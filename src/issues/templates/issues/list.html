@@ -1,13 +1,34 @@
-<h1>Lista de Issues</h1>
-<a href="{% url 'issue_create' %}"> + Crear nuevo Issue</a>
-<hr>
-<ul>
-    {% for i in issues %}
-        <li>
-            <strong>{{ i.title }}</strong> ({{ i.created_at|date:"d/m/Y" }})<br>
-            {{ i.description }}
-        </li>
-    {% empty %}
-        <li>No hay issues todavía.</li>
-    {% endfor %}
-</ul>
+<style>
+    table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+    .status-new { background: #8e44ad; color: white; padding: 4px 8px; border-radius: 3px; font-size: 0.8em; }
+    .btn-new { background: #699b00; color: white; padding: 10px; text-decoration: none; border-radius: 4px; float: right; }
+</style>
+
+<a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
+<h1>Issues</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>SUBJECT</th>
+            <th>STATUS</th>
+            <th>TYPE</th>
+            <th>PRIORITY</th>
+            <th>MODIFIED</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for issue in issues %}
+        <tr>
+            <td>#{{ issue.id }}</td>
+            <td><strong>{{ issue.subject }}</strong></td>
+            <td><span class="status-new">{{ issue.status }}</span></td>
+            <td>{{ issue.issue_type }}</td>
+            <td>{{ issue.priority }}</td>
+            <td>{{ issue.modified_at|date:"d M Y" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -1,16 +1,27 @@
 from django.shortcuts import render, redirect
-from issues.models import Issue
+from .models import Issue
+from django.contrib.auth.models import User
 
 def issue_list(request):
-    # Agafem tots els issues de la base de dades
+    # Ordenades de més noves a més velles (Requisit)
     issues = Issue.objects.all().order_by('-created_at')
     return render(request, 'issues/list.html', {'issues': issues})
 
 def issue_create(request):
+    # Simulem usuari loguejat (Hardcoded per a Sessió 2)
+    default_user = User.objects.first() 
+
     if request.method == "POST":
-        # Guardem el que l'usuari ha enviat pel formulari
-        title = request.POST.get('title')
+        subject = request.POST.get('subject')
         description = request.POST.get('description')
-        Issue.objects.create(title=title, description=description)
+        
+        # Creem l'issue i l'assignem a nosaltres mateixos (Requisit)
+        Issue.objects.create(
+            subject=subject,
+            description=description,
+            creator=default_user,
+            assignee=default_user
+        )
         return redirect('issue_list')
+    
     return render(request, 'issues/create.html')
