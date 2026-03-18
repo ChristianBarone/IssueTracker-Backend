@@ -1,0 +1,13 @@
+<h1>Lista de Issues</h1>
+<a href="{% url 'issue_create' %}"> + Crear nuevo Issue</a>
+<hr>
+<ul>
+    {% for i in issues %}
+        <li>
+            <strong>{{ i.title }}</strong> ({{ i.created_at|date:"d/m/Y" }})<br>
+            {{ i.description }}
+        </li>
+    {% empty %}
+        <li>No hay issues todavía.</li>
+    {% endfor %}
+</ul>

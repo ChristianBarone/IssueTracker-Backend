@@ -25,7 +25,12 @@ SECRET_KEY = 'django-insecure-yww4e(m3a65w+i(#wn%y49=t#&p9$nn7ncu0m8x!@8fl*c6!op
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
+#EXTRA QUE SE PUEDE ELIMINAR SOLO PRUEBA
+CSRF_TRUSTED_ORIGINS = [
+    'https://8886e6181fdc44dfbb69832587320098.vfs.cloud9.us-east-1.amazonaws.com'
+]
 
 
 # Application definition
@@ -37,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "issues",
 ]
 
 MIDDLEWARE = [

@@ -15,7 +15,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from issues.views import issue_list, issue_create
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', issue_list, name='issue_list'),      # La página principal será la lista
+    path('new/', issue_create, name='issue_create'),
 ]
