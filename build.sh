@@ -2,6 +2,10 @@
 # Sortir si hi ha errors
 set -o errexit
 
+# Preparar entor virtual
+virtualenv .env
+source .env/bin/activate
+
 # Instal·lar dependències de Python
 pip install -r requirements.txt
 
