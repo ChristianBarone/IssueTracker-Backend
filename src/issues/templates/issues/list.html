@@ -1,21 +1,26 @@
 <style>
-    .container { width: 95%; margin: 20px auto; font-family: sans-serif; }
-    table { width: 100%; border-collapse: collapse; background: white; }
-    th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #888; font-size: 0.8em; text-transform: uppercase; }
-    td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    .container { width: 95%; margin: 20px auto; font-family: sans-serif; background-color: #f7f7f7; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #888; font-size: 0.75em; text-transform: uppercase; }
+    td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 0.9em; }
 
-    /* Colors tipus Taiga */
-    .badge { padding: 3px 8px; border-radius: 3px; font-size: 0.75em; font-weight: bold; color: white; }
-    .status-new { background: #8e44ad; } /* Lila */
-    .type-bug { color: #e74c3c; border: 1px solid #e74c3c; } /* Vermell */
-    .sev-normal { color: #27ae60; } /* Verd */
+    /* Enllaços */
+    .issue-link { text-decoration: none; color: #333; }
+    .issue-link:hover { color: #699b00; }
+    .issue-id { color: #999; margin-right: 5px; }
 
-    .btn-new { background: #699b00; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; float: right; font-weight: bold; }
+    /* Estils Taiga */
+    .badge { padding: 2px 6px; border-radius: 3px; font-size: 0.7em; font-weight: bold; color: white; text-transform: uppercase; }
+    .status-new { background: #8e44ad; }
+    .type-bug { color: #e74c3c; border: 1px solid #e74c3c; background: transparent; }
+    .sev-normal { color: #27ae60; font-weight: bold; }
+
+    .btn-new { background: #699b00; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px; float: right; font-weight: bold; font-size: 0.8em; }
 </style>
 
 <div class="container">
     <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
-    <h1>Issues</h1>
+    <h1 style="color: #666; font-weight: 300;">Issues</h1>
 
     <table>
         <thead>
@@ -36,8 +41,10 @@
             <td><span class="sev-normal">{{ issue.issue_severity }}</span></td>
             <td>{{ issue.priority }}</td>
             <td>
-                <span style="color: #999;">#{{ issue.id }}</span>
-                <strong>{{ issue.subject }}</strong>
+                <a href="{% url 'issue_detail' issue.id %}" class="issue-link">
+                    <span class="issue-id">#{{ issue.id }}</span>
+                    <strong>{{ issue.subject }}</strong>
+                </a>
             </td>
             <td><span class="badge status-new">{{ issue.status }}</span></td>
             <td>{{ issue.modified_at|date:"d M Y" }}</td>
@@ -45,12 +52,12 @@
                 {% if issue.assignee %}
                 {{ issue.assignee.username }}
                 {% else %}
-                ---
+                <span style="color: #ccc;">---</span>
                 {% endif %}
             </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7">No hi ha issues encara.</td></tr>
+        <tr><td colspan="7" style="text-align: center; padding: 40px;">No hi ha issues encara. Crea la primera!</td></tr>
         {% endfor %}
         </tbody>
     </table>
