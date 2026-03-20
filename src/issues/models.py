@@ -6,6 +6,7 @@ class Issue(models.Model):
     STATUS_CHOICES = [('New', 'New'), ('In Progress', 'In Progress'), ('Closed', 'Closed')]
     PRIORITY_CHOICES = [('Low', 'Low'), ('Normal', 'Normal'), ('High', 'High')]
     TYPE_CHOICES = [('Bug', 'Bug'), ('Question', 'Question'), ('Enhancement', 'Enhancement')]
+    SEVERITY_CHOICES = [('Minor', 'Minor'), ('Normal', 'Normal'), ('Important', 'Important'), ('Critical', 'Critical')]
 
     subject = models.CharField(max_length=200) # En Taiga és 'Subject', no 'Title'
     description = models.TextField(blank=True)
@@ -18,6 +19,7 @@ class Issue(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='New')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='Normal')
     issue_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Bug')
+    issue_severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='Normal')
     
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
