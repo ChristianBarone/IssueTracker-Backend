@@ -11,6 +11,7 @@
         border-radius: 50%;
         display: inline-block;
         margin-right: 8px;
+        vertical-align: middle;
     }
 
     /* Colors per a TYPE */
@@ -24,13 +25,13 @@
     .sev-important { background-color: #e67e22; } /* Taronja */
     .sev-critical { background-color: #c0392b; }  /* Vermell fosc */
 
-    /* Colors per a PRIORITY (Només text o color lateral opcional) */
-    .prio-high { background-color: #32CD32;}
-    .prio-normal { background-color: #FFFF00;}
-    .prio-low { background-color: #e67e22;}
+    /* Colors per a PRIORITY (Corregit: prio-low, prio-normal, prio-high) */
+    .prio-high { background-color: #32CD32; }   /* Verd llima */
+    .prio-normal { background-color: #FFFF00; border: 1px solid #ccc; } /* Groc */
+    .prio-low { background-color: #e67e22; }    /* Taronja */
 
     /* Estils de Status (Badge quadrat com Taiga) */
-    .badge { padding: 4px 8px; border-radius: 3px; font-size: 0.7em; font-weight: bold; color: white; text-transform: uppercase; }
+    .badge { padding: 4px 8px; border-radius: 3px; font-size: 0.75em; font-weight: bold; color: white; text-transform: uppercase; }
     .status-new { background: #8e44ad; }
     .status-in-progress { background: #3498db; }
     .status-closed { background: #27ae60; }
@@ -73,8 +74,8 @@
             </td>
 
             <td>
-                <span class="dot prio-{{ issue.issue_priority|lower }}"></span>
-                {{ issue_priority }}
+                <span class="dot prio-{{ issue.priority|lower }}"></span>
+                {{ issue.priority }}
             </td>
 
             <td>
