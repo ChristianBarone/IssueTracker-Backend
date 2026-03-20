@@ -72,8 +72,9 @@
                 {{ issue.issue_severity }}
             </td>
 
-            <td class="prio-{{ issue.priority|lower }}">
-                {{ issue.priority }}
+            <td>
+                <span class="dot prio-{{ issue.issue_priority|lower }}"></span>
+                {{ issue.issue_priority }}
             </td>
 
             <td>
