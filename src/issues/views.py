@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import Issue
 from django.contrib.auth.models import User
 
@@ -25,3 +25,8 @@ def issue_create(request):
         return redirect('issue_list')
     
     return render(request, 'issues/create.html')
+
+
+def issue_detail(request, issue_id):
+    issue = get_object_or_404(Issue, id=issue_id)
+    return render(request, 'issues/detail.html', {'issue': issue})
