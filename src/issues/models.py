@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 class Issue(models.Model):
     # Valors predefinits per a la Sessió 2 (Hardcoded com diuen les instruccions)
-    STATUS_CHOICES = [('New', 'New'), ('In Progress', 'In Progress'), ('Closed', 'Closed')]
+    STATUS_CHOICES = [('New', 'New'), ('In Progress', 'In Progress'), ('Ready for test', 'Ready for test'), ('Closed', 'Closed'), ('Needs Info', 'Needs Info'), ('Rejected', 'Rejected'), ('Postponed', 'Postponed')]
     PRIORITY_CHOICES = [('Low', 'Low'), ('Normal', 'Normal'), ('High', 'High')]
     TYPE_CHOICES = [('Bug', 'Bug'), ('Question', 'Question'), ('Enhancement', 'Enhancement')]
     SEVERITY_CHOICES = [('Minor', 'Minor'), ('Normal', 'Normal'), ('Important', 'Important'), ('Critical', 'Critical')]

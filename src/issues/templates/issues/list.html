@@ -4,16 +4,41 @@
     th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #888; font-size: 0.75em; text-transform: uppercase; }
     td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 0.9em; }
 
+    /* Estil base per a la "bola" (cercle) */
+    .dot {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+
+    /* Colors per a TYPE */
+    .type-bug { background-color: #e74c3c; }        /* Vermell */
+    .type-question { background-color: #3498db; }   /* Blau */
+    .type-enhancement { background-color: #27ae60; } /* Verd */
+
+    /* Colors per a SEVERITY */
+    .sev-minor { background-color: #2ecc71; }    /* Verd clar */
+    .sev-normal { background-color: #3498db; }   /* Blau */
+    .sev-important { background-color: #e67e22; } /* Taronja */
+    .sev-critical { background-color: #c0392b; }  /* Vermell fosc */
+
+    /* Colors per a PRIORITY (Només text o color lateral opcional) */
+    .prio-high { color: #e74c3c; font-weight: bold; }
+    .prio-normal { color: #555; }
+    .prio-low { color: #999; }
+
+    /* Estils de Status (Badge quadrat com Taiga) */
+    .badge { padding: 4px 8px; border-radius: 3px; font-size: 0.7em; font-weight: bold; color: white; text-transform: uppercase; }
+    .status-new { background: #8e44ad; }
+    .status-in-progress { background: #3498db; }
+    .status-closed { background: #27ae60; }
+
     /* Enllaços */
     .issue-link { text-decoration: none; color: #333; }
-    .issue-link:hover { color: #699b00; }
+    .issue-link:hover { color: #699b00; text-decoration: underline; }
     .issue-id { color: #999; margin-right: 5px; }
-
-    /* Estils Taiga */
-    .badge { padding: 2px 6px; border-radius: 3px; font-size: 0.7em; font-weight: bold; color: white; text-transform: uppercase; }
-    .status-new { background: #8e44ad; }
-    .type-bug { color: #e74c3c; border: 1px solid #e74c3c; background: transparent; }
-    .sev-normal { color: #27ae60; font-weight: bold; }
 
     .btn-new { background: #699b00; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px; float: right; font-weight: bold; font-size: 0.8em; }
 </style>
@@ -37,27 +62,45 @@
         <tbody>
         {% for issue in issues %}
         <tr>
-            <td><span class="badge type-bug">{{ issue.issue_type }}</span></td>
-            <td><span class="sev-normal">{{ issue.issue_severity }}</span></td>
-            <td>{{ issue.priority }}</td>
+            <td>
+                <span class="dot type-{{ issue.issue_type|lower }}"></span>
+                {{ issue.issue_type }}
+            </td>
+
+            <td>
+                <span class="dot sev-{{ issue.issue_severity|lower }}"></span>
+                {{ issue.issue_severity }}
+            </td>
+
+            <td class="prio-{{ issue.priority|lower }}">
+                {{ issue.priority }}
+            </td>
+
             <td>
                 <a href="{% url 'issue_detail' issue.id %}" class="issue-link">
                     <span class="issue-id">#{{ issue.id }}</span>
                     <strong>{{ issue.subject }}</strong>
                 </a>
             </td>
-            <td><span class="badge status-new">{{ issue.status }}</span></td>
-            <td>{{ issue.modified_at|date:"d M Y" }}</td>
+
+            <td>
+                <span class="badge status-{{ issue.status|lower|slugify }}">
+                    {{ issue.status }}
+                </span>
+            </td>
+
+            <td style="color: #666;">{{ issue.modified_at|date:"d M Y" }}</td>
+
             <td>
                 {% if issue.assignee %}
-                {{ issue.assignee.username }}
+                <span style="color: #333;">{{ issue.assignee.username }}</span>
                 {% else %}
                 <span style="color: #ccc;">---</span>
                 {% endif %}
             </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" style="text-align: center; padding: 40px;">No hi ha issues encara. Crea la primera!</td></tr>
+        <tr><td colspan="7" style="text-align: center; padding: 40px; color: #999;">No hi ha issues encara. Crea la primera!</td></tr>
         {% endfor %}
         </tbody>
     </table>
