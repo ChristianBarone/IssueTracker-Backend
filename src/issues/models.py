@@ -20,9 +20,20 @@ class Issue(models.Model):
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='Normal')
     issue_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Bug')
     issue_severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='Normal')
-    
+
+    deadline = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"#{self.id} {self.subject}"
+
+    class Comment(models.Model):
+        issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name='comments')
+        author = models.ForeignKey(User, on_delete=models.CASCADE)
+        body = models.TextField()
+        created_at = models.DateTimeField(auto_now_add=True)
+        updated_at = models.DateTimeField(auto_now=True)
+
+        def is_edited(self):
+            return self.updated_at > self.created_at

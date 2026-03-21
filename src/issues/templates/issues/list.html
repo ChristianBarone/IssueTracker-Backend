@@ -1,5 +1,6 @@
 <style>
     .container { width: 95%; margin: 20px auto; font-family: sans-serif; background-color: #f7f7f7; padding: 20px; }
+    .toolbar { display: flex; justify-content: space-between; background: white; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
     table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #888; font-size: 0.75em; text-transform: uppercase; }
     td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 0.9em; }
@@ -25,10 +26,13 @@
     .sev-important { background-color: #e67e22; } /* Taronja */
     .sev-critical { background-color: #c0392b; }  /* Vermell fosc */
 
-    /* Colors per a PRIORITY (Corregit: prio-low, prio-normal, prio-high) */
+    /* Colors per a PRIORITY */
     .prio-high { background-color: #32CD32; }   /* Verd llima */
     .prio-normal { background-color: #FFFF00; border: 1px solid #ccc; } /* Groc */
     .prio-low { background-color: #e67e22; }    /* Taronja */
+
+    /* Boto delete */
+    .btn-del { color: #c0392b; text-decoration: none; font-weight: bold; font-size: 0.8em; }
 
     /* Estils de Status (Badge quadrat com Taiga) */
     .badge { padding: 4px 8px; border-radius: 3px; font-size: 0.75em; font-weight: bold; color: white; text-transform: uppercase; }
@@ -44,9 +48,139 @@
     .btn-new { background: #699b00; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px; float: right; font-weight: bold; font-size: 0.8em; }
 </style>
 
+Perfecto, vamos a unificar todo el código manteniendo exactamente el formato CSS que tienes en tu list.html pero añadiendo las columnas de Deadline y las Acciones que pide la entrega final.
+
+He ajustado el views.py para que use el usuario hardcodeado (el primero de la base de datos) y he incluido la lógica necesaria para que todo funcione de golpe.
+
+1. El Modelo (models.py)
+Asegúrate de tener estos campos. Si no los tienes, el servidor dará error.
+
+Python
+from django.db import models
+from django.contrib.auth.models import User
+
+class Issue(models.Model):
+STATUS_CHOICES = [('New', 'New'), ('In Progress', 'In Progress'), ('Ready for test', 'Ready for test'), ('Done', 'Done'), ('Archived', 'Archived')]
+TYPE_CHOICES = [('Bug', 'Bug'), ('Question', 'Question'), ('Enhancement', 'Enhancement')]
+SEVERITY_CHOICES = [('Wishlist', 'Wishlist'), ('Minor', 'Minor'), ('Normal', 'Normal'), ('Major', 'Major'), ('Critical', 'Critical')]
+PRIORITY_CHOICES = [('Low', 'Low'), ('Normal', 'Normal'), ('High', 'High')]
+
+subject = models.CharField(max_length=200)
+description = models.TextField(blank=True)
+status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='New')
+issue_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Bug')
+issue_severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='Normal')
+priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='Normal')
+
+deadline = models.DateField(null=True, blank=True)
+created_at = models.DateTimeField(auto_now_add=True)
+modified_at = models.DateTimeField(auto_now=True)
+
+creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_issues')
+assignee = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+class Comment(models.Model):
+issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name='comments')
+author = models.ForeignKey(User, on_delete=models.CASCADE)
+body = models.TextField()
+created_at = models.DateTimeField(auto_now_add=True)
+updated_at = models.DateTimeField(auto_now=True)
+2. La Vista (views.py) - Lógica Hardcoded
+Aquí he mantenido el default_user = User.objects.first() para que no tengas que loguearte.
+
+Python
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Issue, Comment
+from django.contrib.auth.models import User
+from django.db.models import Q
+
+def issue_list(request):
+issues = Issue.objects.all().order_by('-created_at')
+
+# Búsqueda (Subject y Description)
+search_query = request.GET.get('search')
+if search_query:
+issues = issues.filter(Q(subject__icontains=search_query) | Q(description__icontains=search_query))
+
+# Filtros simples
+f_status = request.GET.get('status')
+if f_status:
+issues = issues.filter(status=f_status)
+
+return render(request, 'issues/list.html', {'issues': issues})
+
+def issue_create(request):
+default_user = User.objects.first() # Hardcoded user
+
+if request.method == "POST":
+d_line = request.POST.get('deadline')
+Issue.objects.create(
+subject=request.POST.get('subject'),
+description=request.POST.get('description'),
+issue_type=request.POST.get('issue_type'),
+issue_severity=request.POST.get('issue_severity'),
+priority=request.POST.get('priority'),
+status=request.POST.get('status'),
+deadline=d_line if d_line else None,
+creator=default_user,
+assignee=default_user
+)
+return redirect('issue_list')
+
+return render(request, 'issues/create.html')
+
+def issue_delete(request, pk):
+issue = get_object_or_404(Issue, pk=pk)
+# En modo hardcoded permitimos borrar a este usuario
+issue.delete()
+return redirect('issue_list')
+3. El Template de Lista (list.html)
+He respetado exactamente tu bloque de estilo pero he añadido la columna de Deadline y Actions para que sea funcional.
+
+HTML
+<style>
+    .container { width: 95%; margin: 20px auto; font-family: sans-serif; background-color: #f7f7f7; padding: 20px; }
+    .toolbar { display: flex; justify-content: space-between; background: white; padding: 15px; border-radius: 4px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #888; font-size: 0.75em; text-transform: uppercase; }
+    td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 0.9em; }
+
+    .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; vertical-align: middle; }
+    .type-bug { background-color: #e74c3c; }
+    .type-question { background-color: #3498db; }
+    .type-enhancement { background-color: #00FFFF; }
+    .sev-minor { background-color: #3498db; }
+    .sev-normal { background-color: #2ecc71; }
+    .sev-important { background-color: #e67e22; }
+    .sev-critical { background-color: #c0392b; }
+    .prio-high { background-color: #32CD32; }
+    .prio-normal { background-color: #FFFF00; border: 1px solid #ccc; }
+    .prio-low { background-color: #e67e22; }
+
+    .btn-del { color: #c0392b; text-decoration: none; font-weight: bold; font-size: 0.8em; }
+    .badge { padding: 4px 8px; border-radius: 3px; font-size: 0.75em; font-weight: bold; color: white; text-transform: uppercase; }
+    .status-new { background: #8e44ad; }
+    .status-in-progress { background: #3498db; }
+    .status-closed { background: #27ae60; }
+
+    .issue-link { text-decoration: none; color: #333; }
+    .issue-link:hover { color: #699b00; text-decoration: underline; }
+    .issue-id { color: #999; margin-right: 5px; }
+
+    .btn-new { background: #699b00; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px; font-weight: bold; font-size: 0.8em; }
+</style>
+
 <div class="container">
-    <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
-    <h1 style="color: #666; font-weight: 300;">Issues</h1>
+    <div class="toolbar">
+        <form method="GET" style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" name="search" placeholder="Search..." style="padding: 5px; border: 1px solid #ccc; border-radius: 3px;">
+            <button type="submit" style="cursor:pointer; padding: 5px 10px;">Filter</button>
+        </form>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <h1 style="color: #666; font-weight: 300; margin: 0; font-size: 1.5em;">Issues</h1>
+            <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
+        </div>
+    </div>
 
     <table>
         <thead>
@@ -55,9 +189,10 @@
             <th>Severity</th>
             <th>Priority</th>
             <th>Issue</th>
+            <th>Deadline</th>
             <th>Status</th>
             <th>Modified</th>
-            <th>Assignee</th>
+            <th>Actions</th>
         </tr>
         </thead>
         <tbody>
@@ -67,42 +202,35 @@
                 <span class="dot type-{{ issue.issue_type|lower }}"></span>
                 {{ issue.issue_type }}
             </td>
-
             <td>
                 <span class="dot sev-{{ issue.issue_severity|lower }}"></span>
                 {{ issue.issue_severity }}
             </td>
-
             <td>
                 <span class="dot prio-{{ issue.priority|lower }}"></span>
                 {{ issue.priority }}
             </td>
-
             <td>
                 <a href="{% url 'issue_detail' issue.id %}" class="issue-link">
                     <span class="issue-id">#{{ issue.id }}</span>
                     <strong>{{ issue.subject }}</strong>
                 </a>
             </td>
-
-            <td>
-                <span class="badge status-{{ issue.status|lower|slugify }}">
-                    {{ issue.status }}
-                </span>
+            <td style="color: #c0392b; font-weight: bold;">
+                {{ issue.deadline|date:"d/m/Y"|default:"---" }}
             </td>
-
-            <td style="color: #666;">{{ issue.modified_at|date:"d M Y" }}</td>
-
+            <td><span class="badge status-{{ issue.status|lower|slugify }}">
+                {{ issue.status }}
+            </span></td>
+            <td style="color: #666;">
+                {{ issue.modified_at|date:"d M Y" }}
+            </td>
             <td>
-                {% if issue.assignee %}
-                <span style="color: #333;">{{ issue.assignee.username }}</span>
-                {% else %}
-                <span style="color: #ccc;">---</span>
-                {% endif %}
+                <a href="{% url 'issue_delete' issue.id %}" class="btn-del" onclick="return confirm('¿Borrar issue?')">DELETE</a>
             </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" style="text-align: center; padding: 40px; color: #999;">No hi ha issues encara. Crea la primera!</td></tr>
+        <tr><td colspan="8" style="text-align: center; padding: 40px; color: #999;">No hay issues todavía.</td></tr>
         {% endfor %}
         </tbody>
     </table>

@@ -1,11 +1,59 @@
-<h1>Nuevo Issue</h1>
-<form method="POST">
-    {% csrf_token %}
-    <label>Asunto (Subject):</label><br>
-    <input type="text" name="subject" required><br><br>
-    
-    <label>Descripción:</label><br>
-    <textarea name="description" rows="5"></textarea><br><br>
-    
-    <button type="submit">Guardar Issue</button>
-</form>
+<style>
+    .taiga-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(33, 33, 33, 0.9); display: flex; justify-content: center; align-items: center; }
+    .modal-content { background: white; width: 600px; padding: 30px; border-radius: 3px; font-family: sans-serif; }
+    .form-label { display: block; font-size: 11px; font-weight: bold; color: #999; text-transform: uppercase; margin-bottom: 5px; }
+    .form-input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 3px; margin-bottom: 15px; box-sizing: border-box; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+</style>
+
+<div class="taiga-modal">
+    <div class="modal-content">
+        <h2 style="color: #666; margin-top: 0;">New Issue</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <label class="form-label">Subject</label>
+            <input type="text" name="subject" class="form-input" required>
+
+            <div class="grid">
+                <div><label class="form-label">Type</label>
+                    <select name="issue_type" class="form-input">
+                        <option value="Bug">Bug</option>
+                        <option value="Question">Question</option>
+                    </select>
+                </div>
+                <div><label class="form-label">Severity</label>
+                    <select name="issue_severity" class="form-input">
+                        <option value="Normal">Normal</option>
+                        <option value="Critical">Critical</option>
+                    </select>
+                </div>
+                <div><label class="form-label">Priority</label>
+                    <select name="priority" class="form-input">
+                        <option value="Normal">Normal</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div><label class="form-label">Status</label>
+                    <select name="status" class="form-input">
+                        <option value="New">New</option>
+                        <option value="In Progress">In Progress</option>
+                    </select>
+                </div>
+                <div><label class="form-label">Deadline</label>
+                    <input type="date" name="deadline" class="form-input">
+                </div>
+            </div>
+
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-input" rows="4"></textarea>
+
+            <div style="text-align: right;">
+                <a href="{% url 'issue_list' %}" style="margin-right: 20px; color: #666; text-decoration: none;">CANCEL</a>
+                <button type="submit" style="background: #699b00; color: white; border: none; padding: 10px 20px; border-radius: 3px; cursor: pointer; font-weight: bold;">CREATE</button>
+            </div>
+        </form>
+    </div>
+</div>
