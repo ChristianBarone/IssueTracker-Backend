@@ -1,237 +1,195 @@
-<style>
-    .container { width: 95%; margin: 20px auto; font-family: sans-serif; background-color: #f7f7f7; padding: 20px; }
-    .toolbar { display: flex; justify-content: space-between; background: white; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #888; font-size: 0.75em; text-transform: uppercase; }
-    td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 0.9em; }
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* RESET & PALETA DINÁMICA */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Ubuntu', sans-serif; }
 
-    /* Estil base per a la "bola" (cercle) */
-    .dot {
-        height: 10px;
-        width: 10px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 8px;
-        vertical-align: middle;
-    }
+        :root {
+            --taiga-main: #34495e;      /* Azul oscuro para texto y títulos */
+            --taiga-accent: #5dc5b5;    /* Verde agua para botones y detalles */
+            --taiga-orange: #ff8c00;    /* Naranja para referencias */
+            --taiga-bg: #f8fafc;        /* Fondo muy claro */
+            --sidebar-header: #edf2f7;  /* Gris azulado muy suave */
+        }
 
-    /* Colors per a TYPE */
-    .type-bug { background-color: #e74c3c; }        /* Vermell */
-    .type-question { background-color: #3498db; }   /* Blau */
-    .type-enhancement { background-color: #00FFFF; } /* Cyan */
+        body { background: var(--taiga-bg); color: var(--taiga-main); padding: 20px; }
 
-    /* Colors per a SEVERITY */
-    .sev-minor { background-color: #3498db; }    /* Blau */
-    .sev-normal { background-color: #2ecc71; }   /* Verd clar */
-    .sev-important { background-color: #e67e22; } /* Taronja */
-    .sev-critical { background-color: #c0392b; }  /* Vermell fosc */
+        .container { max-width: 1400px; margin: 0 auto; }
 
-    /* Colors per a PRIORITY */
-    .prio-high { background-color: #32CD32; }   /* Verd llima */
-    .prio-normal { background-color: #FFFF00; border: 1px solid #ccc; } /* Groc */
-    .prio-low { background-color: #e67e22; }    /* Taronja */
+        /* BARRA SUPERIOR */
+        .header-nav { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
 
-    /* Boto delete */
-    .btn-del { color: #c0392b; text-decoration: none; font-weight: bold; font-size: 0.8em; }
+        .btn-toggle-filters {
+            background: #d1d5db; color: #374151; padding: 10px 18px;
+            border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px;
+            display: flex; align-items: center; gap: 8px; transition: 0.3s;
+        }
+        .btn-toggle-filters.active { background: var(--taiga-main); color: white; }
 
-    /* Estils de Status (Badge quadrat com Taiga) */
-    .badge { padding: 4px 8px; border-radius: 3px; font-size: 0.75em; font-weight: bold; color: white; text-transform: uppercase; }
-    .status-new { background: #8e44ad; }
-    .status-in-progress { background: #3498db; }
-    .status-closed { background: #27ae60; }
+        .search-wrapper { position: relative; flex-grow: 1; max-width: 400px; }
+        .search-wrapper input {
+            width: 100%; padding: 10px 15px; border: 2px solid #e2e8f0;
+            border-radius: 5px; outline: none; font-size: 14px;
+        }
 
-    /* Enllaços */
-    .issue-link { text-decoration: none; color: #333; }
-    .issue-link:hover { color: #699b00; text-decoration: underline; }
-    .issue-id { color: #999; margin-right: 5px; }
+        .btn-new {
+            background: var(--taiga-accent); color: white; padding: 10px 20px;
+            border-radius: 5px; text-decoration: none; font-weight: bold;
+            box-shadow: 0 3px 0 #469b8e; margin-left: auto;
+        }
 
-    .btn-new { background: #699b00; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px; float: right; font-weight: bold; font-size: 0.8em; }
-</style>
+        /* DISEÑO DE DOS COLUMNAS */
+        .main-layout { display: flex; gap: 25px; }
 
-Perfecto, vamos a unificar todo el código manteniendo exactamente el formato CSS que tienes en tu list.html pero añadiendo las columnas de Deadline y las Acciones que pide la entrega final.
+        /* SIDEBAR ESTILO TAIGA (image_401409.png) */
+        .filters-sidebar {
+            width: 280px; background: white; border: 1px solid #e2e8f0;
+            border-radius: 8px; overflow: hidden; height: fit-content;
+        }
+        .sidebar-top {
+            padding: 15px; background: var(--sidebar-header);
+            display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;
+        }
 
-He ajustado el views.py para que use el usuario hardcodeado (el primero de la base de datos) y he incluido la lógica necesaria para que todo funcione de golpe.
+        details { border-bottom: 1px solid #f1f5f9; }
+        summary {
+            padding: 12px 15px; cursor: pointer; font-size: 13px; font-weight: 600;
+            display: flex; justify-content: space-between; background: white;
+        }
+        summary:hover { background: #f8fafc; }
 
-1. El Modelo (models.py)
-Asegúrate de tener estos campos. Si no los tienes, el servidor dará error.
+        .filter-content { padding: 5px 10px 15px 10px; }
+        .filter-link {
+            display: flex; justify-content: space-between; padding: 8px 12px;
+            text-decoration: none; color: #64748b; font-size: 14px; border-radius: 5px;
+        }
+        .filter-link:hover { background: #f1f5f9; color: var(--taiga-accent); }
+        .filter-link.active { background: #e6fffa; color: #2c7a7b; font-weight: bold; }
+        .count-pill { background: #f1f5f9; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
 
-Python
-from django.db import models
-from django.contrib.auth.models import User
+        /* TABLA DE ISSUES */
+        .table-wrapper { flex-grow: 1; background: white; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            background: #f8fafc; padding: 15px; text-align: left;
+            font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        td { padding: 18px 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
 
-class Issue(models.Model):
-STATUS_CHOICES = [('New', 'New'), ('In Progress', 'In Progress'), ('Ready for test', 'Ready for test'), ('Done', 'Done'), ('Archived', 'Archived')]
-TYPE_CHOICES = [('Bug', 'Bug'), ('Question', 'Question'), ('Enhancement', 'Enhancement')]
-SEVERITY_CHOICES = [('Wishlist', 'Wishlist'), ('Minor', 'Minor'), ('Normal', 'Normal'), ('Major', 'Major'), ('Critical', 'Critical')]
-PRIORITY_CHOICES = [('Low', 'Low'), ('Normal', 'Normal'), ('High', 'High')]
+        .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+        .ref-number { color: var(--taiga-orange); font-weight: bold; margin-right: 5px; }
+        .subject-link { text-decoration: none; color: var(--taiga-main); font-weight: 500; font-size: 15px; }
+        .subject-link:hover { color: var(--taiga-accent); }
 
-subject = models.CharField(max_length=200)
-description = models.TextField(blank=True)
-status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='New')
-issue_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Bug')
-issue_severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='Normal')
-priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='Normal')
+        /* SELECT DE STATUS DINÁMICO */
+        .status-select {
+            padding: 5px 10px; border-radius: 4px; border: 1px solid #e2e8f0;
+            background: #f8fafc; color: #475569; font-size: 13px; cursor: pointer;
+            outline: none; transition: 0.2s;
+        }
+        .status-select:focus { border-color: var(--taiga-accent); background: white; }
 
-deadline = models.DateField(null=True, blank=True)
-created_at = models.DateTimeField(auto_now_add=True)
-modified_at = models.DateTimeField(auto_now=True)
-
-creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_issues')
-assignee = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-
-class Comment(models.Model):
-issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name='comments')
-author = models.ForeignKey(User, on_delete=models.CASCADE)
-body = models.TextField()
-created_at = models.DateTimeField(auto_now_add=True)
-updated_at = models.DateTimeField(auto_now=True)
-2. La Vista (views.py) - Lógica Hardcoded
-Aquí he mantenido el default_user = User.objects.first() para que no tengas que loguearte.
-
-Python
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Issue, Comment
-from django.contrib.auth.models import User
-from django.db.models import Q
-
-def issue_list(request):
-issues = Issue.objects.all().order_by('-created_at')
-
-# Búsqueda (Subject y Description)
-search_query = request.GET.get('search')
-if search_query:
-issues = issues.filter(Q(subject__icontains=search_query) | Q(description__icontains=search_query))
-
-# Filtros simples
-f_status = request.GET.get('status')
-if f_status:
-issues = issues.filter(status=f_status)
-
-return render(request, 'issues/list.html', {'issues': issues})
-
-def issue_create(request):
-default_user = User.objects.first() # Hardcoded user
-
-if request.method == "POST":
-d_line = request.POST.get('deadline')
-Issue.objects.create(
-subject=request.POST.get('subject'),
-description=request.POST.get('description'),
-issue_type=request.POST.get('issue_type'),
-issue_severity=request.POST.get('issue_severity'),
-priority=request.POST.get('priority'),
-status=request.POST.get('status'),
-deadline=d_line if d_line else None,
-creator=default_user,
-assignee=default_user
-)
-return redirect('issue_list')
-
-return render(request, 'issues/create.html')
-
-def issue_delete(request, pk):
-issue = get_object_or_404(Issue, pk=pk)
-# En modo hardcoded permitimos borrar a este usuario
-issue.delete()
-return redirect('issue_list')
-3. El Template de Lista (list.html)
-He respetado exactamente tu bloque de estilo pero he añadido la columna de Deadline y Actions para que sea funcional.
-
-HTML
-<style>
-    .container { width: 95%; margin: 20px auto; font-family: sans-serif; background-color: #f7f7f7; padding: 20px; }
-    .toolbar { display: flex; justify-content: space-between; background: white; padding: 15px; border-radius: 4px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #888; font-size: 0.75em; text-transform: uppercase; }
-    td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 0.9em; }
-
-    .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; vertical-align: middle; }
-    .type-bug { background-color: #e74c3c; }
-    .type-question { background-color: #3498db; }
-    .type-enhancement { background-color: #00FFFF; }
-    .sev-minor { background-color: #3498db; }
-    .sev-normal { background-color: #2ecc71; }
-    .sev-important { background-color: #e67e22; }
-    .sev-critical { background-color: #c0392b; }
-    .prio-high { background-color: #32CD32; }
-    .prio-normal { background-color: #FFFF00; border: 1px solid #ccc; }
-    .prio-low { background-color: #e67e22; }
-
-    .btn-del { color: #c0392b; text-decoration: none; font-weight: bold; font-size: 0.8em; }
-    .badge { padding: 4px 8px; border-radius: 3px; font-size: 0.75em; font-weight: bold; color: white; text-transform: uppercase; }
-    .status-new { background: #8e44ad; }
-    .status-in-progress { background: #3498db; }
-    .status-closed { background: #27ae60; }
-
-    .issue-link { text-decoration: none; color: #333; }
-    .issue-link:hover { color: #699b00; text-decoration: underline; }
-    .issue-id { color: #999; margin-right: 5px; }
-
-    .btn-new { background: #699b00; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px; font-weight: bold; font-size: 0.8em; }
-</style>
+    </style>
+</head>
+<body>
 
 <div class="container">
-    <div class="toolbar">
-        <form method="GET" style="display: flex; gap: 10px; align-items: center;">
-            <input type="text" name="search" placeholder="Search..." style="padding: 5px; border: 1px solid #ccc; border-radius: 3px;">
-            <button type="submit" style="cursor:pointer; padding: 5px 10px;">Filter</button>
+    <div class="header-nav">
+        <a href="?show_filters={% if show_filters %}0{% else %}1{% endif %}" class="btn-toggle-filters {% if show_filters %}active{% endif %}">
+            FILTERS {% if show_filters %}▴{% else %}▾{% endif %}
+        </a>
+
+        <form method="GET" class="search-wrapper">
+            <input type="text" name="search" placeholder="subject or reference..." value="{{ request.GET.search }}">
+            {% if show_filters %}<input type="hidden" name="show_filters" value="1">{% endif %}
         </form>
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <h1 style="color: #666; font-weight: 300; margin: 0; font-size: 1.5em;">Issues</h1>
-            <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
-        </div>
+
+        <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
     </div>
 
-    <table>
-        <thead>
-        <tr>
-            <th>Type</th>
-            <th>Severity</th>
-            <th>Priority</th>
-            <th>Issue</th>
-            <th>Deadline</th>
-            <th>Status</th>
-            <th>Modified</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for issue in issues %}
-        <tr>
-            <td>
-                <span class="dot type-{{ issue.issue_type|lower }}"></span>
-                {{ issue.issue_type }}
-            </td>
-            <td>
-                <span class="dot sev-{{ issue.issue_severity|lower }}"></span>
-                {{ issue.issue_severity }}
-            </td>
-            <td>
-                <span class="dot prio-{{ issue.priority|lower }}"></span>
-                {{ issue.priority }}
-            </td>
-            <td>
-                <a href="{% url 'issue_detail' issue.id %}" class="issue-link">
-                    <span class="issue-id">#{{ issue.id }}</span>
-                    <strong>{{ issue.subject }}</strong>
-                </a>
-            </td>
-            <td style="color: #c0392b; font-weight: bold;">
-                {{ issue.deadline|date:"d/m/Y"|default:"---" }}
-            </td>
-            <td><span class="badge status-{{ issue.status|lower|slugify }}">
-                {{ issue.status }}
-            </span></td>
-            <td style="color: #666;">
-                {{ issue.modified_at|date:"d M Y" }}
-            </td>
-            <td>
-                <a href="{% url 'issue_delete' issue.id %}" class="btn-del" onclick="return confirm('¿Borrar issue?')">DELETE</a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="8" style="text-align: center; padding: 40px; color: #999;">No hay issues todavía.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="main-layout">
+        {% if show_filters %}
+        <aside class="filters-sidebar">
+            <div class="sidebar-top">
+                <span>Custom filters (0)</span>
+                <a href="?" style="color: #3182ce; text-decoration: none;">add</a>
+            </div>
+
+            <details open>
+                <summary>Type <span style="color: #cbd5e1;">▾</span></summary>
+                <div class="filter-content">
+                    <a href="?show_filters=1&issue_type=Bug" class="filter-link {% if request.GET.issue_type == 'Bug' %}active{% endif %}">
+                        Bug <span class="count-pill">{{ counts.bug }}</span>
+                    </a>
+                    <a href="?show_filters=1&issue_type=Question" class="filter-link {% if request.GET.issue_type == 'Question' %}active{% endif %}">
+                        Question <span class="count-pill">{{ counts.question }}</span>
+                    </a>
+                    <a href="?show_filters=1&issue_type=Enhancement" class="filter-link {% if request.GET.issue_type == 'Enhancement' %}active{% endif %}">
+                        Enhancement <span class="count-pill">{{ counts.enhancement }}</span>
+                    </a>
+                </div>
+            </details>
+
+            <details>
+                <summary>Severity <span style="color: #cbd5e1;">▸</span></summary>
+                <div class="filter-content">
+                    <span style="font-size: 12px; color: #94a3b8;">No severity filters</span>
+                </div>
+            </details>
+
+            <details>
+                <summary>Status <span style="color: #cbd5e1;">▸</span></summary>
+                <div class="filter-content">
+                    <a href="?show_filters=1&status=New" class="filter-link">New <span class="count-pill">{{ counts.new }}</span></a>
+                </div>
+            </details>
+        </aside>
+        {% endif %}
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                <tr>
+                    <th width="80">Type</th>
+                    <th width="80">Sev.</th>
+                    <th width="80">Prio.</th>
+                    <th>Issue</th>
+                    <th>Status</th>
+                    <th>Modified</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for issue in issues %}
+                <tr>
+                    <td><span class="dot" style="background: #5dc5b5;"></span></td>
+                    <td><span class="dot" style="background: #fc8181;"></span></td>
+                    <td><span class="dot" style="background: #ecc94b;"></span></td>
+                    <td>
+                        <span class="ref-number">#{{ issue.id }}</span>
+                        <a href="#" class="subject-link">{{ issue.subject }}</a>
+                    </td>
+                    <td>
+                        <form method="POST" action="{% url 'issue_update_status' issue.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <select name="status" class="status-select" onchange="this.form.submit()">
+                                <option value="New" {% if issue.status == 'New' %}selected{% endif %}>New</option>
+                                <option value="In Progress" {% if issue.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                <option value="Done" {% if issue.status == 'Done' %}selected{% endif %}>Done</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td style="font-size: 13px; color: #64748b;">{{ issue.modified_at|date:"d M Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align: center; padding: 50px; color: #94a3b8;">No issues found matching filters</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+</body>
+</html>

@@ -8,18 +8,41 @@ def issue_list(request):
     issues = Issue.objects.all().order_by('-created_at')
 
     search_query = request.GET.get('search')
-        if search_query:
-            issues = issues.filter(Q(subject__icontains=search_query) | Q(description__icontains=search_query))
+    #Lògica de FILTRES
+    f_type = request.GET.get('issue_type')
+    f_status = request.GET.get('status')
+    f_sev = request.GET.get('issue_severity')
+    f_prio = request.GET.get('priority')
+    show_filters = request.GET.get('show_filters') == '1'
 
-        #Lògica de FILTRES
-        f_status = request.GET.get('status')
-        if f_status:
-            issues = issues.filter(status=f_status)
+    if search_query:
+        issues = issues.filter(Q(subject__icontains=search_query) | Q(id__icontains=search_query))
 
-        f_type = request.GET.get('type')
-        if f_type:
-            issues = issues.filter(issue_type=f_type)
-    return render(request, 'issues/list.html', {'issues': issues})
+    if f_status:
+        issues = issues.filter(status=f_status)
+
+    if f_type:
+        issues = issues.filter(issue_type=f_type)
+    if f_sev:
+        issues = issues.filter(issue_severity=f_sev)
+    if f_prio:
+        issues = issues.filter(priority=f_prio)
+
+    base_stats = Issue.objects.all()
+    counts = {
+        'bug': base_stats.filter(issue_type='Bug').count(),
+        'question': base_stats.filter(issue_type='Question').count(),
+        'enhancement': base_stats.filter(issue_type='Enhancement').count(),
+        'new': base_stats.filter(status='New').count(),
+        'done': base_stats.filter(status='Done').count(),
+    }
+
+    context = {
+        'issues': issues,
+        'counts': counts,
+        'show_filters': show_filters,
+    }
+    return render(request, 'issues/list.html', context)
 
 def issue_create(request):
     # Simulem usuari loguejat (Hardcoded per a Sessió 2)
@@ -58,11 +81,21 @@ def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
     return render(request, 'issues/detail.html', {'issue': issue})
 
-def issue_delete(request, pk):
-    issue = get_object_or_404(Issue, pk=pk)
-    # Només el creador pot esborrar
-    if issue.creator == request.user:
+def issue_delete(request, issue_id):
+    if request.method == 'POST':
+        issue = get_object_or_404(Issue, id=issue_id)
+        # Només el creador pot esborrar
+        #if issue.creator == request.user:
         issue.delete()
+    return redirect('issue_list')
+
+def issue_update_status(request, issue_id):
+    if request.method == 'POST':
+        issue = get_object_or_404(Issue, id=issue_id)
+        nuevo_estado = request.POST.get('status')
+        if nuevo_estado:
+            issue.status = nuevo_estado
+            issue.save()
     return redirect('issue_list')
 
 def comment_add(request, issue_id):
