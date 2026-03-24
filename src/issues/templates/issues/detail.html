@@ -1,0 +1,58 @@
+<style>
+    body { font-family: sans-serif; max-width: 900px; margin: 24px auto; padding: 0 12px; }
+    .meta { color: #666; margin-bottom: 16px; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 3px; background: #8e44ad; color: #fff; font-size: 0.85em; }
+    .card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 18px; }
+    .label { color: #555; font-size: 0.9em; margin-top: 14px; }
+</style>
+
+<div class="container">
+    <div class="main">
+        <a href="{% url 'issue_list' %}">&larr; Back to issues</a>
+
+        <h1>#{{ issue.id }} {{ issue.subject }}</h1>
+        <div class="meta">
+            Created {{ issue.created_at|date:"d M Y H:i" }} |
+            Last modified {{ issue.modified_at|date:"d M Y H:i" }}
+        </div>
+
+        <div class="card">
+            <span class="badge">{{ issue.status }}</span>
+
+            <h3>Description</h3>
+            <p>{{ issue.description|linebreaksbr|default:"No description" }}</p>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="side-card">
+            <div class="side-title">Details</div>
+
+            <div class="item">
+                <span>Type</span>
+                <strong>{{ issue.issue_type }}</strong>
+            </div>
+
+            <div class="item">
+                <span>Priority</span>
+                <strong>{{ issue.priority }}</strong>
+            </div>
+
+            <div class="item">
+                <span>Creator</span>
+                <strong>{{ issue.creator.username }}</strong>
+            </div>
+
+            <div class="item">
+                <span>Assignee</span>
+                <strong>
+                    {% if issue.assignee %}
+                        {{ issue.assignee.username }}
+                    {% else %}
+                        Unassigned
+                    {% endif %}
+                </strong>
+            </div>
+        </div>
+    </div>
+</div>

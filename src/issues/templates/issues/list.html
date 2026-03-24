@@ -22,8 +22,8 @@
     <tbody>
         {% for issue in issues %}
         <tr>
-            <td>#{{ issue.id }}</td>
-            <td><strong>{{ issue.subject }}</strong></td>
+            <td><a href="{% url 'issue_detail' issue.id %}">#{{ issue.id }}</a></td>
+            <td><strong><a href="{% url 'issue_detail' issue.id %}">{{ issue.subject }}</a></strong></td>
             <td><span class="status-new">{{ issue.status }}</span></td>
             <td>{{ issue.issue_type }}</td>
             <td>{{ issue.priority }}</td>
