@@ -1,4 +1,10 @@
-__pycache__
+.vscode
+
+__pycache__/
+**/__pycache__/
+*.py[cod]
+staticfiles
+
 .bundle
 .env
 venv
