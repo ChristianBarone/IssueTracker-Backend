@@ -12,34 +12,42 @@ def issue_list(request):
     selected_statuses = request.GET.getlist('status')
     selected_severities = request.GET.getlist('issue_severity')
     selected_priorities = request.GET.getlist('priority')
-
-    #Lògica de FILTRES
     f_assignee = request.GET.get('assigned_to')
-    search_query = request.GET.get('search', '').strip()
-    mode = request.GET.get('mode', 'include')
 
-    show_filters = request.GET.get('show_filters') == '1'
+    search_query = request.GET.get('search', '').strip()
 
     if search_query:
+        # Cerca: Subject i ID (o Description si vols afegir-ho)
         issues = issues.filter(Q(subject__icontains=search_query) | Q(id__icontains=search_query))
 
-    def apply_filter(qs, field, values):
-        if not values: return qs
-        if mode == 'exclude':
-            return qs.exclude(**{f"{field}__in": values})
-        return qs.filter(**{f"{field}__in": values})
+    # Filtrado por TYPE (Acumulativo)
+    if selected_types:
+        issues = issues.filter(issue_type__in=selected_types)
 
-    issues = apply_filter(issues, 'issue_type', selected_types)
-    issues = apply_filter(issues, 'status', selected_statuses)
-    issues = apply_filter(issues, 'issue_severity', selected_severities)
-    issues = apply_filter(issues, 'priority', selected_priorities)
+    # Filtrado por SEVERITY (Acumulativo)
+    if selected_severities:
+        issues = issues.filter(issue_severity__in=selected_severities)
 
+    # Filtrado por STATUS (Acumulativo)
+    if selected_statuses:
+        issues = issues.filter(status__in=selected_statuses)
+
+    if selected_priorities:
+        issues = issues.filter(priority__in=selected_priorities)
+
+    # Filtrado por ASIGNADO (Uno solo)
     if f_assignee:
         issues = issues.filter(assignee_id=f_assignee)
 
     base_stats = Issue.objects.all()
 
     users = User.objects.annotate(num_issues=Count('assigned_issues'))
+
+    # Listas para iterar en el HTML
+    all_types = ['Bug', 'Question', 'Enhancement']
+    all_severities = ['Wishlist', 'Minor', 'Normal', 'Important', 'Critical']
+    all_statuses = ['New', 'In Progress', 'Ready for test', 'Needs Info', 'Rejected', 'Postponed', 'Closed']
+
     counts = {
         # Types
         'bug': base_stats.filter(issue_type='Bug').count(),
@@ -53,11 +61,6 @@ def issue_list(request):
         'important': base_stats.filter(issue_severity='Important').count(),
         'critical': base_stats.filter(issue_severity='Critical').count(),
 
-        # Priorities
-        'low': base_stats.filter(priority='Low').count(),
-        'normal_prio': base_stats.filter(priority='Normal').count(),
-        'high': base_stats.filter(priority='High').count(),
-
         # Status
         'new': base_stats.filter(status='New').count(),
         'in_progress': base_stats.filter(status='In Progress').count(),
@@ -68,21 +71,19 @@ def issue_list(request):
         'closed': base_stats.filter(status='Closed').count(),
     }
 
-    # Necesario para el conteo de usuarios
-    #user_counts = {}
-    #for u in users:
-        #user_counts[u.id] = base_stats.filter(assignee=u).count()
-
     context = {
         'issues': issues,
         'counts': counts,
         'users': users,
-        'show_filters': show_filters,
-        # Opciones para el HTML
-        'all_types': ['Bug', 'Question', 'Enhancement'],
-        'all_severities': ['Wishlist', 'Minor', 'Normal', 'Important', 'Critical'],
-        'all_priorities': ['Low', 'Normal', 'High'],
-        'all_statuses': ['New', 'In Progress', 'Ready for test', 'Needs Info', 'Rejected', 'Postponed', 'Closed'],
+        'show_filters': request.GET.get('show_filters') == '1',
+        'all_types': all_types,
+        'all_severities': all_severities,
+        'all_statuses': all_statuses,
+        'selected_types': selected_types,
+        'selected_severities': selected_severities,
+        'selected_statuses': selected_statuses,
+        'search_query': search_query,
+        'f_assignee': f_assignee,
     }
     return render(request, 'issues/list.html', context)
 

@@ -18,17 +18,15 @@
         body { background: var(--taiga-bg); color: var(--taiga-main); padding: 20px; }
         .container { max-width: 1400px; margin: 0 auto; }
 
-        /* BARRA SUPERIOR (FORMULARIO ÚNICO PARA BÚSQUEDA) */
+        /* BARRA SUPERIOR */
         .header-nav { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
 
         .btn-action {
             background: #d1d5db; color: #374151; padding: 10px 18px;
             border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px;
             display: flex; align-items: center; gap: 8px; border: none; cursor: pointer;
-            transition: 0.3s;
         }
         .btn-action.active { background: var(--taiga-main); color: white; }
-        .btn-action:hover { opacity: 0.9; }
 
         .search-wrapper { position: relative; flex-grow: 1; max-width: 450px; }
         .search-wrapper input {
@@ -41,9 +39,6 @@
             border-radius: 5px; text-decoration: none; font-weight: bold;
             box-shadow: 0 3px 0 #469b8e; margin-left: auto;
         }
-
-        /* Marcado activo */
-        .filter-link:has(input:checked) { background: #e6fffa; color: #2c7a7b; font-weight: bold; }
 
         /* DISEÑO DE DOS COLUMNAS */
         .main-layout { display: flex; gap: 25px; }
@@ -65,155 +60,91 @@
         }
 
         .filter-content { padding: 5px 10px 15px 10px; }
-        .filter-link {
-            display: flex; justify-content: space-between; padding: 8px 12px;
-            text-decoration: none; color: #64748b; font-size: 14px; border-radius: 5px;
+
+        .filter-label {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; cursor: pointer; color: #64748b;
+            font-size: 14px; border-left: 4px solid transparent;
+            margin-bottom: 2px; background: #fcfcfc; border-radius: 5px;
         }
-        .filter-link:hover { background: #f1f5f9; color: var(--taiga-accent); }
-        .filter-link.active { background: #e6fffa; color: #2c7a7b; font-weight: bold; }
-        .count-pill { background: #f1f5f9; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+        .filter-label:hover { background: #f1f5f9; }
 
-        /* TABLA DE ISSUES */
-        .table-wrapper { flex-grow: 1; background: white; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; }
-        th {
-            background: #f8fafc; padding: 15px; text-align: left;
-            font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;
-        }
-        td { padding: 18px 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-
-        /* COLORES DE LOS DOTS (TU ESTILO ORIGINAL) */
-        .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-        .type-bug { background-color: #e74c3c; }
-        .type-question { background-color: #3498db; }
-        .type-enhancement { background-color: #00FFFF; }
-
-        .sev-minor { background-color: #3498db; }
-        .sev-normal { background-color: #2ecc71; }
-        .sev-important { background-color: #e67e22; }
-        .sev-critical { background-color: #c0392b; }
-
-        .prio-high { background-color: #32CD32; }
-        .prio-normal { background-color: #FFFF00; border: 1px solid #ccc; }
-        .prio-low { background-color: #e67e22; }
-
-        .ref-number { color: var(--taiga-orange); font-weight: bold; margin-right: 5px; text-decoration: none; }
-        .subject-link { text-decoration: none; color: var(--taiga-main); font-weight: 500; font-size: 15px; }
-        .subject-link:hover { color: var(--taiga-accent); }
-
-        .status-select {
-            padding: 5px 8px; border-radius: 4px; border: 1px solid #e2e8f0;
-            background: #f8fafc; color: #475569; font-size: 13px; cursor: pointer; outline: none;
-        }
-        .filter-link {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            text-decoration: none;
-            color: #64748b;
-            font-size: 14px;
-            border-left: 4px solid transparent; /* Borde por defecto invisible */
-            margin-bottom: 2px;
-            background: #fcfcfc;
+        input[type="checkbox"]:checked + .filter-label {
+            background: #e6fffa; color: #2c7a7b; font-weight: bold;
         }
 
-        .filter-link:hover { background: #f1f5f9; }
-
-        /* BORDES DE COLORES PARA CADA SECCIÓN*/
+        /* BORDES DE COLORES */
         .link-bug { border-left-color: #e74c3c; }
         .link-question { border-left-color: #3498db; }
         .link-enhancement { border-left-color: #00FFFF; }
-
-        .link-wishlist { border-left-color: #5d6d7e; }
+        .link-wishlist { border-left-color: #3498db; }
         .link-minor { border-left-color: #3498db; }
         .link-normal { border-left-color: #2ecc71; }
         .link-important { border-left-color: #e67e22; }
         .link-critical { border-left-color: #c0392b; }
 
-        .link-prio-low { border-left-color: #e67e22; }
-        .link-prio-normal { border-left-color: #FFFF00; }
-        .link-prio-high { border-left-color: #32CD32; }
+        .count-pill { background: #ebf0f5; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
 
-        .count-pill {
-            background: #ebf0f5;
-            color: #475569;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-
-        /* RADIO BUTTONS INCLUDE/EXCLUDE */
-        .filter-mode {
-            display: flex; justify-content: center; gap: 20px;
-            padding: 15px; border-bottom: 1px solid #f1f5f9;
-            font-size: 14px; color: #475569;
-        }
-        .filter-mode label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .filter-mode input[type="radio"] { accent-color: var(--taiga-accent); transform: scale(1.2); }
-
-        /* CAJA "FILTERED BY" */
-        .filtered-by-box {
-            background: #f1f8e9; border: 1px solid #dcedc8;
-            margin: 10px; padding: 10px; border-radius: 4px;
-        }
+        .filtered-by-box { background: #f1f8e9; border: 1px solid #dcedc8; margin: 10px; padding: 10px; border-radius: 4px; }
         .filter-tag {
             display: inline-flex; align-items: center; gap: 5px;
             background: white; border: 1px solid #e2e8f0;
             padding: 2px 8px; border-radius: 3px; font-size: 12px; margin: 2px;
         }
-        .filter-tag a { text-decoration: none; color: #94a3b8; font-weight: bold; }
+        .filter-tag button { border: none; background: none; color: #94a3b8; cursor: pointer; }
 
-        /* AVATAR CIRCULAR */
-        .user-avatar {
-            width: 20px; height: 20px; border-radius: 50%;
-            background: #e2e8f0; display: inline-block; vertical-align: middle;
-            margin-right: 8px; border: 1px solid #cbd5e1;
-        }
+        /* TABLA DE ISSUES */
+        .table-wrapper { flex-grow: 1; background: white; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 15px; text-align: left; font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+        td { padding: 18px 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
 
+        .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        .type-bug { background-color: #e74c3c; } .type-question { background-color: #3498db; } .type-enhancement { background-color: #00FFFF; }
+        .sev-wishlist { background-color: #b3e5fc; } .sev-minor { background-color: #3498db; } .sev-normal { background-color: #2ecc71; } .sev-important { background-color: #e67e22; } .sev-critical { background-color: #c0392b; }
+        .prio-high { background-color: #32CD32; } .prio-normal { background-color: #FFFF00; border: 1px solid #ccc; } .prio-low { background-color: #e67e22; }
+
+        .ref-number { color: var(--taiga-orange); font-weight: bold; text-decoration: none; margin-right: 5px; }
+        .subject-link { text-decoration: none; color: var(--taiga-main); font-weight: 500; font-size: 15px; }
+        .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: #34495e; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-right: 8px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <form method="GET" action="{% url 'issue_list' %}" class="header-nav">
-        <a href="?show_filters={% if show_filters %}0{% else %}1{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-           class="btn-action {% if show_filters %}active{% endif %}">
-            FILTERS {% if show_filters %}▴{% else %}▾{% endif %}
-        </a>
+    <form method="GET" action="{% url 'issue_list' %}" id="main-form">
+        <input type="hidden" name="show_filters" value="{% if show_filters %}1{% else %}0{% endif %}" id="show-filters-input">
 
-        <div class="search-wrapper">
-            <input type="text" name="search" placeholder="Search subject or description..." value="{{ request.GET.search|default:'' }}">
+        <div class="header-nav">
+            <button type="button" class="btn-action {% if show_filters %}active{% endif %}"
+                    onclick="document.getElementById('show-filters-input').value = (document.getElementById('show-filters-input').value == '1' ? '0' : '1'); this.form.submit();">
+                FILTERS {% if show_filters %}▴{% else %}▾{% endif %}
+            </button>
+
+            <div class="search-wrapper">
+                <input type="text" name="search" placeholder="Search subject or ID..." value="{{ search_query|default:'' }}">
+            </div>
+            <button type="submit" class="btn-action active">SEARCH</button>
+            <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
         </div>
-        <button type="submit" class="btn-action active">SEARCH</button>
 
-        {% if show_filters %}<input type="hidden" name="show_filters" value="1">{% endif %}
-        <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
-    </form>
-
-    <div class="main-layout">
-        {% if show_filters %}
-        <aside class="filters-sidebar">
-            <form id="sidebar-form" method="GET" action="{% url 'issue_list' %}">
-                <input type="hidden" name="show_filters" value="1">
-                <input type="hidden" name="search" value="{{ request.GET.search|default:'' }}">
-
+        <div class="main-layout">
+            {% if show_filters %}
+            <aside class="filters-sidebar">
                 <div class="sidebar-top">
-                    Custom filters ({{ issues.count }})
+                    Filtres ({{ issues.count }})
                     <a href="?show_filters=1" style="color:var(--taiga-accent); font-size:10px; text-decoration:none;">CLEAR</a>
                 </div>
 
-                <div class="filter-mode">
-                    <label><input type="radio" name="mode" value="include" {% if request.GET.mode != 'exclude' %}checked{% endif %} onchange="this.form.submit()"> Include</label>
-                    <label><input type="radio" name="mode" value="exclude" {% if request.GET.mode == 'exclude' %}checked{% endif %} onchange="this.form.submit()"> Exclude</label>
-                </div>
-
-                {% if request.GET.issue_type or request.GET.status or request.GET.issue_severity or request.GET.priority %}
+                {% if selected_types or selected_severities or selected_statuses %}
                 <div class="filtered-by-box">
                     <p style="color: #8bc34a; font-size: 10px; font-weight: bold; margin-bottom: 4px;">Filtered by:</p>
-                    {% for val in request.GET.getlist.issue_type %}<span class="filter-tag">{{ val }}</span>{% endfor %}
-                    {% for val in request.GET.getlist.status %}<span class="filter-tag">{{ val }}</span>{% endfor %}
+                    {% for val in selected_types %}
+                    <span class="filter-tag">{{ val }} <button type="submit" onmousedown="document.getElementById('type-{{ val }}').checked=false">×</button></span>
+                    {% endfor %}
+                    {% for val in selected_severities %}
+                    <span class="filter-tag">{{ val }} <button type="submit" onmousedown="document.getElementById('sev-{{ val }}').checked=false">×</button></span>
+                    {% endfor %}
                 </div>
                 {% endif %}
 
@@ -221,10 +152,9 @@
                     <summary>Type <span>▾</span></summary>
                     <div class="filter-content">
                         {% for t in all_types %}
-                        <label class="filter-link link-{{ t|lower }}">
-                            <input type="checkbox" name="issue_type" value="{{ t }}" {% if t in request.GET.getlist.issue_type %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
-                            {{ t }}
-                            <span class="count-pill">{% if t == 'Bug' %}{{ counts.bug }}{% elif t == 'Question' %}{{ counts.question }}{% else %}{{ counts.enhancement }}{% endif %}</span>
+                        <input type="checkbox" name="issue_type" value="{{ t }}" id="type-{{ t }}" {% if t in selected_types %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
+                        <label for="type-{{ t }}" class="filter-label link-{{ t|lower }}">
+                            {{ t }} <span class="count-pill">{% if t == 'Bug' %}{{ counts.bug }}{% elif t == 'Question' %}{{ counts.question }}{% else %}{{ counts.enhancement }}{% endif %}</span>
                         </label>
                         {% endfor %}
                     </div>
@@ -234,10 +164,9 @@
                     <summary>Severity <span>▾</span></summary>
                     <div class="filter-content">
                         {% for s in all_severities %}
-                        <label class="filter-link link-{{ s|lower }}">
-                            <input type="checkbox" name="issue_severity" value="{{ s }}" {% if s in request.GET.getlist.issue_severity %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
-                            {{ s }}
-                            <span class="count-pill">
+                        <input type="checkbox" name="issue_severity" value="{{ s }}" id="sev-{{ s }}" {% if s in selected_severities %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
+                        <label for="sev-{{ s }}" class="filter-label link-{{ s|lower }}">
+                            {{ s }} <span class="count-pill">
                                 {% if s == 'Critical' %}{{ counts.critical }}{% elif s == 'Important' %}{{ counts.important }}{% elif s == 'Normal' %}{{ counts.normal_sev }}{% elif s == 'Minor' %}{{ counts.minor }}{% else %}{{ counts.wishlist }}{% endif %}
                             </span>
                         </label>
@@ -249,73 +178,60 @@
                     <summary>Status <span>▾</span></summary>
                     <div class="filter-content">
                         {% for st in all_statuses %}
-                        <label class="filter-link">
-                            <input type="checkbox" name="status" value="{{ st }}" {% if st in request.GET.getlist.status %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
-                            {{ st }}
-                            <span class="count-pill">
+                        <input type="checkbox" name="status" value="{{ st }}" id="status-{{ st }}" {% if st in selected_statuses %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
+                        <label for="status-{{ st }}" class="filter-label">
+                            {{ st }} <span class="count-pill">
                                 {% if st == 'New' %}{{ counts.new }}{% elif st == 'In Progress' %}{{ counts.in_progress }}{% elif st == 'Closed' %}{{ counts.closed }}{% else %}0{% endif %}
                             </span>
                         </label>
                         {% endfor %}
                     </div>
                 </details>
+            </aside>
+            {% endif %}
 
-                <details open>
-                    <summary>Assigned to <span>▾</span></summary>
-                    <div class="filter-content">
-                        {% for u in users %}
-                        <label class="filter-link" style="border-left-color: #5dc5b5;">
-                            <input type="radio" name="assigned_to" value="{{ u.id }}" {% if request.GET.assigned_to == u.id|slugify %}checked{% endif %} onchange="this.form.submit()" style="display:none;">                            <span><span class="user-avatar"></span> {{ u.username }}</span>
-                            <span class="count-pill">{{ u.num_issues }}</span>
-                        </label>
-                        {% endfor %}
-                    </div>
-                </details>
-            </form>
-        </aside>
-        {% endif %}
-
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                <tr>
-                    <th width="50" style="text-align:center;">Type</th>
-                    <th width="50" style="text-align:center;">Sev.</th>
-                    <th width="50" style="text-align:center;">Prio.</th>
-                    <th>Issue</th>
-                    <th>Status</th>
-                    <th>Modified</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for issue in issues %}
-                <tr>
-                    <td align="center"><span class="dot type-{{ issue.issue_type|lower }}"></span></td>
-                    <td align="center"><span class="dot sev-{{ issue.issue_severity|lower }}"></span></td>
-                    <td align="center"><span class="dot prio-{{ issue.priority|lower }}"></span></td>
-                    <td>
-                        <a href="{% url 'issue_detail' issue.id %}" class="ref-number">#{{ issue.id }}</a>
-                        <a href="{% url 'issue_detail' issue.id %}" class="subject-link">{{ issue.subject }}</a>
-                    </td>
-                    <td>
-                        <form method="POST" action="{% url 'issue_update_status' issue.id %}">
-                            {% csrf_token %}
-                            <select name="status" class="status-select" onchange="this.form.submit()">
-                                {% for code, label in issue.STATUS_CHOICES %}
-                                <option value="{{ code }}" {% if issue.status == code %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        </form>
-                    </td>
-                    <td style="color: #94a3b8; font-size: 11px;">{{ issue.modified_at|date:"d M Y" }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:40px;">No issues found.</td></tr>
-                {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                    <tr>
+                        <th width="50" style="text-align:center;">Type</th>
+                        <th width="50" style="text-align:center;">Sev.</th>
+                        <th width="50" style="text-align:center;">Prio.</th>
+                        <th>Issue</th>
+                        <th width="150">Status</th>
+                        <th width="150">Assigned to</th>
+                        <th width="120">Modified</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for issue in issues %}
+                    <tr>
+                        <td align="center"><span class="dot type-{{ issue.issue_type|lower }}"></span></td>
+                        <td align="center"><span class="dot sev-{{ issue.issue_severity|lower }}"></span></td>
+                        <td align="center"><span class="dot prio-{{ issue.priority|lower }}"></span></td>
+                        <td>
+                            <a href="{% url 'issue_detail' issue.id %}" class="ref-number">#{{ issue.id }}</a>
+                            <a href="{% url 'issue_detail' issue.id %}" class="subject-link">{{ issue.subject }}</a>
+                        </td>
+                        <td>{{ issue.status }}</td>
+                        <td>
+                            {% if issue.assignee %}
+                            <div style="display: flex; align-items: center;">
+                                <span class="user-avatar">{{ issue.assignee.username|slice:":2"|upper }}</span>
+                                <span style="font-size: 13px;">{{ issue.assignee.username }}</span>
+                            </div>
+                            {% else %}
+                            <span style="color: #cbd5e1; font-size: 12px;">No assignee</span>
+                            {% endif %}
+                        </td>
+                        <td style="color: #94a3b8; font-size: 11px;">{{ issue.modified_at|date:"d M Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    </form>
 </div>
 </body>
 </html>
