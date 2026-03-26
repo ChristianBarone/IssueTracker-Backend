@@ -2,33 +2,35 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <title>Issue Tracker - Taiga Style</title>
     <style>
         /* RESET & PALETA DINÁMICA */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Ubuntu', sans-serif; }
 
         :root {
-            --taiga-main: #34495e;      /* Azul oscuro para texto y títulos */
-            --taiga-accent: #5dc5b5;    /* Verde agua para botones y detalles */
-            --taiga-orange: #ff8c00;    /* Naranja para referencias */
-            --taiga-bg: #f8fafc;        /* Fondo muy claro */
-            --sidebar-header: #edf2f7;  /* Gris azulado muy suave */
+            --taiga-main: #34495e;      /* Azul oscuro */
+            --taiga-accent: #5dc5b5;    /* Verde agua */
+            --taiga-orange: #ff8c00;    /* Naranja referencias */
+            --taiga-bg: #f8fafc;        /* Fondo claro */
+            --sidebar-header: #edf2f7;  /* Gris suave */
         }
 
         body { background: var(--taiga-bg); color: var(--taiga-main); padding: 20px; }
-
         .container { max-width: 1400px; margin: 0 auto; }
 
-        /* BARRA SUPERIOR */
+        /* BARRA SUPERIOR (FORMULARIO ÚNICO PARA BÚSQUEDA) */
         .header-nav { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
 
-        .btn-toggle-filters {
+        .btn-action {
             background: #d1d5db; color: #374151; padding: 10px 18px;
             border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px;
-            display: flex; align-items: center; gap: 8px; transition: 0.3s;
+            display: flex; align-items: center; gap: 8px; border: none; cursor: pointer;
+            transition: 0.3s;
         }
-        .btn-toggle-filters.active { background: var(--taiga-main); color: white; }
+        .btn-action.active { background: var(--taiga-main); color: white; }
+        .btn-action:hover { opacity: 0.9; }
 
-        .search-wrapper { position: relative; flex-grow: 1; max-width: 400px; }
+        .search-wrapper { position: relative; flex-grow: 1; max-width: 450px; }
         .search-wrapper input {
             width: 100%; padding: 10px 15px; border: 2px solid #e2e8f0;
             border-radius: 5px; outline: none; font-size: 14px;
@@ -43,7 +45,7 @@
         /* DISEÑO DE DOS COLUMNAS */
         .main-layout { display: flex; gap: 25px; }
 
-        /* SIDEBAR ESTILO TAIGA (image_401409.png) */
+        /* SIDEBAR */
         .filters-sidebar {
             width: 280px; background: white; border: 1px solid #e2e8f0;
             border-radius: 8px; overflow: hidden; height: fit-content;
@@ -56,9 +58,8 @@
         details { border-bottom: 1px solid #f1f5f9; }
         summary {
             padding: 12px 15px; cursor: pointer; font-size: 13px; font-weight: 600;
-            display: flex; justify-content: space-between; background: white;
+            display: flex; justify-content: space-between; background: white; list-style: none;
         }
-        summary:hover { background: #f8fafc; }
 
         .filter-content { padding: 5px 10px 15px 10px; }
         .filter-link {
@@ -78,71 +79,77 @@
         }
         td { padding: 18px 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
 
-        .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
-        .ref-number { color: var(--taiga-orange); font-weight: bold; margin-right: 5px; }
+        /* COLORES DE LOS DOTS (TU ESTILO ORIGINAL) */
+        .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        .type-bug { background-color: #e74c3c; }
+        .type-question { background-color: #3498db; }
+        .type-enhancement { background-color: #00FFFF; }
+
+        .sev-minor { background-color: #3498db; }
+        .sev-normal { background-color: #2ecc71; }
+        .sev-important { background-color: #e67e22; }
+        .sev-critical { background-color: #c0392b; }
+
+        .prio-high { background-color: #32CD32; }
+        .prio-normal { background-color: #FFFF00; border: 1px solid #ccc; }
+        .prio-low { background-color: #e67e22; }
+
+        .ref-number { color: var(--taiga-orange); font-weight: bold; margin-right: 5px; text-decoration: none; }
         .subject-link { text-decoration: none; color: var(--taiga-main); font-weight: 500; font-size: 15px; }
         .subject-link:hover { color: var(--taiga-accent); }
 
-        /* SELECT DE STATUS DINÁMICO */
         .status-select {
-            padding: 5px 10px; border-radius: 4px; border: 1px solid #e2e8f0;
-            background: #f8fafc; color: #475569; font-size: 13px; cursor: pointer;
-            outline: none; transition: 0.2s;
+            padding: 5px 8px; border-radius: 4px; border: 1px solid #e2e8f0;
+            background: #f8fafc; color: #475569; font-size: 13px; cursor: pointer; outline: none;
         }
-        .status-select:focus { border-color: var(--taiga-accent); background: white; }
-
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header-nav">
-        <a href="?show_filters={% if show_filters %}0{% else %}1{% endif %}" class="btn-toggle-filters {% if show_filters %}active{% endif %}">
+    <form method="GET" action="{% url 'issue_list' %}" class="header-nav">
+
+        <a href="?show_filters={% if show_filters %}0{% else %}1{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
+           class="btn-action {% if show_filters %}active{% endif %}">
             FILTERS {% if show_filters %}▴{% else %}▾{% endif %}
         </a>
 
-        <form method="GET" class="search-wrapper">
-            <input type="text" name="search" placeholder="subject or reference..." value="{{ request.GET.search }}">
-            {% if show_filters %}<input type="hidden" name="show_filters" value="1">{% endif %}
-        </form>
+        <div class="search-wrapper">
+            <input type="text" name="search" placeholder="Search subject or description..." value="{{ request.GET.search|default:'' }}">
+        </div>
+
+        <button type="submit" class="btn-action active">SEARCH</button>
+
+        {% if show_filters %}
+        <input type="hidden" name="show_filters" value="1">
+        {% endif %}
 
         <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
-    </div>
+    </form>
 
     <div class="main-layout">
         {% if show_filters %}
         <aside class="filters-sidebar">
             <div class="sidebar-top">
-                <span>Custom filters (0)</span>
-                <a href="?" style="color: #3182ce; text-decoration: none;">add</a>
+                <span>Custom filters</span>
+                <a href="{% url 'issue_list' %}?show_filters=1" style="text-decoration:none; color:var(--taiga-accent); font-size:11px;">CLEAR</a>
             </div>
 
             <details open>
-                <summary>Type <span style="color: #cbd5e1;">▾</span></summary>
+                <summary>Type <span>▾</span></summary>
                 <div class="filter-content">
-                    <a href="?show_filters=1&issue_type=Bug" class="filter-link {% if request.GET.issue_type == 'Bug' %}active{% endif %}">
+                    <a href="?show_filters=1&issue_type=Bug{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
+                       class="filter-link {% if request.GET.issue_type == 'Bug' %}active{% endif %}">
                         Bug <span class="count-pill">{{ counts.bug }}</span>
                     </a>
-                    <a href="?show_filters=1&issue_type=Question" class="filter-link {% if request.GET.issue_type == 'Question' %}active{% endif %}">
+                    <a href="?show_filters=1&issue_type=Question{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
+                       class="filter-link {% if request.GET.issue_type == 'Question' %}active{% endif %}">
                         Question <span class="count-pill">{{ counts.question }}</span>
                     </a>
-                    <a href="?show_filters=1&issue_type=Enhancement" class="filter-link {% if request.GET.issue_type == 'Enhancement' %}active{% endif %}">
+                    <a href="?show_filters=1&issue_type=Enhancement{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
+                       class="filter-link {% if request.GET.issue_type == 'Enhancement' %}active{% endif %}">
                         Enhancement <span class="count-pill">{{ counts.enhancement }}</span>
                     </a>
-                </div>
-            </details>
-
-            <details>
-                <summary>Severity <span style="color: #cbd5e1;">▸</span></summary>
-                <div class="filter-content">
-                    <span style="font-size: 12px; color: #94a3b8;">No severity filters</span>
-                </div>
-            </details>
-
-            <details>
-                <summary>Status <span style="color: #cbd5e1;">▸</span></summary>
-                <div class="filter-content">
-                    <a href="?show_filters=1&status=New" class="filter-link">New <span class="count-pill">{{ counts.new }}</span></a>
                 </div>
             </details>
         </aside>
@@ -152,9 +159,9 @@
             <table>
                 <thead>
                 <tr>
-                    <th width="80">Type</th>
-                    <th width="80">Sev.</th>
-                    <th width="80">Prio.</th>
+                    <th width="60">Type</th>
+                    <th width="60">Sev.</th>
+                    <th width="60">Prio.</th>
                     <th>Issue</th>
                     <th>Status</th>
                     <th>Modified</th>
@@ -163,27 +170,36 @@
                 <tbody>
                 {% for issue in issues %}
                 <tr>
-                    <td><span class="dot" style="background: #5dc5b5;"></span></td>
-                    <td><span class="dot" style="background: #fc8181;"></span></td>
-                    <td><span class="dot" style="background: #ecc94b;"></span></td>
-                    <td>
-                        <span class="ref-number">#{{ issue.id }}</span>
-                        <a href="#" class="subject-link">{{ issue.subject }}</a>
+                    <td style="text-align: center;">
+                        <span class="dot {% if issue.issue_type == 'Bug' %}type-bug{% elif issue.issue_type == 'Question' %}type-question{% else %}type-enhancement{% endif %}"></span>
                     </td>
+                    <td style="text-align: center;">
+                        <span class="dot {% if issue.issue_severity == 'Critical' %}sev-critical{% elif issue.issue_severity == 'Important' %}sev-important{% elif issue.issue_severity == 'Normal' %}sev-normal{% else %}sev-minor{% endif %}"></span>
+                    </td>
+                    <td style="text-align: center;">
+                        <span class="dot {% if issue.priority == 'High' %}prio-high{% elif issue.priority == 'Normal' %}prio-normal{% else %}prio-low{% endif %}"></span>
+                    </td>
+
+                    <td>
+                        <a href="{% url 'issue_detail' issue.id %}" class="ref-number">#{{ issue.id }}</a>
+                        <a href="{% url 'issue_detail' issue.id %}" class="subject-link">{{ issue.subject }}</a>
+                    </td>
+
                     <td>
                         <form method="POST" action="{% url 'issue_update_status' issue.id %}" style="display:inline;">
                             {% csrf_token %}
                             <select name="status" class="status-select" onchange="this.form.submit()">
-                                <option value="New" {% if issue.status == 'New' %}selected{% endif %}>New</option>
-                                <option value="In Progress" {% if issue.status == 'In Progress' %}selected{% endif %}>In Progress</option>
-                                <option value="Done" {% if issue.status == 'Done' %}selected{% endif %}>Done</option>
+                                {% for choice_val, choice_label in issue.STATUS_CHOICES %}
+                                <option value="{{ choice_val }}" {% if issue.status == choice_val %}selected{% endif %}>{{ choice_label }}</option>
+                                {% endfor %}
                             </select>
                         </form>
                     </td>
+
                     <td style="font-size: 13px; color: #64748b;">{{ issue.modified_at|date:"d M Y" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" style="text-align: center; padding: 50px; color: #94a3b8;">No issues found matching filters</td></tr>
+                <tr><td colspan="6" style="text-align: center; padding: 50px; color: #94a3b8;">No results found.</td></tr>
                 {% endfor %}
                 </tbody>
             </table>

@@ -33,6 +33,11 @@ def issue_list(request):
         'bug': base_stats.filter(issue_type='Bug').count(),
         'question': base_stats.filter(issue_type='Question').count(),
         'enhancement': base_stats.filter(issue_type='Enhancement').count(),
+        'wishlist': base_stats.filter(issue_type='Wishlist').count(),
+        'minor': base_stats.filter(issue_type='Minor').count(),
+        'normal': base_stats.filter(issue_type='Normal').count(),
+        'important': base_stats.filter(issue_type='Important').count(),
+        'critical': base_stats.filter(issue_type='Critical').count(),
         'new': base_stats.filter(status='New').count(),
         'done': base_stats.filter(status='Done').count(),
     }
@@ -55,7 +60,7 @@ def issue_create(request):
         issue_type=request.POST.get('issue_type')
         issue_severity=request.POST.get('issue_severity')
         priority=request.POST.get('priority')
-        status=request.POST.get('status')
+        status = request.POST.get('status') or 'New'
         d_line = request.POST.get('deadline')
         creator=default_user
         assignee=default_user
