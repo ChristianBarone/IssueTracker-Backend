@@ -1,11 +1,108 @@
-<h1>Nuevo Issue</h1>
-<form method="POST">
-    {% csrf_token %}
-    <label>Asunto (Subject):</label><br>
-    <input type="text" name="subject" required><br><br>
-    
-    <label>Descripción:</label><br>
-    <textarea name="description" rows="5"></textarea><br><br>
-    
-    <button type="submit">Guardar Issue</button>
-</form>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Ubuntu', sans-serif; }
+        body { background: #f4f7f6; display: flex; justify-content: center; padding-top: 50px; }
+
+        .create-container { width: 900px; background: white; padding: 40px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header-title { text-align: center; color: #34495e; font-size: 28px; margin-bottom: 30px; font-weight: 300; }
+
+        /* Layout: Izquierda (Principal) - Derecha (Ajustes) */
+        .form-layout { display: flex; gap: 40px; }
+        .main-fields { flex: 2; }
+        .side-fields { flex: 1; background: #f8fafc; padding: 20px; border-radius: 4px; height: fit-content; }
+
+        /* Estilos de Input */
+        .subject-input { width: 100%; border: 2px solid #5dc5b5; padding: 12px; font-size: 18px; border-radius: 3px; margin-bottom: 15px; outline: none; }
+        .description-area { width: 100%; border: 1px solid #ccd6dd; padding: 15px; font-size: 14px; border-radius: 3px; min-height: 200px; resize: vertical; outline: none; color: #666; }
+
+        /* Selects del Panel Lateral */
+        .side-group { margin-bottom: 20px; }
+        .side-label { display: block; font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; font-weight: bold; }
+        .side-select { width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 3px; background: white; font-size: 14px; color: #475569; outline: none; }
+
+        /* Botón de Status estilo Taiga */
+        .status-box { background: #64748b; color: white; padding: 10px; border-radius: 4px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Botón Final */
+        .btn-submit { width: 100%; background: #92e7d9; color: #16a085; border: none; padding: 15px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer; border-radius: 3px; margin-top: 20px; transition: 0.3s; }
+        .btn-submit:hover { background: #5dc5b5; color: white; }
+
+        .add-tag { color: #5dc5b5; font-size: 13px; text-decoration: none; display: inline-block; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="create-container">
+    <h1 class="header-title">New issue</h1>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-layout">
+
+            <div class="main-fields">
+                <input type="text" name="subject" class="subject-input" placeholder="Subject" required>
+
+                <a href="#" class="add-tag">Add tag +</a>
+
+                <textarea name="description" class="description-area" placeholder="Please add descriptive text to help others better understand this issue"></textarea>
+
+                <div style="margin-top: 20px; border: 1px dashed #cbd5e1; padding: 20px; text-align: center; color: #94a3b8; border-radius: 4px;">
+                    Drop attachments here!
+                </div>
+            </div>
+
+            <div class="side-fields">
+                <div class="status-box">
+                    <span>New</span>
+                    <span>▾</span>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                    <div style="width: 40px; height: 40px; background: #e2e8f0; border-radius: 3px;"></div>
+                    <div style="font-size: 13px;">
+                        <span style="color: #3182ce; cursor: pointer;">Assign</span> or <br>
+                        <span style="color: #3182ce; cursor: pointer;">Assign to me</span>
+                    </div>
+                </div>
+
+                <div class="side-group">
+                    <label class="side-label">Type</label>
+                    <select name="issue_type" class="side-select">
+                        <option value="Bug">Bug</option>
+                        <option value="Question">Question</option>
+                        <option value="Enhancement">Enhancement</option>
+                    </select>
+                </div>
+
+                <div class="side-group">
+                    <label class="side-label">Severity</label>
+                    <select name="issue_severity" class="side-select">
+                        <option value="Normal">Normal</option>
+                        <option value="Minor">Minor</option>
+                        <option value="Critical">Critical</option>
+                    </select>
+                </div>
+
+                <div class="side-group">
+                    <label class="side-label">Priority</label>
+                    <select name="priority" class="side-select">
+                        <option value="Normal">Normal</option>
+                        <option value="Low">Low</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-submit">CREATE</button>
+        <div style="text-align: center; margin-top: 15px;">
+            <a href="{% url 'issue_list' %}" style="color: #94a3b8; text-decoration: none; font-size: 12px;">CANCEL</a>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

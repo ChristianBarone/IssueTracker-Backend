@@ -1,34 +1,319 @@
-<style>
-    table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-    .status-new { background: #8e44ad; color: white; padding: 4px 8px; border-radius: 3px; font-size: 0.8em; }
-    .btn-new { background: #699b00; color: white; padding: 10px; text-decoration: none; border-radius: 4px; float: right; }
-</style>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Issue Tracker - Taiga Style</title>
+    <style>
+        /* RESET & PALETA DINÁMICA */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Ubuntu', sans-serif; }
 
-<a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
-<h1>Issues</h1>
+        :root {
+            --taiga-main: #34495e;      /* Azul oscuro */
+            --taiga-accent: #5dc5b5;    /* Verde agua */
+            --taiga-orange: #ff8c00;    /* Naranja referencias */
+            --taiga-bg: #f8fafc;        /* Fondo claro */
+            --sidebar-header: #edf2f7;  /* Gris suave */
+        }
 
-<table>
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>SUBJECT</th>
-            <th>STATUS</th>
-            <th>TYPE</th>
-            <th>PRIORITY</th>
-            <th>MODIFIED</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for issue in issues %}
-        <tr>
-            <td><a href="{% url 'issue_detail' issue.id %}">#{{ issue.id }}</a></td>
-            <td><strong><a href="{% url 'issue_detail' issue.id %}">{{ issue.subject }}</a></strong></td>
-            <td><span class="status-new">{{ issue.status }}</span></td>
-            <td>{{ issue.issue_type }}</td>
-            <td>{{ issue.priority }}</td>
-            <td>{{ issue.modified_at|date:"d M Y" }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+        body { background: var(--taiga-bg); color: var(--taiga-main); padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* BARRA SUPERIOR */
+        .header-nav { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+
+        .btn-action {
+            background: #d1d5db; color: #374151; padding: 10px 18px;
+            border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px;
+            display: flex; align-items: center; gap: 8px; border: none; cursor: pointer;
+        }
+        .btn-action.active { background: var(--taiga-main); color: white; }
+
+        .search-wrapper { position: relative; flex-grow: 1; max-width: 450px; }
+        .search-wrapper input {
+            width: 100%; padding: 10px 15px; border: 2px solid #e2e8f0;
+            border-radius: 5px; outline: none; font-size: 14px;
+        }
+
+        .btn-new {
+            background: var(--taiga-accent); color: white; padding: 10px 20px;
+            border-radius: 5px; text-decoration: none; font-weight: bold;
+            box-shadow: 0 3px 0 #469b8e; margin-left: auto;
+        }
+
+        /* DISEÑO DE DOS COLUMNAS */
+        .main-layout { display: flex; gap: 25px; }
+
+        /* SIDEBAR */
+        .filters-sidebar {
+            width: 280px; background: white; border: 1px solid #e2e8f0;
+            border-radius: 8px; overflow: hidden; height: fit-content;
+        }
+        .sidebar-top {
+            padding: 15px; background: var(--sidebar-header);
+            display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;
+        }
+
+        details { border-bottom: 1px solid #f1f5f9; }
+        summary {
+            padding: 12px 15px; cursor: pointer; font-size: 13px; font-weight: 600;
+            display: flex; justify-content: space-between; background: white; list-style: none;
+        }
+
+        .filter-content { padding: 5px 10px 15px 10px; }
+
+        .filter-label {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; cursor: pointer; color: #64748b;
+            font-size: 14px; border-left: 4px solid transparent;
+            margin-bottom: 2px; background: #fcfcfc; border-radius: 5px;
+        }
+        .filter-label:hover { background: #f1f5f9; }
+
+        input[type="checkbox"]:checked + .filter-label {
+            background: #e6fffa; color: #2c7a7b; font-weight: bold;
+        }
+
+        /* BORDES DE COLORES */
+        .link-bug { border-left-color: #e74c3c; }
+        .link-question { border-left-color: #3498db; }
+        .link-enhancement { border-left-color: #00FFFF; }
+        .link-wishlist { border-left-color: #3498db; }
+        .link-minor { border-left-color: #3498db; }
+        .link-normal { border-left-color: #2ecc71; }
+        .link-important { border-left-color: #e67e22; }
+        .link-critical { border-left-color: #c0392b; }
+
+        .count-pill { background: #ebf0f5; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+
+        .filtered-by-box { background: #f1f8e9; border: 1px solid #dcedc8; margin: 10px; padding: 10px; border-radius: 4px; }
+        .filter-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: white; border: 1px solid #e2e8f0;
+            padding: 2px 8px; border-radius: 3px; font-size: 12px; margin: 2px;
+        }
+        .filter-tag button { border: none; background: none; color: #94a3b8; cursor: pointer; }
+
+        /* TABLA DE ISSUES */
+        .table-wrapper { flex-grow: 1; background: white; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 15px; text-align: left; font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+        td { padding: 18px 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+
+        .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        .type-bug { background-color: #e74c3c; } .type-question { background-color: #3498db; } .type-enhancement { background-color: #00FFFF; }
+        .sev-wishlist { background-color: #b3e5fc; } .sev-minor { background-color: #3498db; } .sev-normal { background-color: #2ecc71; } .sev-important { background-color: #e67e22; } .sev-critical { background-color: #c0392b; }
+        .prio-high { background-color: #32CD32; } .prio-normal { background-color: #FFFF00; border: 1px solid #ccc; } .prio-low { background-color: #e67e22; }
+
+        .ref-number { color: var(--taiga-orange); font-weight: bold; text-decoration: none; margin-right: 5px; }
+        .subject-link { text-decoration: none; color: var(--taiga-main); font-weight: 500; font-size: 15px; }
+        .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: #34495e; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-right: 8px; }
+
+        /* Estilo para las flechas de ordenación */
+        .sort-container { display: inline-flex; flex-direction: column; vertical-align: middle; margin-left: 5px; line-height: 0.7; }
+        .sort-container a { text-decoration: none; color: #cbd5e1; font-size: 10px; transition: color 0.2s; }
+        .sort-container a:hover { color: var(--taiga-accent); }
+        .sort-container a.active { color: var(--taiga-main); font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <form method="GET" action="{% url 'issue_list' %}" id="main-form">
+        <input type="hidden" name="show_filters" value="{% if show_filters %}1{% else %}0{% endif %}" id="show-filters-input">
+
+        <div class="header-nav">
+            <button type="button" class="btn-action {% if show_filters %}active{% endif %}"
+                    onclick="document.getElementById('show-filters-input').value = (document.getElementById('show-filters-input').value == '1' ? '0' : '1'); this.form.submit();">
+                FILTERS {% if show_filters %}▴{% else %}▾{% endif %}
+            </button>
+
+            <div class="search-wrapper">
+                <input type="text" name="search" placeholder="Search subject or ID..." value="{{ search_query|default:'' }}">
+            </div>
+            <button type="submit" class="btn-action active">SEARCH</button>
+            <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
+        </div>
+
+        <div class="main-layout">
+            {% if show_filters %}
+            <aside class="filters-sidebar">
+                <div class="sidebar-top">
+                    Filtres ({{ issues.count }})
+                    <a href="?show_filters=1" style="color:var(--taiga-accent); font-size:10px; text-decoration:none;">CLEAR</a>
+                </div>
+
+                {% if selected_types or selected_severities or selected_statuses %}
+                <div class="filtered-by-box">
+                    <p style="color: #8bc34a; font-size: 10px; font-weight: bold; margin-bottom: 4px;">Filtered by:</p>
+                    {% for val in selected_types %}
+                    <span class="filter-tag">{{ val }} <button type="submit" onmousedown="document.getElementById('type-{{ val }}').checked=false">×</button></span>
+                    {% endfor %}
+                    {% for val in selected_severities %}
+                    <span class="filter-tag">{{ val }} <button type="submit" onmousedown="document.getElementById('sev-{{ val }}').checked=false">×</button></span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <details open>
+                    <summary>Type <span>▾</span></summary>
+                    <div class="filter-content">
+                        {% for t in all_types %}
+                        <input type="checkbox" name="issue_type" value="{{ t }}" id="type-{{ t }}" {% if t in selected_types %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
+                        <label for="type-{{ t }}" class="filter-label link-{{ t|lower }}">
+                            {{ t }} <span class="count-pill">{% if t == 'Bug' %}{{ counts.bug }}{% elif t == 'Question' %}{{ counts.question }}{% else %}{{ counts.enhancement }}{% endif %}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </details>
+
+                <details open>
+                    <summary>Severity <span>▾</span></summary>
+                    <div class="filter-content">
+                        {% for s in all_severities %}
+                        <input type="checkbox" name="issue_severity" value="{{ s }}" id="sev-{{ s }}" {% if s in selected_severities %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
+                        <label for="sev-{{ s }}" class="filter-label link-{{ s|lower }}">
+                            {{ s }} <span class="count-pill">
+                                {% if s == 'Critical' %}{{ counts.critical }}{% elif s == 'Important' %}{{ counts.important }}{% elif s == 'Normal' %}{{ counts.normal_sev }}{% elif s == 'Minor' %}{{ counts.minor }}{% else %}{{ counts.wishlist }}{% endif %}
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </details>
+
+                <details open>
+                    <summary>Status <span>▾</span></summary>
+                    <div class="filter-content">
+                        {% for st in all_statuses %}
+                        <input type="checkbox" name="status" value="{{ st }}" id="status-{{ st }}" {% if st in selected_statuses %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
+                        <label for="status-{{ st }}" class="filter-label">
+                            {{ st }} <span class="count-pill">
+                                {% if st == 'New' %}{{ counts.new }}{% elif st == 'In Progress' %}{{ counts.in_progress }}{% elif st == 'Closed' %}{{ counts.closed }}{% else %}0{% endif %}
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </details>
+
+                <details open>
+                    <summary>Assigned to <span>▾</span></summary>
+                    <div class="filter-content">
+                        <a href="?show_filters=1{% if search_query %}&search={{ search_query }}{% endif %}"
+                           class="filter-label" style="text-decoration: none; {% if not f_assignee %}background: #e6fffa; color: #2c7a7b; font-weight: bold;{% endif %}">
+                            <div class="user-info">
+                                <span class="user-avatar" style="background: #ccc;">??</span>
+                                <span>All Users</span>
+                            </div>
+                        </a>
+
+                        {% for u in users %}
+                        <a href="?show_filters=1&assigned_to={{ u.id }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                           class="filter-label"
+                           style="text-decoration: none; {% if f_assignee == u.id|slugify %}background: #e6fffa; color: #2c7a7b; font-weight: bold; border-left: 4px solid var(--taiga-accent);{% endif %}">
+
+                            <div class="user-info">
+                                <span class="user-avatar">{{ u.username|slice:":2" }}</span>
+                                <span>{{ u.username }}</span>
+                            </div>
+                            <span class="count-pill">{{ u.num_issues }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </details>
+            </aside>
+            {% endif %}
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                    <tr>
+                        <th width="80">TYPE
+                            <div class="sort-container">
+                                <a href="?order_by=issue_type&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
+                                <a href="?order_by=-issue_type&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
+                            </div>
+                        </th>
+                        <th width="80">SEV.
+                            <div class="sort-container">
+                                <a href="?order_by=issue_severity&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
+                                <a href="?order_by=-issue_severity&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
+                            </div>
+                        </th>
+                        <th width="80">PRIO.
+                            <div class="sort-container">
+                                <a href="?order_by=priority&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
+                                <a href="?order_by=-priority&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
+                            </div>
+                        </th>
+                        <th>ISSUE
+                            <div class="sort-container">
+                                <a href="?order_by=subject&show_filters={{ show_filters|yesno:'1,0' }}" title="A-Z">▲</a>
+                                <a href="?order_by=-subject&show_filters={{ show_filters|yesno:'1,0' }}" title="Z-A">▼</a>
+                            </div>
+                        </th>
+                        <th width="180">STATUS
+                            <div class="sort-container">
+                                <a href="?order_by=status&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
+                                <a href="?order_by=-status&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
+                            </div>
+                        </th>
+                        <th width="150">ASSIGNED TO
+                            <div class="sort-container">
+                                <a href="?order_by=assignee&show_filters={{ show_filters|yesno:'1,0' }}">▲</a>
+                                <a href="?order_by=-assignee&show_filters={{ show_filters|yesno:'1,0' }}">▼</a>
+                            </div>
+                        </th>
+                        <th width="120">MODIFIED
+                            <div class="sort-container">
+                                <a href="?order_by=modified_at&show_filters={{ show_filters|yesno:'1,0' }}">▲</a>
+                                <a href="?order_by=-modified_at&show_filters={{ show_filters|yesno:'1,0' }}">▼</a>
+                            </div>
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for issue in issues %}
+                    <tr>
+                        <td align="center"><span class="dot type-{{ issue.issue_type|lower }}"></span></td>
+                        <td align="center"><span class="dot sev-{{ issue.issue_severity|lower }}"></span></td>
+                        <td align="center"><span class="dot prio-{{ issue.priority|lower }}"></span></td>
+                        <td>
+                            <a href="{% url 'issue_detail' issue.id %}" class="ref-number">#{{ issue.id }}</a>
+                            <a href="{% url 'issue_detail' issue.id %}" class="subject-link">{{ issue.subject }}</a>
+                        </td>
+
+                        <td>
+                            <form method="POST" action="{% url 'issue_update_status' issue.id %}" style="margin: 0;">
+                                {% csrf_token %}
+                                <select name="status" onchange="this.form.submit()"
+                                        style="width: 100%; padding: 6px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 13px; color: var(--taiga-main); background: white; cursor: pointer;">
+                                    {% for st in all_statuses %}
+                                    <option value="{{ st }}" {% if issue.status == st %}selected{% endif %}>
+                                        {{ st }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </td>
+
+                        <td>
+                            {% if issue.assignee %}
+                            <div class="user-info">
+                                <span class="user-avatar">{{ issue.assignee.username|slice:":2" }}</span>
+                                <span style="font-size: 13px;">{{ issue.assignee.username }}</span>
+                            </div>
+                            {% else %}
+                            <span style="color: #cbd5e1; font-size: 12px;">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td style="color: #94a3b8; font-size: 12px;">{{ issue.modified_at|date:"d M Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+</html>
