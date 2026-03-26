@@ -4,21 +4,20 @@
     <meta charset="UTF-8">
     <title>Issue Tracker - Taiga Style</title>
     <style>
-        /* RESET & PALETA DINÁMICA */
+        /* RESET & PALETA DINÁMICA (Sin cambios) */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Ubuntu', sans-serif; }
 
         :root {
-            --taiga-main: #34495e;      /* Azul oscuro */
-            --taiga-accent: #5dc5b5;    /* Verde agua */
-            --taiga-orange: #ff8c00;    /* Naranja referencias */
-            --taiga-bg: #f8fafc;        /* Fondo claro */
-            --sidebar-header: #edf2f7;  /* Gris suave */
+            --taiga-main: #34495e;
+            --taiga-accent: #5dc5b5;
+            --taiga-orange: #ff8c00;
+            --taiga-bg: #f8fafc;
+            --sidebar-header: #edf2f7;
         }
 
         body { background: var(--taiga-bg); color: var(--taiga-main); padding: 20px; }
         .container { max-width: 1400px; margin: 0 auto; }
 
-        /* BARRA SUPERIOR */
         .header-nav { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
 
         .btn-action {
@@ -40,7 +39,6 @@
             box-shadow: 0 3px 0 #469b8e; margin-left: auto;
         }
 
-        /* DISEÑO DE DOS COLUMNAS */
         .main-layout { display: flex; gap: 25px; }
 
         /* SIDEBAR */
@@ -69,9 +67,8 @@
         }
         .filter-label:hover { background: #f1f5f9; }
 
-        input[type="checkbox"]:checked + .filter-label {
-            background: #e6fffa; color: #2c7a7b; font-weight: bold;
-        }
+        /* Estilo para simular el checkbox activo en el label */
+        .filter-item { display: flex; align-items: center; gap: 8px; }
 
         /* BORDES DE COLORES */
         .link-bug { border-left-color: #e74c3c; }
@@ -93,7 +90,13 @@
         }
         .filter-tag button { border: none; background: none; color: #94a3b8; cursor: pointer; }
 
-        /* TABLA DE ISSUES */
+        /* BOTÓN APPLY (Sustituye el auto-submit de JS) */
+        .btn-apply-filters {
+            width: 100%; background: var(--taiga-accent); color: white; border: none;
+            padding: 12px; font-weight: bold; cursor: pointer; border-top: 1px solid #e2e8f0;
+        }
+
+        /* TABLA */
         .table-wrapper { flex-grow: 1; background: white; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
         table { width: 100%; border-collapse: collapse; }
         th { background: #f8fafc; padding: 15px; text-align: left; font-size: 11px; color: #94a3b8; text-transform: uppercase; }
@@ -108,25 +111,29 @@
         .subject-link { text-decoration: none; color: var(--taiga-main); font-weight: 500; font-size: 15px; }
         .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: #34495e; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-right: 8px; }
 
-        /* Estilo para las flechas de ordenación */
-        .sort-container { display: inline-flex; flex-direction: column; vertical-align: middle; margin-left: 5px; line-height: 0.7; }
-        .sort-container a { text-decoration: none; color: #cbd5e1; font-size: 10px; transition: color 0.2s; }
-        .sort-container a:hover { color: var(--taiga-accent); }
-        .sort-container a.active { color: var(--taiga-main); font-weight: bold; }
+        .btn-save-status {
+            background: #cbd5e1; color: white; border: none; padding: 5px 8px;
+            border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; margin-left: 4px;
+        }
+
+        .th-content { display: flex; align-items: center; gap: 5px; text-decoration: none; color: #94a3b8; }
+        .sort-arrows { display: flex; flex-direction: column; font-size: 8px; line-height: 1; color: #cbd5e1; }
+        .sort-arrows .active { color: #34495e; }
 
     </style>
 </head>
 <body>
 
 <div class="container">
-    <form method="GET" action="{% url 'issue_list' %}" id="main-form">
-        <input type="hidden" name="show_filters" value="{% if show_filters %}1{% else %}0{% endif %}" id="show-filters-input">
+    <form method="GET" action="{% url 'issue_list' %}" id="filter-form">
+        <input type="hidden" name="show_filters" value="{{ show_filters|yesno:'1,0' }}">
 
         <div class="header-nav">
-            <button type="button" class="btn-action {% if show_filters %}active{% endif %}"
-                    onclick="document.getElementById('show-filters-input').value = (document.getElementById('show-filters-input').value == '1' ? '0' : '1'); this.form.submit();">
-                FILTERS {% if show_filters %}▴{% else %}▾{% endif %}
-            </button>
+            {% if show_filters %}
+            <a href="?show_filters=0" class="btn-action active">FILTERS ▴</a>
+            {% else %}
+            <a href="?show_filters=1" class="btn-action">FILTERS ▾</a>
+            {% endif %}
 
             <div class="search-wrapper">
                 <input type="text" name="search" placeholder="Search subject or ID..." value="{{ search_query|default:'' }}">
@@ -146,12 +153,8 @@
                 {% if selected_types or selected_severities or selected_statuses %}
                 <div class="filtered-by-box">
                     <p style="color: #8bc34a; font-size: 10px; font-weight: bold; margin-bottom: 4px;">Filtered by:</p>
-                    {% for val in selected_types %}
-                    <span class="filter-tag">{{ val }} <button type="submit" onmousedown="document.getElementById('type-{{ val }}').checked=false">×</button></span>
-                    {% endfor %}
-                    {% for val in selected_severities %}
-                    <span class="filter-tag">{{ val }} <button type="submit" onmousedown="document.getElementById('sev-{{ val }}').checked=false">×</button></span>
-                    {% endfor %}
+                    {% for val in selected_types %}<span class="filter-tag">{{ val }}</span>{% endfor %}
+                    {% for val in selected_severities %}<span class="filter-tag">{{ val }}</span>{% endfor %}
                 </div>
                 {% endif %}
 
@@ -159,9 +162,12 @@
                     <summary>Type <span>▾</span></summary>
                     <div class="filter-content">
                         {% for t in all_types %}
-                        <input type="checkbox" name="issue_type" value="{{ t }}" id="type-{{ t }}" {% if t in selected_types %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
-                        <label for="type-{{ t }}" class="filter-label link-{{ t|lower }}">
-                            {{ t }} <span class="count-pill">{% if t == 'Bug' %}{{ counts.bug }}{% elif t == 'Question' %}{{ counts.question }}{% else %}{{ counts.enhancement }}{% endif %}</span>
+                        <label class="filter-label link-{{ t|lower }}">
+                            <div class="filter-item">
+                                <input type="checkbox" name="issue_type" value="{{ t }}" {% if t in selected_types %}checked{% endif %}>
+                                <span>{{ t }}</span>
+                            </div>
+                            <span class="count-pill">{% if t == 'Bug' %}{{ counts.bug }}{% elif t == 'Question' %}{{ counts.question }}{% else %}{{ counts.enhancement }}{% endif %}</span>
                         </label>
                         {% endfor %}
                     </div>
@@ -171,9 +177,12 @@
                     <summary>Severity <span>▾</span></summary>
                     <div class="filter-content">
                         {% for s in all_severities %}
-                        <input type="checkbox" name="issue_severity" value="{{ s }}" id="sev-{{ s }}" {% if s in selected_severities %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
-                        <label for="sev-{{ s }}" class="filter-label link-{{ s|lower }}">
-                            {{ s }} <span class="count-pill">
+                        <label class="filter-label link-{{ s|lower }}">
+                            <div class="filter-item">
+                                <input type="checkbox" name="issue_severity" value="{{ s }}" {% if s in selected_severities %}checked{% endif %}>
+                                <span>{{ s }}</span>
+                            </div>
+                            <span class="count-pill">
                                 {% if s == 'Critical' %}{{ counts.critical }}{% elif s == 'Important' %}{{ counts.important }}{% elif s == 'Normal' %}{{ counts.normal_sev }}{% elif s == 'Minor' %}{{ counts.minor }}{% else %}{{ counts.wishlist }}{% endif %}
                             </span>
                         </label>
@@ -185,9 +194,12 @@
                     <summary>Status <span>▾</span></summary>
                     <div class="filter-content">
                         {% for st in all_statuses %}
-                        <input type="checkbox" name="status" value="{{ st }}" id="status-{{ st }}" {% if st in selected_statuses %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
-                        <label for="status-{{ st }}" class="filter-label">
-                            {{ st }} <span class="count-pill">
+                        <label class="filter-label">
+                            <div class="filter-item">
+                                <input type="checkbox" name="status" value="{{ st }}" {% if st in selected_statuses %}checked{% endif %}>
+                                <span>{{ st }}</span>
+                            </div>
+                            <span class="count-pill">
                                 {% if st == 'New' %}{{ counts.new }}{% elif st == 'In Progress' %}{{ counts.in_progress }}{% elif st == 'Closed' %}{{ counts.closed }}{% else %}0{% endif %}
                             </span>
                         </label>
@@ -198,28 +210,21 @@
                 <details open>
                     <summary>Assigned to <span>▾</span></summary>
                     <div class="filter-content">
-                        <a href="?show_filters=1{% if search_query %}&search={{ search_query }}{% endif %}"
-                           class="filter-label" style="text-decoration: none; {% if not f_assignee %}background: #e6fffa; color: #2c7a7b; font-weight: bold;{% endif %}">
-                            <div class="user-info">
-                                <span class="user-avatar" style="background: #ccc;">??</span>
-                                <span>All Users</span>
-                            </div>
-                        </a>
-
                         {% for u in users %}
-                        <a href="?show_filters=1&assigned_to={{ u.id }}{% if search_query %}&search={{ search_query }}{% endif %}"
-                           class="filter-label"
-                           style="text-decoration: none; {% if f_assignee == u.id|slugify %}background: #e6fffa; color: #2c7a7b; font-weight: bold; border-left: 4px solid var(--taiga-accent);{% endif %}">
-
-                            <div class="user-info">
-                                <span class="user-avatar">{{ u.username|slice:":2" }}</span>
-                                <span>{{ u.username }}</span>
+                        <label class="filter-label">
+                            <div class="filter-item">
+                                <input type="checkbox" name="assigned_to" value="{{ u.id }}" {% if f_assignee == u.id|slugify %}checked{% endif %}>
+                                <div class="user-info">
+                                    <span class="user-avatar">{{ u.username|slice:":2" }}</span>
+                                    <span>{{ u.username }}</span>
+                                </div>
                             </div>
                             <span class="count-pill">{{ u.num_issues }}</span>
-                        </a>
+                        </label>
                         {% endfor %}
                     </div>
                 </details>
+                <button type="submit" class="btn-apply-filters">APPLY FILTERS</button>
             </aside>
             {% endif %}
 
@@ -227,48 +232,41 @@
                 <table>
                     <thead>
                     <tr>
-                        <th width="80">TYPE
-                            <div class="sort-container">
-                                <a href="?order_by=issue_type&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
-                                <a href="?order_by=-issue_type&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
+                        <th width="80">
+                            <div class="th-content">TYPE
+                                <div class="sort-arrows">
+                                    <a href="?order_by=issue_type&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'issue_type' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-issue_type&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-issue_type' %}active{% endif %}">▼</a>
+                                </div>
                             </div>
                         </th>
-                        <th width="80">SEV.
-                            <div class="sort-container">
-                                <a href="?order_by=issue_severity&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
-                                <a href="?order_by=-issue_severity&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
+                        <th width="80">
+                            <div class="th-content">SEV.
+                                <div class="sort-arrows">
+                                    <a href="?order_by=issue_severity&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'issue_severity' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-issue_severity&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-issue_severity' %}active{% endif %}">▼</a>
+                                </div>
                             </div>
                         </th>
-                        <th width="80">PRIO.
-                            <div class="sort-container">
-                                <a href="?order_by=priority&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
-                                <a href="?order_by=-priority&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
+                        <th width="80">
+                            <div class="th-content">PRIO.
+                                <div class="sort-arrows">
+                                    <a href="?order_by=priority&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'priority' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-priority&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-priority' %}active{% endif %}">▼</a>
+                                </div>
                             </div>
                         </th>
-                        <th>ISSUE
-                            <div class="sort-container">
-                                <a href="?order_by=subject&show_filters={{ show_filters|yesno:'1,0' }}" title="A-Z">▲</a>
-                                <a href="?order_by=-subject&show_filters={{ show_filters|yesno:'1,0' }}" title="Z-A">▼</a>
+                        <th>
+                            <div class="th-content">ISSUE
+                                <div class="sort-arrows">
+                                    <a href="?order_by=subject&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'subject' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-subject&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-subject' %}active{% endif %}">▼</a>
+                                </div>
                             </div>
                         </th>
-                        <th width="180">STATUS
-                            <div class="sort-container">
-                                <a href="?order_by=status&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
-                                <a href="?order_by=-status&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
-                            </div>
-                        </th>
-                        <th width="150">ASSIGNED TO
-                            <div class="sort-container">
-                                <a href="?order_by=assignee&show_filters={{ show_filters|yesno:'1,0' }}">▲</a>
-                                <a href="?order_by=-assignee&show_filters={{ show_filters|yesno:'1,0' }}">▼</a>
-                            </div>
-                        </th>
-                        <th width="120">MODIFIED
-                            <div class="sort-container">
-                                <a href="?order_by=modified_at&show_filters={{ show_filters|yesno:'1,0' }}">▲</a>
-                                <a href="?order_by=-modified_at&show_filters={{ show_filters|yesno:'1,0' }}">▼</a>
-                            </div>
-                        </th>
+                        <th width="180">STATUS</th>
+                        <th width="150">ASSIGNED TO</th>
+                        <th width="120">MODIFIED</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -281,30 +279,21 @@
                             <a href="{% url 'issue_detail' issue.id %}" class="ref-number">#{{ issue.id }}</a>
                             <a href="{% url 'issue_detail' issue.id %}" class="subject-link">{{ issue.subject }}</a>
                         </td>
-
                         <td>
-                            <form method="POST" action="{% url 'issue_update_status' issue.id %}" style="margin: 0;">
-                                {% csrf_token %}
-                                <select name="status" onchange="this.form.submit()"
-                                        style="width: 100%; padding: 6px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 13px; color: var(--taiga-main); background: white; cursor: pointer;">
+                            <div style="display:flex; align-items:center;">
+                                <select name="status" form="update-form-{{ issue.id }}" style="padding: 4px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 13px; flex-grow:1;">
                                     {% for st in all_statuses %}
-                                    <option value="{{ st }}" {% if issue.status == st %}selected{% endif %}>
-                                        {{ st }}
-                                    </option>
+                                    <option value="{{ st }}" {% if issue.status == st %}selected{% endif %}>{{ st }}</option>
                                     {% endfor %}
                                 </select>
-                            </form>
-                        </td>
-
-                        <td>
-                            {% if issue.assignee %}
-                            <div class="user-info">
-                                <span class="user-avatar">{{ issue.assignee.username|slice:":2" }}</span>
-                                <span style="font-size: 13px;">{{ issue.assignee.username }}</span>
+                                <button type="submit" form="update-form-{{ issue.id }}" class="btn-save-status">OK</button>
                             </div>
-                            {% else %}
-                            <span style="color: #cbd5e1; font-size: 12px;">Unassigned</span>
-                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="user-info">
+                                <span class="user-avatar">{{ issue.assignee.username|slice:":2"|default:"--" }}</span>
+                                <span style="font-size: 13px;">{{ issue.assignee.username|default:"Unassigned" }}</span>
+                            </div>
                         </td>
                         <td style="color: #94a3b8; font-size: 12px;">{{ issue.modified_at|date:"d M Y" }}</td>
                     </tr>
@@ -314,6 +303,12 @@
             </div>
         </div>
     </form>
+
+    {% for issue in issues %}
+    <form method="POST" action="{% url 'issue_update_status' issue.id %}" id="update-form-{{ issue.id }}">
+        {% csrf_token %}
+    </form>
+    {% endfor %}
 </div>
 </body>
 </html>

@@ -10,7 +10,7 @@ def issue_list(request):
 
     #Captura de parámetros
     selected_types = request.GET.getlist('issue_type')
-    selected_statuses = request.GET.getlist('status')
+    selected_statuses = request.GET.getlist('filter_status')
     selected_severities = request.GET.getlist('issue_severity')
     selected_priorities = request.GET.getlist('priority')
     f_assignee = request.GET.get('assigned_to')
