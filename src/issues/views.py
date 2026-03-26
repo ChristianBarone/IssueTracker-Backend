@@ -5,7 +5,8 @@ from django.db.models import Q, Count
 
 def issue_list(request):
     # Ordenades de més noves a més velles (Requisit)
-    issues = Issue.objects.all().order_by('-created_at')
+    order_param = request.GET.get('order_by', '-created_at')
+    issues = Issue.objects.all().order_by(order_param)
 
     #Captura de parámetros
     selected_types = request.GET.getlist('issue_type')
@@ -38,6 +39,12 @@ def issue_list(request):
     # Filtrado por ASIGNADO (Uno solo)
     if f_assignee:
         issues = issues.filter(assignee_id=f_assignee)
+
+
+    def toggle_order(field):
+        if order_param == field:
+            return f"-{field}" # Si ya es asc, pasamos a desc
+        return field # Si es cualquier otra cosa, ponemos asc
 
     base_stats = Issue.objects.all()
 
@@ -84,6 +91,16 @@ def issue_list(request):
         'selected_statuses': selected_statuses,
         'search_query': search_query,
         'f_assignee': f_assignee,
+        'current_order':order_param,
+        'order_links': {
+            'type': toggle_order('issue_type'),
+            'sev': toggle_order('issue_severity'),
+            'prio': toggle_order('priority'),
+            'subj': toggle_order('subject'),
+            'stat': toggle_order('status'),
+            'assign': toggle_order('assignee'),
+            'mod': toggle_order('modified_at'),
+        },
     }
     return render(request, 'issues/list.html', context)
 
