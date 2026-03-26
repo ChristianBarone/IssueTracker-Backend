@@ -42,6 +42,9 @@
             box-shadow: 0 3px 0 #469b8e; margin-left: auto;
         }
 
+        /* Marcado activo */
+        .filter-link:has(input:checked) { background: #e6fffa; color: #2c7a7b; font-weight: bold; }
+
         /* DISEÑO DE DOS COLUMNAS */
         .main-layout { display: flex; gap: 25px; }
 
@@ -102,13 +105,79 @@
             padding: 5px 8px; border-radius: 4px; border: 1px solid #e2e8f0;
             background: #f8fafc; color: #475569; font-size: 13px; cursor: pointer; outline: none;
         }
+        .filter-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            text-decoration: none;
+            color: #64748b;
+            font-size: 14px;
+            border-left: 4px solid transparent; /* Borde por defecto invisible */
+            margin-bottom: 2px;
+            background: #fcfcfc;
+        }
+
+        .filter-link:hover { background: #f1f5f9; }
+
+        /* BORDES DE COLORES PARA CADA SECCIÓN*/
+        .link-bug { border-left-color: #e74c3c; }
+        .link-question { border-left-color: #3498db; }
+        .link-enhancement { border-left-color: #00FFFF; }
+
+        .link-wishlist { border-left-color: #5d6d7e; }
+        .link-minor { border-left-color: #3498db; }
+        .link-normal { border-left-color: #2ecc71; }
+        .link-important { border-left-color: #e67e22; }
+        .link-critical { border-left-color: #c0392b; }
+
+        .link-prio-low { border-left-color: #e67e22; }
+        .link-prio-normal { border-left-color: #FFFF00; }
+        .link-prio-high { border-left-color: #32CD32; }
+
+        .count-pill {
+            background: #ebf0f5;
+            color: #475569;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        /* RADIO BUTTONS INCLUDE/EXCLUDE */
+        .filter-mode {
+            display: flex; justify-content: center; gap: 20px;
+            padding: 15px; border-bottom: 1px solid #f1f5f9;
+            font-size: 14px; color: #475569;
+        }
+        .filter-mode label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .filter-mode input[type="radio"] { accent-color: var(--taiga-accent); transform: scale(1.2); }
+
+        /* CAJA "FILTERED BY" */
+        .filtered-by-box {
+            background: #f1f8e9; border: 1px solid #dcedc8;
+            margin: 10px; padding: 10px; border-radius: 4px;
+        }
+        .filter-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: white; border: 1px solid #e2e8f0;
+            padding: 2px 8px; border-radius: 3px; font-size: 12px; margin: 2px;
+        }
+        .filter-tag a { text-decoration: none; color: #94a3b8; font-weight: bold; }
+
+        /* AVATAR CIRCULAR */
+        .user-avatar {
+            width: 20px; height: 20px; border-radius: 50%;
+            background: #e2e8f0; display: inline-block; vertical-align: middle;
+            margin-right: 8px; border: 1px solid #cbd5e1;
+        }
+
     </style>
 </head>
 <body>
 
 <div class="container">
     <form method="GET" action="{% url 'issue_list' %}" class="header-nav">
-
         <a href="?show_filters={% if show_filters %}0{% else %}1{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
            class="btn-action {% if show_filters %}active{% endif %}">
             FILTERS {% if show_filters %}▴{% else %}▾{% endif %}
@@ -117,41 +186,92 @@
         <div class="search-wrapper">
             <input type="text" name="search" placeholder="Search subject or description..." value="{{ request.GET.search|default:'' }}">
         </div>
-
         <button type="submit" class="btn-action active">SEARCH</button>
 
-        {% if show_filters %}
-        <input type="hidden" name="show_filters" value="1">
-        {% endif %}
-
+        {% if show_filters %}<input type="hidden" name="show_filters" value="1">{% endif %}
         <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
     </form>
 
     <div class="main-layout">
         {% if show_filters %}
         <aside class="filters-sidebar">
-            <div class="sidebar-top">
-                <span>Custom filters</span>
-                <a href="{% url 'issue_list' %}?show_filters=1" style="text-decoration:none; color:var(--taiga-accent); font-size:11px;">CLEAR</a>
-            </div>
+            <form id="sidebar-form" method="GET" action="{% url 'issue_list' %}">
+                <input type="hidden" name="show_filters" value="1">
+                <input type="hidden" name="search" value="{{ request.GET.search|default:'' }}">
 
-            <details open>
-                <summary>Type <span>▾</span></summary>
-                <div class="filter-content">
-                    <a href="?show_filters=1&issue_type=Bug{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-                       class="filter-link {% if request.GET.issue_type == 'Bug' %}active{% endif %}">
-                        Bug <span class="count-pill">{{ counts.bug }}</span>
-                    </a>
-                    <a href="?show_filters=1&issue_type=Question{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-                       class="filter-link {% if request.GET.issue_type == 'Question' %}active{% endif %}">
-                        Question <span class="count-pill">{{ counts.question }}</span>
-                    </a>
-                    <a href="?show_filters=1&issue_type=Enhancement{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-                       class="filter-link {% if request.GET.issue_type == 'Enhancement' %}active{% endif %}">
-                        Enhancement <span class="count-pill">{{ counts.enhancement }}</span>
-                    </a>
+                <div class="sidebar-top">
+                    Custom filters ({{ issues.count }})
+                    <a href="?show_filters=1" style="color:var(--taiga-accent); font-size:10px; text-decoration:none;">CLEAR</a>
                 </div>
-            </details>
+
+                <div class="filter-mode">
+                    <label><input type="radio" name="mode" value="include" {% if request.GET.mode != 'exclude' %}checked{% endif %} onchange="this.form.submit()"> Include</label>
+                    <label><input type="radio" name="mode" value="exclude" {% if request.GET.mode == 'exclude' %}checked{% endif %} onchange="this.form.submit()"> Exclude</label>
+                </div>
+
+                {% if request.GET.issue_type or request.GET.status or request.GET.issue_severity or request.GET.priority %}
+                <div class="filtered-by-box">
+                    <p style="color: #8bc34a; font-size: 10px; font-weight: bold; margin-bottom: 4px;">Filtered by:</p>
+                    {% for val in request.GET.getlist.issue_type %}<span class="filter-tag">{{ val }}</span>{% endfor %}
+                    {% for val in request.GET.getlist.status %}<span class="filter-tag">{{ val }}</span>{% endfor %}
+                </div>
+                {% endif %}
+
+                <details open>
+                    <summary>Type <span>▾</span></summary>
+                    <div class="filter-content">
+                        {% for t in all_types %}
+                        <label class="filter-link link-{{ t|lower }}">
+                            <input type="checkbox" name="issue_type" value="{{ t }}" {% if t in request.GET.getlist.issue_type %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
+                            {{ t }}
+                            <span class="count-pill">{% if t == 'Bug' %}{{ counts.bug }}{% elif t == 'Question' %}{{ counts.question }}{% else %}{{ counts.enhancement }}{% endif %}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </details>
+
+                <details open>
+                    <summary>Severity <span>▾</span></summary>
+                    <div class="filter-content">
+                        {% for s in all_severities %}
+                        <label class="filter-link link-{{ s|lower }}">
+                            <input type="checkbox" name="issue_severity" value="{{ s }}" {% if s in request.GET.getlist.issue_severity %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
+                            {{ s }}
+                            <span class="count-pill">
+                                {% if s == 'Critical' %}{{ counts.critical }}{% elif s == 'Important' %}{{ counts.important }}{% elif s == 'Normal' %}{{ counts.normal_sev }}{% elif s == 'Minor' %}{{ counts.minor }}{% else %}{{ counts.wishlist }}{% endif %}
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </details>
+
+                <details open>
+                    <summary>Status <span>▾</span></summary>
+                    <div class="filter-content">
+                        {% for st in all_statuses %}
+                        <label class="filter-link">
+                            <input type="checkbox" name="status" value="{{ st }}" {% if st in request.GET.getlist.status %}checked{% endif %} onchange="this.form.submit()" style="display:none;">
+                            {{ st }}
+                            <span class="count-pill">
+                                {% if st == 'New' %}{{ counts.new }}{% elif st == 'In Progress' %}{{ counts.in_progress }}{% elif st == 'Closed' %}{{ counts.closed }}{% else %}0{% endif %}
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </details>
+
+                <details open>
+                    <summary>Assigned to <span>▾</span></summary>
+                    <div class="filter-content">
+                        {% for u in users %}
+                        <label class="filter-link" style="border-left-color: #5dc5b5;">
+                            <input type="radio" name="assigned_to" value="{{ u.id }}" {% if request.GET.assigned_to == u.id|slugify %}checked{% endif %} onchange="this.form.submit()" style="display:none;">                            <span><span class="user-avatar"></span> {{ u.username }}</span>
+                            <span class="count-pill">{{ u.num_issues }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </details>
+            </form>
         </aside>
         {% endif %}
 
@@ -159,9 +279,9 @@
             <table>
                 <thead>
                 <tr>
-                    <th width="60">Type</th>
-                    <th width="60">Sev.</th>
-                    <th width="60">Prio.</th>
+                    <th width="50" style="text-align:center;">Type</th>
+                    <th width="50" style="text-align:center;">Sev.</th>
+                    <th width="50" style="text-align:center;">Prio.</th>
                     <th>Issue</th>
                     <th>Status</th>
                     <th>Modified</th>
@@ -170,42 +290,32 @@
                 <tbody>
                 {% for issue in issues %}
                 <tr>
-                    <td style="text-align: center;">
-                        <span class="dot {% if issue.issue_type == 'Bug' %}type-bug{% elif issue.issue_type == 'Question' %}type-question{% else %}type-enhancement{% endif %}"></span>
-                    </td>
-                    <td style="text-align: center;">
-                        <span class="dot {% if issue.issue_severity == 'Critical' %}sev-critical{% elif issue.issue_severity == 'Important' %}sev-important{% elif issue.issue_severity == 'Normal' %}sev-normal{% else %}sev-minor{% endif %}"></span>
-                    </td>
-                    <td style="text-align: center;">
-                        <span class="dot {% if issue.priority == 'High' %}prio-high{% elif issue.priority == 'Normal' %}prio-normal{% else %}prio-low{% endif %}"></span>
-                    </td>
-
+                    <td align="center"><span class="dot type-{{ issue.issue_type|lower }}"></span></td>
+                    <td align="center"><span class="dot sev-{{ issue.issue_severity|lower }}"></span></td>
+                    <td align="center"><span class="dot prio-{{ issue.priority|lower }}"></span></td>
                     <td>
                         <a href="{% url 'issue_detail' issue.id %}" class="ref-number">#{{ issue.id }}</a>
                         <a href="{% url 'issue_detail' issue.id %}" class="subject-link">{{ issue.subject }}</a>
                     </td>
-
                     <td>
-                        <form method="POST" action="{% url 'issue_update_status' issue.id %}" style="display:inline;">
+                        <form method="POST" action="{% url 'issue_update_status' issue.id %}">
                             {% csrf_token %}
                             <select name="status" class="status-select" onchange="this.form.submit()">
-                                {% for choice_val, choice_label in issue.STATUS_CHOICES %}
-                                <option value="{{ choice_val }}" {% if issue.status == choice_val %}selected{% endif %}>{{ choice_label }}</option>
+                                {% for code, label in issue.STATUS_CHOICES %}
+                                <option value="{{ code }}" {% if issue.status == code %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
                         </form>
                     </td>
-
-                    <td style="font-size: 13px; color: #64748b;">{{ issue.modified_at|date:"d M Y" }}</td>
+                    <td style="color: #94a3b8; font-size: 11px;">{{ issue.modified_at|date:"d M Y" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" style="text-align: center; padding: 50px; color: #94a3b8;">No results found.</td></tr>
+                <tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:40px;">No issues found.</td></tr>
                 {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
-
 </body>
 </html>

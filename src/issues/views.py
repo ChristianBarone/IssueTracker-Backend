@@ -1,51 +1,88 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Issue, Comment
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db.models import Q, Count
 
 def issue_list(request):
     # Ordenades de més noves a més velles (Requisit)
     issues = Issue.objects.all().order_by('-created_at')
 
-    search_query = request.GET.get('search')
+    #Captura de parámetros
+    selected_types = request.GET.getlist('issue_type')
+    selected_statuses = request.GET.getlist('status')
+    selected_severities = request.GET.getlist('issue_severity')
+    selected_priorities = request.GET.getlist('priority')
+
     #Lògica de FILTRES
-    f_type = request.GET.get('issue_type')
-    f_status = request.GET.get('status')
-    f_sev = request.GET.get('issue_severity')
-    f_prio = request.GET.get('priority')
+    f_assignee = request.GET.get('assigned_to')
+    search_query = request.GET.get('search', '').strip()
+    mode = request.GET.get('mode', 'include')
+
     show_filters = request.GET.get('show_filters') == '1'
 
     if search_query:
         issues = issues.filter(Q(subject__icontains=search_query) | Q(id__icontains=search_query))
 
-    if f_status:
-        issues = issues.filter(status=f_status)
+    def apply_filter(qs, field, values):
+        if not values: return qs
+        if mode == 'exclude':
+            return qs.exclude(**{f"{field}__in": values})
+        return qs.filter(**{f"{field}__in": values})
 
-    if f_type:
-        issues = issues.filter(issue_type=f_type)
-    if f_sev:
-        issues = issues.filter(issue_severity=f_sev)
-    if f_prio:
-        issues = issues.filter(priority=f_prio)
+    issues = apply_filter(issues, 'issue_type', selected_types)
+    issues = apply_filter(issues, 'status', selected_statuses)
+    issues = apply_filter(issues, 'issue_severity', selected_severities)
+    issues = apply_filter(issues, 'priority', selected_priorities)
+
+    if f_assignee:
+        issues = issues.filter(assignee_id=f_assignee)
 
     base_stats = Issue.objects.all()
+
+    users = User.objects.annotate(num_issues=Count('assigned_issues'))
     counts = {
+        # Types
         'bug': base_stats.filter(issue_type='Bug').count(),
         'question': base_stats.filter(issue_type='Question').count(),
         'enhancement': base_stats.filter(issue_type='Enhancement').count(),
-        'wishlist': base_stats.filter(issue_type='Wishlist').count(),
-        'minor': base_stats.filter(issue_type='Minor').count(),
-        'normal': base_stats.filter(issue_type='Normal').count(),
-        'important': base_stats.filter(issue_type='Important').count(),
-        'critical': base_stats.filter(issue_type='Critical').count(),
+
+        # Severities
+        'wishlist': base_stats.filter(issue_severity='Wishlist').count(),
+        'minor': base_stats.filter(issue_severity='Minor').count(),
+        'normal_sev': base_stats.filter(issue_severity='Normal').count(),
+        'important': base_stats.filter(issue_severity='Important').count(),
+        'critical': base_stats.filter(issue_severity='Critical').count(),
+
+        # Priorities
+        'low': base_stats.filter(priority='Low').count(),
+        'normal_prio': base_stats.filter(priority='Normal').count(),
+        'high': base_stats.filter(priority='High').count(),
+
+        # Status
         'new': base_stats.filter(status='New').count(),
-        'done': base_stats.filter(status='Done').count(),
+        'in_progress': base_stats.filter(status='In Progress').count(),
+        'ready_test': base_stats.filter(status='Ready for test').count(),
+        'needs_info': base_stats.filter(status='Needs Info').count(),
+        'rejected': base_stats.filter(status='Rejected').count(),
+        'postponed': base_stats.filter(status='Postponed').count(),
+        'closed': base_stats.filter(status='Closed').count(),
     }
+
+    # Necesario para el conteo de usuarios
+    #user_counts = {}
+    #for u in users:
+        #user_counts[u.id] = base_stats.filter(assignee=u).count()
 
     context = {
         'issues': issues,
         'counts': counts,
+        'users': users,
         'show_filters': show_filters,
+        # Opciones para el HTML
+        'all_types': ['Bug', 'Question', 'Enhancement'],
+        'all_severities': ['Wishlist', 'Minor', 'Normal', 'Important', 'Critical'],
+        'all_priorities': ['Low', 'Normal', 'High'],
+        'all_statuses': ['New', 'In Progress', 'Ready for test', 'Needs Info', 'Rejected', 'Postponed', 'Closed'],
     }
     return render(request, 'issues/list.html', context)
 
