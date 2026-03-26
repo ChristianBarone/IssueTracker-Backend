@@ -187,6 +187,32 @@
                         {% endfor %}
                     </div>
                 </details>
+
+                <details open>
+                    <summary>Assigned to <span>▾</span></summary>
+                    <div class="filter-content">
+                        <a href="?show_filters=1{% if search_query %}&search={{ search_query }}{% endif %}"
+                           class="filter-label" style="text-decoration: none; {% if not f_assignee %}background: #e6fffa; color: #2c7a7b; font-weight: bold;{% endif %}">
+                            <div class="user-info">
+                                <span class="user-avatar" style="background: #ccc;">??</span>
+                                <span>All Users</span>
+                            </div>
+                        </a>
+
+                        {% for u in users %}
+                        <a href="?show_filters=1&assigned_to={{ u.id }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                           class="filter-label"
+                           style="text-decoration: none; {% if f_assignee == u.id|slugify %}background: #e6fffa; color: #2c7a7b; font-weight: bold; border-left: 4px solid var(--taiga-accent);{% endif %}">
+
+                            <div class="user-info">
+                                <span class="user-avatar">{{ u.username|slice:":2" }}</span>
+                                <span>{{ u.username }}</span>
+                            </div>
+                            <span class="count-pill">{{ u.num_issues }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </details>
             </aside>
             {% endif %}
 
@@ -194,13 +220,13 @@
                 <table>
                     <thead>
                     <tr>
-                        <th width="50" style="text-align:center;">Type</th>
-                        <th width="50" style="text-align:center;">Sev.</th>
-                        <th width="50" style="text-align:center;">Prio.</th>
-                        <th>Issue</th>
-                        <th width="150">Status</th>
-                        <th width="150">Assigned to</th>
-                        <th width="120">Modified</th>
+                        <th width="40">TYPE</th>
+                        <th width="40">SEV.</th>
+                        <th width="40">PRIO.</th>
+                        <th>ISSUE</th>
+                        <th width="180">STATUS</th>
+                        <th width="150">ASSIGNED TO</th>
+                        <th width="120">MODIFIED</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -213,18 +239,32 @@
                             <a href="{% url 'issue_detail' issue.id %}" class="ref-number">#{{ issue.id }}</a>
                             <a href="{% url 'issue_detail' issue.id %}" class="subject-link">{{ issue.subject }}</a>
                         </td>
-                        <td>{{ issue.status }}</td>
+
+                        <td>
+                            <form method="POST" action="{% url 'issue_update_status' issue.id %}" style="margin: 0;">
+                                {% csrf_token %}
+                                <select name="status" onchange="this.form.submit()"
+                                        style="width: 100%; padding: 6px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 13px; color: var(--taiga-main); background: white; cursor: pointer;">
+                                    {% for st in all_statuses %}
+                                    <option value="{{ st }}" {% if issue.status == st %}selected{% endif %}>
+                                        {{ st }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </td>
+
                         <td>
                             {% if issue.assignee %}
-                            <div style="display: flex; align-items: center;">
-                                <span class="user-avatar">{{ issue.assignee.username|slice:":2"|upper }}</span>
+                            <div class="user-info">
+                                <span class="user-avatar">{{ issue.assignee.username|slice:":2" }}</span>
                                 <span style="font-size: 13px;">{{ issue.assignee.username }}</span>
                             </div>
                             {% else %}
-                            <span style="color: #cbd5e1; font-size: 12px;">No assignee</span>
+                            <span style="color: #cbd5e1; font-size: 12px;">Unassigned</span>
                             {% endif %}
                         </td>
-                        <td style="color: #94a3b8; font-size: 11px;">{{ issue.modified_at|date:"d M Y" }}</td>
+                        <td style="color: #94a3b8; font-size: 12px;">{{ issue.modified_at|date:"d M Y" }}</td>
                     </tr>
                     {% endfor %}
                     </tbody>
