@@ -114,6 +114,30 @@
         .sort-container a:hover { color: var(--taiga-accent); }
         .sort-container a.active { color: var(--taiga-main); font-weight: bold; }
 
+        /* Contenedor del título de la columna */
+        .th-content {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #94a3b8;
+        }
+
+        /* Las dos flechitas pequeñas */
+        .sort-arrows {
+            display: flex;
+            flex-direction: column;
+            font-size: 8px;
+            line-height: 1;
+            color: #cbd5e1; /* Gris claro por defecto */
+        }
+
+        /* Resaltar la flecha activa */
+        .sort-arrows .active {
+            color: #34495e; /* Color oscuro cuando está activo */
+        }
+
     </style>
 </head>
 <body>
@@ -227,46 +251,67 @@
                 <table>
                     <thead>
                     <tr>
-                        <th width="80">TYPE
-                            <div class="sort-container">
-                                <a href="?order_by=issue_type&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
-                                <a href="?order_by=-issue_type&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
+                        <th width="80">
+                            <div class="th-content">
+                                TYPE
+                                <div class="sort-arrows">
+                                    <a href="?order_by=issue_type&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'issue_type' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-issue_type&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-issue_type' %}active{% endif %}">▼</a>
+                                </div>
                             </div>
                         </th>
-                        <th width="80">SEV.
-                            <div class="sort-container">
-                                <a href="?order_by=issue_severity&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
-                                <a href="?order_by=-issue_severity&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
+                        <th width="80">
+                            <div class="th-content">
+                                SEV.
+                                <div class="sort-arrows">
+                                    <a href="?order_by=issue_severity&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'issue_severity' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-issue_severity&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-issue_severity' %}active{% endif %}">▼</a>
+                                </div>
                             </div>
                         </th>
-                        <th width="80">PRIO.
-                            <div class="sort-container">
-                                <a href="?order_by=priority&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
-                                <a href="?order_by=-priority&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
+                        <th width="80">
+                            <div class="th-content">
+                                PRIO.
+                                <div class="sort-arrows">
+                                    <a href="?order_by=priority&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'priority' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-priority&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-priority' %}active{% endif %}">▼</a>
+                                </div>
                             </div>
                         </th>
-                        <th>ISSUE
-                            <div class="sort-container">
-                                <a href="?order_by=subject&show_filters={{ show_filters|yesno:'1,0' }}" title="A-Z">▲</a>
-                                <a href="?order_by=-subject&show_filters={{ show_filters|yesno:'1,0' }}" title="Z-A">▼</a>
+                        <th>
+                            <div class="th-content">
+                                ISSUE
+                                <div class="sort-arrows">
+                                    <a href="?order_by=subject&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'subject' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-subject&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-subject' %}active{% endif %}">▼</a>
+                                </div>
                             </div>
                         </th>
-                        <th width="180">STATUS
-                            <div class="sort-container">
-                                <a href="?order_by=status&show_filters={{ show_filters|yesno:'1,0' }}" title="Ascendente">▲</a>
-                                <a href="?order_by=-status&show_filters={{ show_filters|yesno:'1,0' }}" title="Descendente">▼</a>
+                        <th width="180">
+                            <div class="th-content">
+                                STATUS
+                                <div class="sort-arrows">
+                                    <a href="?order_by=status&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'status' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-status&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-status' %}active{% endif %}">▼</a>
+                                </div>
                             </div>
                         </th>
-                        <th width="150">ASSIGNED TO
-                            <div class="sort-container">
-                                <a href="?order_by=assignee&show_filters={{ show_filters|yesno:'1,0' }}">▲</a>
-                                <a href="?order_by=-assignee&show_filters={{ show_filters|yesno:'1,0' }}">▼</a>
+                        <th width="150">
+                            <div class="th-content">
+                                ASSIGNED TO
+                                <div class="sort-arrows">
+                                    <a href="?order_by=assignee&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'assignee' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-assignee&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-assignee' %}active{% endif %}">▼</a>
+                                </div>
                             </div>
                         </th>
-                        <th width="120">MODIFIED
-                            <div class="sort-container">
-                                <a href="?order_by=modified_at&show_filters={{ show_filters|yesno:'1,0' }}">▲</a>
-                                <a href="?order_by=-modified_at&show_filters={{ show_filters|yesno:'1,0' }}">▼</a>
+                        <th width="120">
+                            <div class="th-content">
+                                MODIFIED
+                                <div class="sort-arrows">
+                                    <a href="?order_by=modified_at&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'modified_at' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-modified_at&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-modified_at' %}active{% endif %}">▼</a>
+                                </div>
                             </div>
                         </th>
                     </tr>
