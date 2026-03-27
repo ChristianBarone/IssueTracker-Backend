@@ -37,3 +37,7 @@ class Comment(models.Model):
 
     def is_edited(self):
          return self.updated_at > self.created_at
+
+class Attachment(models.Model):
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name='attachments')
+    path = models.TextField()

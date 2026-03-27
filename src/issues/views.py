@@ -139,7 +139,8 @@ def issue_create(request):
 
 def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
-    return render(request, 'issues/detail.html', {'issue': issue})
+    attachments = issue.attachments.all()
+    return render(request, 'issues/detail.html', {'issue': issue, 'attach_num': attachments.count(), 'attachments': attachments})
 
 def issue_delete(request, issue_id):
     if request.method == 'POST':
