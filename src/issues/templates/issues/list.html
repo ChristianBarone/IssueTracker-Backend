@@ -264,9 +264,30 @@
                                 </div>
                             </div>
                         </th>
-                        <th width="180">STATUS</th>
-                        <th width="150">ASSIGNED TO</th>
-                        <th width="120">MODIFIED</th>
+                        <th width="180">
+                            <div class="th-content">STATUS
+                                <div class="sort-arrows">
+                                    <a href="?order_by=status&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'status' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-status&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-status' %}active{% endif %}">▼</a>
+                                </div>
+                            </div>
+                        </th>
+                        <th width="150">
+                            <div class="th-content">ASSIGNED TO
+                                <div class="sort-arrows">
+                                    <a href="?order_by=assignee&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'assignee' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-assignee&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-assignee' %}active{% endif %}">▼</a>
+                                </div>
+                            </div>
+                        </th>
+                        <th width="120">
+                            <div class="th-content">MODIFIED
+                                <div class="sort-arrows">
+                                    <a href="?order_by=modified_at&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'modified_at' %}active{% endif %}">▲</a>
+                                    <a href="?order_by=-modified_at&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-modified_at' %}active{% endif %}">▼</a>
+                                </div>
+                            </div>
+                        </th>
                     </tr>
                     </thead>
                     <tbody>
