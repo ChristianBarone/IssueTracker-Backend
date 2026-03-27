@@ -1,14 +1,31 @@
 <style>
     body { font-family: sans-serif; max-width: 900px; margin: 24px auto; padding: 0 12px; }
-    .meta { color: #666; margin-bottom: 16px; }
+    .container { display: flex; gap: 30px; align-items: flex-start; }
+    .main { flex: 2; }
+    .sidebar { flex: 1; }
+    .meta { color: #666; margin-bottom: 16px; font-size: 0.9em; }
     .badge { display: inline-block; padding: 4px 8px; border-radius: 3px; background: #8e44ad; color: #fff; font-size: 0.85em; }
-    .card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 18px; }
-    .label { color: #555; font-size: 0.9em; margin-top: 14px; }
+    .card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 18px; margin-bottom: 20px; }
+    .side-card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 18px; background: #fdfdfd; }
+    .side-title { font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; color: #333; }
+    .item { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9em; }
+    .item span { color: #666; }
+
+    /* Estilos para Comentarios */
+    .comments-container { margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; }
+    .comment-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 15px; border-left: 4px solid #5dc5b5; }
+    .comment-header { display: flex; justify-content: space-between; font-size: 0.85em; color: #64748b; margin-bottom: 8px; }
+    .comment-author { font-weight: bold; color: #334155; }
+    .comment-body { color: #334155; line-height: 1.5; white-space: pre-wrap; }
+    .comment-actions { margin-top: 10px; display: flex; gap: 12px; font-size: 0.8em; }
+    .btn-delete { color: #ef4444; background: none; border: none; cursor: pointer; padding: 0; font-size: inherit; font-weight: bold; }
+    .comment-form textarea { width: 100%; min-height: 80px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 10px; font-family: inherit; box-sizing: border-box; }
+    .btn-post { background: #5dc5b5; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
 </style>
 
 <div class="container">
     <div class="main">
-        <a href="{% url 'issue_list' %}">&larr; Back to issues</a>
+        <a href="{% url 'issue_list' %}" style="text-decoration: none; color: #3498db;">&larr; Back to issues</a>
 
         <h1>#{{ issue.id }} {{ issue.subject }}</h1>
         <div class="meta">
@@ -18,41 +35,61 @@
 
         <div class="card">
             <span class="badge">{{ issue.status }}</span>
-
             <h3>Description</h3>
             <p>{{ issue.description|linebreaksbr|default:"No description" }}</p>
+        </div>
+
+        <div class="comments-container">
+            <h2 style="font-size: 1.2em; color: #333; margin-bottom: 20px;">Activity & Comments</h2>
+
+            <div class="comment-form">
+                <form method="POST" action="{% url 'comment_add' issue.id %}">
+                    {% csrf_token %}
+                    <textarea name="body" placeholder="Write a comment..." required></textarea>
+                    <div style="text-align: right;">
+                        <button type="submit" class="btn-post">POST COMMENT</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="comments-list" style="margin-top: 25px;">
+                {% for comment in issue.comments.all|dictsortreversed:"created_at" %}
+                <div class="comment-card" id="comment-{{ comment.id }}">
+                    <div class="comment-header">
+                        <div>
+                            <span class="comment-author">{{ comment.author.username }}</span>
+                            <span style="margin-left: 5px;">commented on {{ comment.created_at|date:"d M Y H:i" }}</span>
+                        </div>
+                    </div>
+
+                    <div class="comment-body">{{ comment.body }}</div>
+
+                    {% if request.user == comment.author or not request.user.is_authenticated %}
+                    <div class="comment-actions">
+                        <a href="{% url 'comment_edit' comment.id %}" style="color: #5dc5b5; text-decoration: none; font-weight: bold;">Edit</a>
+                        <form method="POST" action="{% url 'comment_delete' comment.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-delete" onclick="return confirm('Are you sure you want to delete this comment?')">Delete</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p style="color: #94a3b8; font-size: 0.9em; text-align: center; margin-top: 20px;">No activity yet.</p>
+                {% endfor %}
+            </div>
         </div>
     </div>
 
     <div class="sidebar">
         <div class="side-card">
             <div class="side-title">Details</div>
-
-            <div class="item">
-                <span>Type</span>
-                <strong>{{ issue.issue_type }}</strong>
-            </div>
-
-            <div class="item">
-                <span>Priority</span>
-                <strong>{{ issue.priority }}</strong>
-            </div>
-
-            <div class="item">
-                <span>Creator</span>
-                <strong>{{ issue.creator.username }}</strong>
-            </div>
-
-            <div class="item">
-                <span>Assignee</span>
-                <strong>
-                    {% if issue.assignee %}
-                        {{ issue.assignee.username }}
-                    {% else %}
-                        Unassigned
-                    {% endif %}
-                </strong>
-            </div>
+            <div class="item"><span>Type</span><strong>{{ issue.issue_type }}</strong></div>
+            <div class="item"><span>Priority</span><strong>{{ issue.priority }}</strong></div>
+            <div class="item"><span>Creator</span><strong>{{ issue.creator.username }}</strong></div>
+            <div class="item"><span>Assignee</span><strong>
+                {% if issue.assignee %}{{ issue.assignee.username }}{% else %}Unassigned{% endif %}
+            </strong></div>
         </div>
     </div>
 </div>
