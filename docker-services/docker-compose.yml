@@ -1,0 +1,11 @@
+services:
+  db:
+    image: "postgres:17-alpine"
+    env_file: .env
+    volumes:
+      - issue-tracker-postgres:/var/lib/postgresql/data
+    ports:
+      - ${POSTGRES_PORT}:5432
+
+volumes:
+  issue-tracker-postgres:

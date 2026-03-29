@@ -10,22 +10,50 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+from pydantic import (
+    PostgresDsn,
+    EmailStr,
+    HttpUrl
+)
+from pydantic_settings import BaseSettings
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+class SettingsFromEnvironment(BaseSettings):
+    # PostgreSQL
+    DATABASE_URL: str
+    DATABASE_SSL: bool = True
+
+    # Django
+    SECRET_KEY: str
+    DEBUG: bool = False
+    DEBUG_TEMPLATES: bool = False
+    USE_SSL: bool = False
+    ALLOWED_HOSTS: list
+
+    class Config:
+        env_file = str(BASE_DIR / ".env")
+        case_sensitive = True
+
+config = SettingsFromEnvironment()
+
+os.environ["DATABASE_URL"] = config.DATABASE_URL
+DATABASES = {
+    "default": dj_database_url.config(conn_max_age=600, ssl_require=config.DATABASE_SSL)
+}
+
+SECRET_KEY = config.SECRET_KEY
+DEBUG =  config.DEBUG
+DEBUG_TEMPLATES = config.DEBUG_TEMPLATES
+USE_SSL = config.USE_SSL
+ALLOWED_HOSTS = config.ALLOWED_HOSTS
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-yww4e(m3a65w+i(#wn%y49=t#&p9$nn7ncu0m8x!@8fl*c6!op'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']
 
 #EXTRA QUE SE PUEDE ELIMINAR SOLO PRUEBA
 CSRF_TRUSTED_ORIGINS = [
@@ -47,6 +75,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -75,18 +104,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'issueTracker.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/3.2/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
@@ -109,9 +126,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-es'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Madrid'
 
 USE_I18N = True
 
@@ -123,8 +140,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT.mkdir(exist_ok=True)
+
+STATIC_URL = '/static/'
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
