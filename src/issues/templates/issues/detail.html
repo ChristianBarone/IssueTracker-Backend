@@ -1,95 +1,223 @@
 <style>
-    body { font-family: sans-serif; max-width: 900px; margin: 24px auto; padding: 0 12px; }
-    .container { display: flex; gap: 30px; align-items: flex-start; }
-    .main { flex: 2; }
-    .sidebar { flex: 1; }
-    .meta { color: #666; margin-bottom: 16px; font-size: 0.9em; }
-    .badge { display: inline-block; padding: 4px 8px; border-radius: 3px; background: #8e44ad; color: #fff; font-size: 0.85em; }
-    .card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 18px; margin-bottom: 20px; }
-    .side-card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 18px; background: #fdfdfd; }
-    .side-title { font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; color: #333; }
-    .item { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9em; }
-    .item span { color: #666; }
+    /* VARIABLES DE DISEÑO MODERNO */
+    :root {
+        --taiga-green: #5dc5b5;
+        --taiga-green-dark: #4eb0a1;
+        --bg-body: #f4f7f9;
+        --card-bg: #ffffff;
+        --text-main: #34495e;
+        --text-muted: #95a5a6;
+        --danger: #ff7675;
+        --shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
 
-    /* Estilos para Comentarios */
-    .comments-container { margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; }
-    .comment-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 15px; border-left: 4px solid #5dc5b5; }
-    .comment-header { display: flex; justify-content: space-between; font-size: 0.85em; color: #64748b; margin-bottom: 8px; }
-    .comment-author { font-weight: bold; color: #334155; }
-    .comment-body { color: #334155; line-height: 1.5; white-space: pre-wrap; }
-    .comment-actions { margin-top: 10px; display: flex; gap: 12px; font-size: 0.8em; }
-    .btn-delete { color: #ef4444; background: none; border: none; cursor: pointer; padding: 0; font-size: inherit; font-weight: bold; }
-    .comment-form textarea { width: 100%; min-height: 80px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 10px; font-family: inherit; box-sizing: border-box; }
-    .btn-post { background: #5dc5b5; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    body {
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-body);
+        margin: 0; padding: 40px 20px;
+        color: var(--text-main);
+    }
+
+    .taiga-detail-wrapper {
+        display: flex; gap: 40px;
+        max-width: 1200px; margin: 0 auto;
+        align-items: flex-start;
+    }
+
+    .taiga-main-content { flex: 3; display: flex; flex-direction: column; gap: 30px; }
+
+    .taiga-sidebar {
+        flex: 1; background: var(--card-bg);
+        padding: 30px; border-radius: 20px;
+        box-shadow: var(--shadow);
+        position: sticky; top: 40px;
+    }
+
+    .issue-header { margin-bottom: 10px; }
+    .back-link {
+        font-size: 0.9em; color: var(--taiga-green);
+        text-decoration: none; font-weight: 700;
+        display: inline-block; margin-bottom: 15px;
+        transition: transform 0.2s;
+    }
+    .back-link:hover { transform: translateX(-5px); }
+
+    .issue-id { font-size: 1.5em; color: var(--text-muted); font-weight: 300; }
+    .issue-subject { font-size: 2.2em; font-weight: 800; color: #2c3e50; margin: 5px 0; }
+    .issue-dates { font-size: 0.85em; color: var(--text-muted); }
+
+    .taiga-panel {
+        background: var(--card-bg);
+        border-radius: 20px; padding: 35px;
+        box-shadow: var(--shadow);
+    }
+
+    .taiga-panel h2, .taiga-panel h3 {
+        font-size: 1.2em; color: #2c3e50;
+        margin-top: 0; margin-bottom: 20px;
+        font-weight: 700;
+    }
+
+    .taiga-status-badge {
+        background: linear-gradient(135deg, #79a6d8, #5a8bc0);
+        color: white; padding: 6px 14px;
+        border-radius: 50px; font-weight: 700;
+        font-size: 0.75em; text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .description-text { line-height: 1.8; color: #50667f; font-size: 1.05em; }
+
+    .sidebar-block h4 {
+        font-size: 0.85em; color: var(--text-muted);
+        margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1.5px;
+    }
+    .sidebar-item {
+        display: flex; justify-content: space-between;
+        padding: 12px 0; border-bottom: 1px solid #f1f4f6;
+    }
+    .sidebar-label { color: var(--text-muted); font-size: 0.9em; }
+    .sidebar-value { font-weight: 700; color: #2c3e50; }
+
+    .comment-item {
+        background: #f8fbff; border-radius: 15px;
+        padding: 20px; margin-bottom: 20px;
+        border-left: 5px solid var(--taiga-green);
+        transition: all 0.3s;
+    }
+    .comment-item:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+    .comment-meta { font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px; }
+    .comment-author { font-weight: 800; color: var(--taiga-green); }
+
+    .taiga-textarea {
+        width: 100%; min-height: 120px; padding: 20px;
+        border: 2px solid #eef2f5; border-radius: 15px;
+        background: #fcfdfe; font-family: inherit; font-size: 1em;
+        transition: all 0.2s; box-sizing: border-box;
+    }
+    .taiga-textarea:focus { border-color: var(--taiga-green); outline: none; background: #fff; }
+
+    .btn-taiga-primary {
+        background: var(--taiga-green); color: white;
+        border: none; padding: 14px 28px; border-radius: 12px;
+        font-weight: 700; cursor: pointer; transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(93, 197, 181, 0.3);
+    }
+    .btn-taiga-primary:hover { background: var(--taiga-green-dark); transform: translateY(-2px); }
+
+    /* BOTÓN BORRAR SIN ONCLICK */
+    .btn-issue-delete-trigger {
+        background: #fff; color: var(--danger);
+        border: 2px solid var(--danger); padding: 12px;
+        border-radius: 12px; font-weight: 700; width: 100%;
+        cursor: pointer; transition: all 0.2s; margin-top: 25px;
+    }
+    .btn-issue-delete-trigger:hover { background: var(--danger); color: white; }
+
+    .btn-action-delete { color: var(--danger); background: none; border: none; font-weight: 700; cursor: pointer; padding: 0; font-family: inherit; }
 </style>
 
-<div class="container">
-    <div class="main">
-        <a href="{% url 'issue_list' %}" style="text-decoration: none; color: #3498db;">&larr; Back to issues</a>
+<div class="taiga-detail-wrapper">
 
-        <h1>#{{ issue.id }} {{ issue.subject }}</h1>
-        <div class="meta">
-            Created {{ issue.created_at|date:"d M Y H:i" }} |
-            Last modified {{ issue.modified_at|date:"d M Y H:i" }}
+    <div class="taiga-main-content">
+        <div class="issue-header">
+            <a href="{% url 'issue_list' %}" class="back-link">← Retornar al Llistat</a>
+            <div class="issue-title-wrapper">
+                <span class="issue-id">#{{ issue.id }}</span>
+                <h1 class="issue-subject">{{ issue.subject }}</h1>
+            </div>
+            <div class="issue-dates">
+                Registrada el {{ issue.created_at|date:"d M Y" }} | Actualizada {{ issue.modified_at|date:"H:i" }}
+            </div>
         </div>
 
-        <div class="card">
-            <span class="badge">{{ issue.status }}</span>
-            <h3>Description</h3>
-            <p>{{ issue.description|linebreaksbr|default:"No description" }}</p>
+        <div class="taiga-panel">
+            <div style="margin-bottom: 25px;">
+                <span class="taiga-status-badge">{{ issue.status }}</span>
+            </div>
+            <h3>Descripció</h3>
+            <p class="description-text">{{ issue.description|linebreaksbr|default:"Sin descripción." }}</p>
         </div>
 
-        <div class="comments-container">
-            <h2 style="font-size: 1.2em; color: #333; margin-bottom: 20px;">Activity & Comments</h2>
+        <div class="taiga-panel">
+            <h2>Comentaris</h2>
 
-            <div class="comment-form">
+            <div class="comment-form-panel">
                 <form method="POST" action="{% url 'comment_add' issue.id %}">
                     {% csrf_token %}
-                    <textarea name="body" placeholder="Write a comment..." required></textarea>
-                    <div style="text-align: right;">
-                        <button type="submit" class="btn-post">POST COMMENT</button>
+                    <textarea name="body" class="taiga-textarea" placeholder="Escribe algo..." required></textarea>
+                    <div style="text-align: right; margin-top: 15px;">
+                        <button type="submit" class="btn-taiga-primary">PUBLICAR</button>
                     </div>
                 </form>
             </div>
 
-            <div class="comments-list" style="margin-top: 25px;">
+            <div class="comments-list" style="margin-top: 40px;">
                 {% for comment in issue.comments.all|dictsortreversed:"created_at" %}
-                <div class="comment-card" id="comment-{{ comment.id }}">
-                    <div class="comment-header">
-                        <div>
-                            <span class="comment-author">{{ comment.author.username }}</span>
-                            <span style="margin-left: 5px;">commented on {{ comment.created_at|date:"d M Y H:i" }}</span>
-                        </div>
+                <div class="comment-item" id="comment-{{ comment.id }}">
+                    <div class="comment-meta">
+                        <span class="comment-author">@{{ comment.author.username }}</span>
+                        hace {{ comment.created_at|timesince }}
                     </div>
 
-                    <div class="comment-body">{{ comment.body }}</div>
+                    {% if edit_comment_obj and edit_comment_obj.id == comment.id %}
+                    <form method="POST" action="{% url 'comment_edit' comment.id %}">
+                        {% csrf_token %}
+                        <textarea name="body" class="taiga-textarea" style="min-height: 80px;" required>{{ comment.body }}</textarea>
+                        <div style="text-align: right; margin-top: 10px;">
+                            <a href="{% url 'issue_detail' issue.id %}" style="text-decoration: none; color: #95a5a6; font-size: 0.9em; margin-right: 15px;">Cancelar</a>
+                            <button type="submit" class="btn-taiga-primary" style="padding: 8px 20px; font-size: 0.9em;">GUARDAR</button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <p class="comment-text">{{ comment.body|linebreaksbr }}</p>
 
-                    {% if request.user == comment.author or not request.user.is_authenticated %}
-                    <div class="comment-actions">
-                        <a href="{% url 'comment_edit' comment.id %}" style="color: #5dc5b5; text-decoration: none; font-weight: bold;">Edit</a>
+                    {% if comment.author == request.user or not request.user.is_authenticated %}
+                    <div style="margin-top: 15px; border-top: 1px solid #edf2f5; padding-top: 10px;">
+                        <a href="?edit_comment={{ comment.id }}#comment-{{ comment.id }}" style="color: var(--taiga-green); text-decoration: none; font-weight: 700; margin-right:15px;">Editar</a>
                         <form method="POST" action="{% url 'comment_delete' comment.id %}" style="display:inline;">
                             {% csrf_token %}
-                            <button type="submit" class="btn-delete" onclick="return confirm('Are you sure you want to delete this comment?')">Delete</button>
+                            <button type="submit" class="btn-action-delete">Eliminar</button>
                         </form>
                     </div>
                     {% endif %}
+                    {% endif %}
                 </div>
                 {% empty %}
-                <p style="color: #94a3b8; font-size: 0.9em; text-align: center; margin-top: 20px;">No activity yet.</p>
+                <p style="text-align: center; color: #bdc3c7; padding: 20px;">No hi ha comentaris.</p>
                 {% endfor %}
             </div>
         </div>
     </div>
 
-    <div class="sidebar">
-        <div class="side-card">
-            <div class="side-title">Details</div>
-            <div class="item"><span>Type</span><strong>{{ issue.issue_type }}</strong></div>
-            <div class="item"><span>Priority</span><strong>{{ issue.priority }}</strong></div>
-            <div class="item"><span>Creator</span><strong>{{ issue.creator.username }}</strong></div>
-            <div class="item"><span>Assignee</span><strong>
-                {% if issue.assignee %}{{ issue.assignee.username }}{% else %}Unassigned{% endif %}
-            </strong></div>
+    <div class="taiga-sidebar">
+        <div class="sidebar-block">
+            <h4>DETAILS</h4>
+            <div class="sidebar-item">
+                <span class="sidebar-label">Type</span>
+                <span class="sidebar-value" style="color: var(--taiga-green);">{{ issue.issue_type }}</span>
+            </div>
+            <div class="sidebar-item">
+                <span class="sidebar-label">Priority</span>
+                <span class="sidebar-value">{{ issue.priority }}</span>
+            </div>
+            <div class="sidebar-item">
+                <span class="sidebar-label">Creator</span>
+                <span class="sidebar-value">@{{ issue.creator.username }}</span>
+            </div>
+            <div class="sidebar-item">
+                <span class="sidebar-label">Assigned</span>
+                <span class="sidebar-value">{% if issue.assignee %}@{{ issue.assignee.username }}{% else %}Nadie{% endif %}</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 40px;">
+            <form method="POST" action="{% url 'issue_delete' issue.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-issue-delete-trigger">
+                    ELIMINAR ISSUE
+                </button>
+            </form>
         </div>
     </div>
 </div>

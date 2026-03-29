@@ -184,17 +184,13 @@ def comment_edit(request, comment_id):
     #Simulamos que el admin puede hacer todo
     current_user = User.objects.first()
     # Només el creador edita request.user
-    if comment.author != current_user:
-        return redirect('issue_detail', issue_id=comment.issue.id)
-
-    if request.method == "POST":
+    if request.method == 'POST' and comment.author == current_user:
         text = request.POST.get('body', '').strip()
         if text:
             comment.body = text
             comment.save()
-        return redirect('issue_detail', issue_id=comment.issue.id)
 
-    return render(request, 'issues/comment_edit.html', {'comment': comment})
+    return redirect('issue_detail', issue_id=comment.issue.id)
 
 def comment_delete(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
