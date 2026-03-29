@@ -16,6 +16,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from issues.views import issue_list, issue_create, issue_detail, issue_delete, issue_update_status
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -24,4 +26,4 @@ urlpatterns = [
     path('issue/<int:issue_id>/', issue_detail, name='issue_detail'),
     path('issue/<int:issue_id>/delete/', issue_delete, name='issue_delete'),
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
