@@ -1,0 +1,22 @@
+databases:
+  - name: issueTrackerDB
+    plan: free
+    databaseName: issueTracker
+    user: admin
+
+services:
+  - type: web
+    plan: free
+    name: issueTracker
+    runtime: python
+    buildCommand: './build.sh'
+    startCommand: 'cd src && python -m gunicorn issueTracker.asgi:application -k uvicorn.workers.UvicornWorker'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: issueTrackerDB
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4
