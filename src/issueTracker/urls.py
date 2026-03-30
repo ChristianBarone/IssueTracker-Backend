@@ -30,5 +30,5 @@ urlpatterns = [
     path('issue/<int:issue_id>/comment/', comment_add, name='comment_add'),
     path('comment/<int:comment_id>/edit/', comment_edit, name='comment_edit'),
     path('comment/<int:comment_id>/delete/', comment_delete, name='comment_delete'),
-    
+
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
