@@ -111,7 +111,6 @@ def issue_create(request):
     if request.method == "POST":
         subject = request.POST.get('subject')
         description = request.POST.get('description')
-        d_line = request.POST.get('deadline')
         issue_type=request.POST.get('issue_type')
         issue_severity=request.POST.get('issue_severity')
         priority=request.POST.get('priority')
@@ -121,21 +120,49 @@ def issue_create(request):
         assignee=default_user
         
         # Creem l'issue i l'assignem a nosaltres mateixos (Requisit)
-        Issue.objects.create(
-            subject=subject,
-            description=description,
-            issue_type= issue_type,
-            issue_severity=issue_severity,
-            priority=priority,
-            status=status,
-            deadline=d_line if d_line else None,
-            creator=default_user,
-            assignee=default_user
-        )
+        issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
+                              assignee)
         return redirect('issue_list')
     
     return render(request, 'issues/create.html')
 
+def issue_bulk_create(request):
+    # S'ha de canviar en tenir la funcionalitat dels usuaris
+    user = User.objects.first()
+
+    if request.method == "POST":
+        # Valors per defecte en fer bulk add
+        subjects = request.POST.get('list').splitlines()
+        description = ''
+        issue_type = 'Bug'
+        issue_severity = 'Normal'
+        priority = 'Normal'
+        status = 'New'
+        d_line = None
+        creator = user
+        assignee = user
+
+        for subject in subjects:
+            issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
+                              assignee)
+
+        return redirect('issue_list')
+
+    return render(request, 'issues/bulk_create.html')
+
+def issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
+                          assignee):
+    Issue.objects.create(
+        subject=subject,
+        description=description,
+        issue_type=issue_type,
+        issue_severity=issue_severity,
+        priority=priority,
+        status=status,
+        deadline=d_line if d_line else None,
+        creator=creator,
+        assignee=assignee
+    )
 
 def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
@@ -215,3 +242,4 @@ def user_comments_view(request, username):
         'profile_user': profile_user,
         'user_comments': user_comments,
     })
+
