@@ -47,10 +47,11 @@ DATABASES = {
 }
 
 SECRET_KEY = config.SECRET_KEY
-DEBUG =  config.DEBUG
+DEBUG = True
 DEBUG_TEMPLATES = config.DEBUG_TEMPLATES
 USE_SSL = config.USE_SSL
-ALLOWED_HOSTS = config.ALLOWED_HOSTS
+ALLOWED_HOSTS = ['*']
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
