@@ -9,3 +9,5 @@ staticfiles
 .bundle
 .env
 venv
+
+.ENV

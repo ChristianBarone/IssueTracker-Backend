@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from issues.views import issue_list, issue_create, issue_detail, issue_delete, issue_update_status, comment_add, comment_edit, comment_delete
 
 urlpatterns = [
@@ -28,4 +30,5 @@ urlpatterns = [
     path('issue/<int:issue_id>/comment/', comment_add, name='comment_add'),
     path('comment/<int:comment_id>/edit/', comment_edit, name='comment_edit'),
     path('comment/<int:comment_id>/delete/', comment_delete, name='comment_delete'),
-]
+    
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
