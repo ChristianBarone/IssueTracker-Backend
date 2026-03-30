@@ -1,7 +1,7 @@
 databases:
   - name: issueTrackerDB
     plan: free
-    databaseName: issueTracker
+    databaseName: database_insy
     user: admin
 
 services:
