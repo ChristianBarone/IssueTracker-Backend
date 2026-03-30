@@ -139,7 +139,12 @@ def issue_create(request):
 
 def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
-    return render(request, 'issues/detail.html', {'issue': issue})
+    edit_comment_id = request.GET.get('edit_comment')
+    edit_comment_obj = None
+    if edit_comment_id:
+        edit_comment_obj = get_object_or_404(Comment, id=edit_comment_id, issue=issue)
+
+    return render(request, 'issues/detail.html', {'issue': issue,'edit_comment_obj': edit_comment_obj})
 
 def issue_delete(request, issue_id):
     if request.method == 'POST':
@@ -162,27 +167,51 @@ def comment_add(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
     if request.method == "POST":
         text = request.POST.get('body', '').strip()
-        if text: # No buit
-            Comment.objects.create(issue=issue, author=request.user, body=text)
-    return redirect('issue_detail', pk=issue_id)
+        if text:
+            # Si el usuario no está logueado, usamos el primero de la base de datos
+            author = request.user
+            if not author.is_authenticated:
+                author = User.objects.first()
+
+            Comment.objects.create(issue=issue, author=author, body=text)
+
+    # Importante: Usa issue_id=issue_id para coincidir con tu nombre en urls.py
+    return redirect('issue_detail', issue_id=issue_id)
 
 def comment_edit(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    # Només el creador edita
-    if comment.author != request.user:
-        return redirect('issue_detail', pk=comment.issue.id)
 
-    if request.method == "POST":
-        comment.body = request.POST.get('body')
-        comment.save()
-        return redirect('issue_detail', pk=comment.issue.id)
+    #Simulamos que el admin puede hacer todo
+    current_user = User.objects.first()
+    # Només el creador edita request.user
+    if request.method == 'POST' and comment.author == current_user:
+        text = request.POST.get('body', '').strip()
+        if text:
+            comment.body = text
+            comment.save()
 
-    return render(request, 'issues/comment_edit.html', {'comment': comment})
+    return redirect('issue_detail', issue_id=comment.issue.id)
 
 def comment_delete(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     issue_id = comment.issue.id
-    # Només el creador esborra
-    if comment.author == request.user:
+
+    # Simulamos el admin
+    current_user = User.objects.first()
+
+    # Només el creador esborra request.user
+    if comment.author == current_user:
         comment.delete()
-    return redirect('issue_detail', pk=issue_id)
+    return redirect('issue_detail', issue_id=issue_id)
+
+def user_comments_view(request, username):
+    # Obtenemos al usuario del perfil que estamos visitando
+    profile_user = get_object_or_404(User, username=username)
+
+    # Ordenados de más recientes a menos
+    user_comments = Comment.objects.filter(author=profile_user).order_by('-created_at')
+
+    return render(request, 'users/profile_comments_tab.html', {
+        'profile_user': profile_user,
+        'user_comments': user_comments,
+    })
