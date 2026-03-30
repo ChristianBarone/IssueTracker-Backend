@@ -12,49 +12,21 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 import os
 from pathlib import Path
-from pydantic import (
-    PostgresDsn,
-    EmailStr,
-    HttpUrl
-)
-from pydantic_settings import BaseSettings
 import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-class SettingsFromEnvironment(BaseSettings):
-    # PostgreSQL
-    DATABASE_URL: str
-    DATABASE_SSL: bool = True
-
-    # Django
-    SECRET_KEY: str
-    DEBUG: bool = False
-    DEBUG_TEMPLATES: bool = False
-    USE_SSL: bool = False
-    ALLOWED_HOSTS: list
-
-    class Config:
-        env_file = str(BASE_DIR / ".env")
-        case_sensitive = True
-
-config = SettingsFromEnvironment()
-
-os.environ["DATABASE_URL"] = config.DATABASE_URL
-DATABASES = {
-    "default": dj_database_url.config(conn_max_age=600, ssl_require=config.DATABASE_SSL)
-}
-
-SECRET_KEY = config.SECRET_KEY
+SECRET_KEY = 'django-insecure-yww4e(m3a65w+i(#wn%y49=t#&p9$nn7ncu0m8x!@8fl*c6!op'
 DEBUG = True
-DEBUG_TEMPLATES = config.DEBUG_TEMPLATES
-USE_SSL = config.USE_SSL
 ALLOWED_HOSTS = ['*']
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
+DATABASES = {
+    "default": dj_database_url.config(
+        default='postgresql://postgres:postgres@localhost:5432/issueTrackerDB',
+        conn_max_age=600
+    )
+}
 
 #EXTRA QUE SE PUEDE ELIMINAR SOLO PRUEBA
 CSRF_TRUSTED_ORIGINS = [
