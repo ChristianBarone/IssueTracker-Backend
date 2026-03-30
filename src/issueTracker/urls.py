@@ -17,12 +17,13 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from issues.views import issue_list, issue_create, issue_detail, issue_delete, issue_update_status, comment_add, comment_edit, comment_delete
+from issues.views import issue_list, issue_create, issue_bulk_create, issue_detail, issue_delete, issue_update_status, comment_add, comment_edit, comment_delete
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', issue_list, name='issue_list'),      # La página principal será la lista
     path('new/', issue_create, name='issue_create'),
+    path('new_bulk/', issue_bulk_create, name='issue_bulk_create'),
     path('issue/<int:issue_id>/', issue_detail, name='issue_detail'),
     path('issue/<int:issue_id>/delete/', issue_delete, name='issue_delete'),
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
