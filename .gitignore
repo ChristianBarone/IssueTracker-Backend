@@ -11,3 +11,5 @@ staticfiles
 venv
 
 .ENV
+docker-services/env
+src/env

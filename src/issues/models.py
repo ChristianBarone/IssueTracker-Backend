@@ -1,7 +1,17 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+class Profile(models.Model):
+    objects = models.Manager()
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bio = models.TextField(blank=True)
+    avatar = models.ImageField(upload_to='avatars/', blank=True)
+
+    def __str__(self):
+        return str(self.user)
+
 class Issue(models.Model):
+    objects = models.Manager()
     # Valors predefinits per a la Sessió 2 (Hardcoded com diuen les instruccions)
     STATUS_CHOICES = [('New', 'New'), ('In Progress', 'In Progress'), ('Ready for test', 'Ready for test'), ('Closed', 'Closed'), ('Needs Info', 'Needs Info'), ('Rejected', 'Rejected'), ('Postponed', 'Postponed')]
     PRIORITY_CHOICES = [('Low', 'Low'), ('Normal', 'Normal'), ('High', 'High')]
@@ -26,9 +36,10 @@ class Issue(models.Model):
     modified_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"#{self.id} {self.subject}"
+        return f"#{self.pk} {self.subject}"
 
 class Comment(models.Model):
+    objects = models.Manager()
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name='comments')
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     body = models.TextField()
@@ -36,4 +47,4 @@ class Comment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def is_edited(self):
-         return self.updated_at > self.created_at
+        return self.updated_at > self.created_at
