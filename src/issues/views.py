@@ -1,8 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Issue, Comment
+from django.contrib.auth.decorators import login_required
+from .models import Issue, Comment, Profile
 from django.contrib.auth.models import User
 from django.db.models import Q, Count
 
+
+def login_page(_request):
+    _ = _request
+    return redirect('/accounts/github/login/?next=/issues/')
+
+@login_required(login_url='/')
 def issue_list(request):
     # Ordenades de més noves a més velles (Requisit)
     order_param = request.GET.get('order_by', '-created_at')
@@ -103,44 +110,73 @@ def issue_list(request):
         },
     }
     return render(request, 'issues/list.html', context)
-
+@login_required
 def issue_create(request):
-    # Simulem usuari loguejat (Hardcoded per a Sessió 2)
-    default_user = User.objects.first() 
-
     if request.method == "POST":
         subject = request.POST.get('subject')
         description = request.POST.get('description')
-        d_line = request.POST.get('deadline')
         issue_type=request.POST.get('issue_type')
         issue_severity=request.POST.get('issue_severity')
         priority=request.POST.get('priority')
         status = request.POST.get('status') or 'New'
         d_line = request.POST.get('deadline')
-        creator=default_user
-        assignee=default_user
+        creator=request.user  #if request.user.is_authenticated else default_user
+        assignee=request.user  #if request.user.is_authenticated else default_user
         
         # Creem l'issue i l'assignem a nosaltres mateixos (Requisit)
-        Issue.objects.create(
-            subject=subject,
-            description=description,
-            issue_type= issue_type,
-            issue_severity=issue_severity,
-            priority=priority,
-            status=status,
-            deadline=d_line if d_line else None,
-            creator=default_user,
-            assignee=default_user
-        )
+        issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
+                              assignee)
         return redirect('issue_list')
-    
+
     return render(request, 'issues/create.html')
 
+@login_required
+def issue_bulk_create(request):
+    # S'ha de canviar en tenir la funcionalitat dels usuaris
+    user = request.user
+
+    if request.method == "POST":
+        # Valors per defecte en fer bulk add
+        subjects = request.POST.get('list').splitlines()
+        description = ''
+        issue_type = 'Bug'
+        issue_severity = 'Normal'
+        priority = 'Normal'
+        status = 'New'
+        d_line = None
+        creator = user
+        assignee = user
+
+        for subject in subjects:
+            issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
+                              assignee)
+
+        return redirect('issue_list')
+
+    return render(request, 'issues/bulk_create.html')
+
+def issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
+                          assignee):
+    Issue.objects.create(
+        subject=subject,
+        description=description,
+        issue_type=issue_type,
+        issue_severity=issue_severity,
+        priority=priority,
+        status=status,
+        deadline=d_line if d_line else None,
+        creator=creator,
+        assignee=assignee
+    )
 
 def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
-    attachments = issue.attachments.all()
-    return render(request, 'issues/detail.html', {'issue': issue, 'attach_num': attachments.count(), 'attachments': attachments})
+    edit_comment_id = request.GET.get('edit_comment')
+    edit_comment_obj = None
+    if edit_comment_id:
+        edit_comment_obj = get_object_or_404(Comment, id=edit_comment_id, issue=issue)
+
+    return render(request, 'issues/detail.html', {'issue': issue,'edit_comment_obj': edit_comment_obj})
 
 def issue_delete(request, issue_id):
     if request.method == 'POST':
@@ -159,31 +195,75 @@ def issue_update_status(request, issue_id):
             issue.save()
     return redirect('issue_list')
 
+@login_required
 def comment_add(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
     if request.method == "POST":
         text = request.POST.get('body', '').strip()
-        if text: # No buit
-            Comment.objects.create(issue=issue, author=request.user, body=text)
-    return redirect('issue_detail', pk=issue_id)
+        if text:
+            # Si el usuario no está logueado, usamos el primero de la base de datos
+            if not request.user.is_authenticated:
+                return redirect('account_login')  # allauth
+            author = request.user
+            Comment.objects.create(issue=issue, author=author, body=text)
 
+    # Importante: Usa issue_id=issue_id para coincidir con tu nombre en urls.py
+    return redirect('issue_detail', issue_id=issue_id)
+
+@login_required
 def comment_edit(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    # Només el creador edita
-    if comment.author != request.user:
-        return redirect('issue_detail', pk=comment.issue.id)
+    issue_id = getattr(comment, 'issue_id')
 
-    if request.method == "POST":
-        comment.body = request.POST.get('body')
-        comment.save()
-        return redirect('issue_detail', pk=comment.issue.id)
+    #Simulamos que el admin puede hacer todo
+    current_user = request.user
+    # Només el creador edita request.user
+    if request.method == 'POST' and comment.author == current_user:
+        text = request.POST.get('body', '').strip()
+        if text:
+            comment.body = text
+            comment.save()
 
-    return render(request, 'issues/comment_edit.html', {'comment': comment})
+    return redirect('issue_detail', issue_id=issue_id)
 
+@login_required
 def comment_delete(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    issue_id = comment.issue.id
-    # Només el creador esborra
-    if comment.author == request.user:
+    issue_id = getattr(comment, 'issue_id')
+
+    # Simulamos el admin
+    current_user = request.user
+
+    # Només el creador esborra request.user
+    if comment.author == current_user:
         comment.delete()
-    return redirect('issue_detail', pk=issue_id)
+    return redirect('issue_detail', issue_id=issue_id)
+
+def user_comments_view(request, username):
+    # Obtenemos al usuario del perfil que estamos visitando
+    profile_user = get_object_or_404(User, username=username)
+    profile_obj, _ = Profile.objects.get_or_create(user=profile_user)
+
+    tab = request.GET.get('tab', 'assigned')
+
+    created_issues = Issue.objects.filter(creator=profile_user).count()
+    assigned_issues = Issue.objects.filter(assignee=profile_user).count()
+    comments_count = Comment.objects.filter(author=profile_user).count()
+
+    if tab == 'assigned':
+        items = Issue.objects.filter(assignee=profile_user, status='New').order_by('-modified_at')
+    elif tab == 'watched':
+        items = Issue.objects.none()
+    else:
+        items = Comment.objects.filter(author=profile_user).order_by('-created_at')
+
+    return render(request, 'users/profile_comments_tab.html', {
+        'profile_user': profile_user,
+        'profile_obj': profile_obj,
+        'tab': tab,
+        'items': items,
+        'created_issues': created_issues,
+        'assigned_issues': assigned_issues,
+        'comments_count': comments_count,
+    })
+

@@ -14,14 +14,28 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from issues.views import issue_list, issue_create, issue_detail, issue_delete, issue_update_status
+from django.urls import include, path
+from django.conf import settings
+from django.conf.urls.static import static
+from issues.views import login_page, issue_list, issue_create, issue_bulk_create, issue_detail, issue_delete, issue_update_status, comment_add, comment_edit, comment_delete, user_comments_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', issue_list, name='issue_list'),      # La página principal será la lista
+    path('', login_page, name='login_page'),
+    path('issues/', issue_list, name='issue_list'),
     path('new/', issue_create, name='issue_create'),
+    path('new_bulk/', issue_bulk_create, name='issue_bulk_create'),
     path('issue/<int:issue_id>/', issue_detail, name='issue_detail'),
     path('issue/<int:issue_id>/delete/', issue_delete, name='issue_delete'),
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
-]
+
+    path('issue/<int:issue_id>/comment/', comment_add, name='comment_add'),
+    path('comment/<int:comment_id>/edit/', comment_edit, name='comment_edit'),
+    path('comment/<int:comment_id>/delete/', comment_delete, name='comment_delete'),
+    path('users/<str:username>/', user_comments_view, name='user_profile'),
+    path('accounts/', include('allauth.urls')),
+
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -2,10 +2,6 @@
 # Sortir si hi ha errors
 set -o errexit
 
-# Preparar entor virtual
-virtualenv .env
-source .env/bin/activate
-
 # Instal·lar dependències de Python
 pip install -r requirements.txt
 
@@ -14,4 +10,4 @@ cd src
 
 # Recollir fitxers estàtics i aplicar migracions a la base de dades
 python manage.py collectstatic --no-input
-python manage.py migrate
+python manage.py migrate --fake-initial # No tira errors si les taules ja existeixen

@@ -1,0 +1,12 @@
+{% for comment in user_comments %}
+<div class="activity-item">
+    <a href="{% url 'issue_detail' comment.issue.id %}#comment-{{ comment.id }}">
+        #{{ comment.issue.id }} {{ comment.issue.subject }}
+    </a>
+    <p>"{{ comment.body|truncatechars:100 }}"</p>
+
+    {% if request.user == comment.author %}
+    <a href="{% url 'edit_comment' comment.id %}">Edit</a>
+    {% endif %}
+</div>
+{% endfor %}

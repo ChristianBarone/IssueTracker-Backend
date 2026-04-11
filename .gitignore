@@ -9,3 +9,7 @@ staticfiles
 .bundle
 .env
 venv
+
+.ENV
+docker-services/env
+src/env
