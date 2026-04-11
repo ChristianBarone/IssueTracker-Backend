@@ -172,7 +172,7 @@
                     {% else %}
                     <p class="comment-text">{{ comment.body|linebreaksbr }}</p>
 
-                    {% if comment.author == request.user or not request.user.is_authenticated %}
+                    {% if request.user.is_authenticated and comment.author == request.user %}
                     <div style="margin-top: 15px; border-top: 1px solid #edf2f5; padding-top: 10px;">
                         <a href="?edit_comment={{ comment.id }}#comment-{{ comment.id }}" style="color: var(--taiga-green); text-decoration: none; font-weight: 700; margin-right:15px;">Editar</a>
                         <form method="POST" action="{% url 'comment_delete' comment.id %}" style="display:inline;">
