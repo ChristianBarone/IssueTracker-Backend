@@ -11,5 +11,3 @@ cd src
 # Recollir fitxers estàtics i aplicar migracions a la base de dades
 python manage.py collectstatic --no-input
 python manage.py migrate
-
-python manage.py createsuperuser --noinput
