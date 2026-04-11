@@ -18,7 +18,8 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load local environment variables from src/env when running in local development.
+# Load local environment variables from src/.env (preferred) and src/env (legacy).
+load_dotenv(BASE_DIR / '.env')
 load_dotenv(BASE_DIR / 'env')
 
 SECRET_KEY = os.environ.get('SECRET_KEY', default='dummy_key')
