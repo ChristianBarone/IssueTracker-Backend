@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from issues import views
 from issues.views import issue_list, issue_create, issue_detail, issue_delete, issue_update_status
 
 urlpatterns = [
@@ -24,4 +25,6 @@ urlpatterns = [
     path('issue/<int:issue_id>/', issue_detail, name='issue_detail'),
     path('issue/<int:issue_id>/delete/', issue_delete, name='issue_delete'),
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
+    path('issue/<int:issue_id>/add_watcher/', views.add_watcher, name='add_watcher'),
+    path('issue/<int:issue_id>/toggle_watcher/', views.toggle_watcher, name='toggle_watcher'),
 ]

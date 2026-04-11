@@ -14,7 +14,8 @@ class Issue(models.Model):
     # Relacions
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_issues')
     assignee = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_issues')
-    
+    watchers = models.ManyToManyField(User, related_name='watched_issues', blank=True)
+
     # Atributs amb valors per defecte
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='New')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='Normal')

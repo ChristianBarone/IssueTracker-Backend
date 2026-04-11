@@ -138,10 +138,36 @@ def issue_create(request):
     
     return render(request, 'issues/create.html')
 
+# sobreescribir metodo save para notificar a watchers cada vez que se guardan cambios
+def save(self, *args, **kwargs):
+    is_update = self.pk is not None
+    super().save(*args, **kwargs)
+    if is_update:
+        try:
+            self.notify_watchers("ha sido actualizado")
+        except Exception as e:
+            print(f"Error al notificar: {e}")
+
+def notify_watchers(self, action_description):
+    watchers = self.watchers.all()
+
+    for watcher in watchers:
+        # Aquí simulamos la notificación por consola
+        print(f"--- NOTIFICACIÓN ---")
+        print(f"Para: {watcher.email}")
+        print(f"Asunto: El issue #{self.id} {action_description}")
+        print(f"Modificado por: [Usuario Actual]")
+        print(f"--------------------")
+
 
 def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
-    return render(request, 'issues/detail.html', {'issue': issue})
+    available_users = User.objects.exclude(id__in=issue.watchers.all())
+    context = {
+        'issue': issue,
+        'available_users': available_users,
+    }
+    return render(request, 'issues/detail.html', context)
 
 def issue_delete(request, issue_id):
     if request.method == 'POST':
@@ -168,6 +194,33 @@ def issue_update_status(request, issue_id):
 
         issue.save()
     return redirect('issue_list')
+
+def add_watcher(request, issue_id):
+    if request.method == "POST":
+        issue = get_object_or_404(Issue, id=issue_id)
+        user_id = request.POST.get('user_id')
+        if user_id:
+            user_to_add = get_object_or_404(User, id=user_id)
+            issue.watchers.add(user_to_add)
+    return redirect('issue_detail', issue_id=issue_id)
+
+
+def toggle_watcher(request, issue_id):
+    if request.method == "POST":
+        issue = get_object_or_404(Issue, id=issue_id)
+        target_user_id = request.POST.get('user_id')
+
+        if target_user_id:
+            user = get_object_or_404(User, id=target_user_id)
+        else:
+            user = request.user
+
+        if user in issue.watchers.all():
+            issue.watchers.remove(user)
+        else:
+            issue.watchers.add(user)
+
+    return redirect(request.META.get('HTTP_REFERER', 'issue_list'))
 
 def comment_add(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
