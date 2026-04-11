@@ -130,14 +130,24 @@ def issue_create(request):
         
         # Creem l'issue i l'assignem a nosaltres mateixos (Requisit)
         issue = issue_create_instance(subject, description, issue_type, issue_severity, priority, status, deadline_value, creator,
-                              assignee)
+                                      assignee)
 
         if request.FILES.get('files') is not None:
             attachment_create_instance(issue.id, creator, request.FILES.get('files'))
 
         return redirect('issue_list')
-    
+
     return render(request, 'issues/create.html')
+
+# sobreescribir metodo save para notificar a watchers cada vez que se guardan cambios
+def save(self, *args, **kwargs):
+    is_update = self.pk is not None
+    super().save(*args, **kwargs)
+    if is_update:
+        try:
+            self.notify_watchers("ha sido actualizado")
+        except Exception as e:
+            print(f"Error al notificar: {e}")
 
 @login_required
 def issue_bulk_create(request):
@@ -180,6 +190,9 @@ def issue_create_instance(subject, description, issue_type, issue_severity, prio
 
 def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
+
+    available_users = User.objects.exclude(id__in=issue.watchers.all())
+
     edit_comment_id = request.GET.get('edit_comment')
     edit_comment_obj = None
     if edit_comment_id:
@@ -187,7 +200,13 @@ def issue_detail(request, issue_id):
 
     attachments = issue.attachments.all()
 
-    return render(request, 'issues/detail.html', {'issue': issue, 'attachments': attachments, 'edit_comment_obj': edit_comment_obj})
+    context = {
+        'issue': issue,
+        'attachments': attachments,
+        'edit_comment_obj': edit_comment_obj,
+        'available_users': available_users,
+    }
+    return render(request, 'issues/detail.html', context)
 
 def issue_delete(request, issue_id):
     if request.method == 'POST':
@@ -214,6 +233,33 @@ def issue_update_status(request, issue_id):
 
         issue.save()
     return redirect('issue_list')
+
+def add_watcher(request, issue_id):
+    if request.method == "POST":
+        issue = get_object_or_404(Issue, id=issue_id)
+        user_id = request.POST.get('user_id')
+        if user_id:
+            user_to_add = get_object_or_404(User, id=user_id)
+            issue.watchers.add(user_to_add)
+    return redirect('issue_detail', issue_id=issue_id)
+
+
+def toggle_watcher(request, issue_id):
+    if request.method == "POST":
+        issue = get_object_or_404(Issue, id=issue_id)
+        target_user_id = request.POST.get('user_id')
+
+        if target_user_id:
+            user = get_object_or_404(User, id=target_user_id)
+        else:
+            user = request.user
+
+        if user in issue.watchers.all():
+            issue.watchers.remove(user)
+        else:
+            issue.watchers.add(user)
+
+    return redirect(request.META.get('HTTP_REFERER', 'issue_list'))
 
 @login_required
 def comment_add(request, issue_id):

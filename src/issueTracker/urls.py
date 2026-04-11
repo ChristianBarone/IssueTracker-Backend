@@ -29,7 +29,10 @@ urlpatterns = [
     path('issue/<int:issue_id>/delete/', issue_delete, name='issue_delete'),
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
 
-    path('issue/<int:issue_id>/comment/', comment_add, name='comment_add'),
+    path('issue/<int:issue_id>/add_watcher/', add_watcher, name='add_watcher'),
+    path('issue/<int:issue_id>/toggle_watcher/', toggle_watcher, name='toggle_watcher'),
+
+path('issue/<int:issue_id>/comment/', comment_add, name='comment_add'),
     path('comment/<int:comment_id>/edit/', comment_edit, name='comment_edit'),
     path('comment/<int:comment_id>/delete/', comment_delete, name='comment_delete'),
     path('users/<str:username>/', user_comments_view, name='user_profile'),
