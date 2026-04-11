@@ -266,6 +266,14 @@
                         </th>
                         <th width="180">STATUS</th>
                         <th width="150">ASSIGNED TO</th>
+                        <th width="120">
+                            <div class="th-content">DEADLINE
+                                <div class="sort-arrows">
+                                    <a href="?order_by=deadline&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == 'deadline' %}active{% endif %}" >▲</a>
+                                    <a href="?order_by=-deadline&show_filters={{ show_filters|yesno:'1,0' }}" class="{% if current_order == '-deadline' %}active{% endif %}" >▼</a>
+                                </div>
+                            </div>
+                        </th>
                         <th width="120">MODIFIED</th>
                     </tr>
                     </thead>
@@ -295,6 +303,31 @@
                                 <span style="font-size: 13px;">{{ issue.assignee.username|default:"Unassigned" }}</span>
                             </div>
                         </td>
+                        <td class="deadline-column">
+                            {% if issue.deadline %}
+                                <div class="deadline-pill {% if issue.deadline_status == 'overdue' %}deadline-overdue{% elif issue.deadline_status == 'soon' %}deadline-soon{% endif %}">
+
+                                    <span style="color: #94a3b8; font-size: 12px;">
+                                        {{ issue.deadline|date:"d M Y" }}
+                                    </span>
+
+                                    <button type="button"
+                                            class="btn-delete-deadline"
+                                            onclick="clearAndSubmit('{{ issue.id }}')"
+                                            title="Eliminar fecha">
+                                        ✕
+                                    </button>
+
+                                    <input type="hidden"
+                                           name="deadline"
+                                           id="deadline-input-{{ issue.id }}"
+                                           value="{{ issue.deadline|date:'Y-m-d' }}"
+                                           form="update-form-{{ issue.id }}">
+                                </div>
+                            {% else %}
+                                <span style="color: #94a3b8; font-size: 12px;">No date</span>
+                            {% endif %}
+                        </td>
                         <td style="color: #94a3b8; font-size: 12px;">{{ issue.modified_at|date:"d M Y" }}</td>
                     </tr>
                     {% endfor %}
@@ -310,5 +343,14 @@
     </form>
     {% endfor %}
 </div>
+<script>
+function clearAndSubmit(issueId) {
+    if (confirm('Delete deadline?')) {
+        const input = document.getElementById('deadline-input-' + issueId);
+        input.value = "";
+        document.getElementById('update-form-' + issueId).submit();
+    }
+}
+</script>
 </body>
 </html>

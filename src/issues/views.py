@@ -100,6 +100,7 @@ def issue_list(request):
             'stat': toggle_order('status'),
             'assign': toggle_order('assignee'),
             'mod': toggle_order('modified_at'),
+            'deadline': toggle_order('deadline'),
         },
     }
     return render(request, 'issues/list.html', context)
@@ -117,6 +118,7 @@ def issue_create(request):
         priority=request.POST.get('priority')
         status = request.POST.get('status') or 'New'
         d_line = request.POST.get('deadline')
+        deadline_value = d_line if d_line and d_line.strip() != "" else None
         creator=default_user
         assignee=default_user
         
@@ -128,7 +130,7 @@ def issue_create(request):
             issue_severity=issue_severity,
             priority=priority,
             status=status,
-            deadline=d_line if d_line else None,
+            deadline=deadline_value,
             creator=default_user,
             assignee=default_user
         )
@@ -149,13 +151,22 @@ def issue_delete(request, issue_id):
         issue.delete()
     return redirect('issue_list')
 
+
 def issue_update_status(request, issue_id):
     if request.method == 'POST':
         issue = get_object_or_404(Issue, id=issue_id)
+
         nuevo_estado = request.POST.get('status')
         if nuevo_estado:
             issue.status = nuevo_estado
-            issue.save()
+
+        nueva_deadline = request.POST.get('deadline')
+        if nueva_deadline == "":
+            issue.deadline = None
+        elif nueva_deadline:
+            issue.deadline = nueva_deadline
+
+        issue.save()
     return redirect('issue_list')
 
 def comment_add(request, issue_id):
