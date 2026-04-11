@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('issues', '0003_insert_admin'),
+        ('issues', '0002_issue_deadline_issue_issue_severity_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
