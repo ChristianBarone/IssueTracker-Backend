@@ -127,7 +127,7 @@
                 <h1 class="issue-subject">{{ issue.subject }}</h1>
             </div>
             <div class="issue-dates">
-                Registrada el {{ issue.created_at|date:"d M Y" }} | Actualizada {{ issue.modified_at|date:"H:i" }}
+                Created {{ issue.created_at|date:"d M Y" }} | Updated {{ issue.modified_at|date:"H:i" }}
             </div>
         </div>
 
@@ -135,8 +135,35 @@
             <div style="margin-bottom: 25px;">
                 <span class="taiga-status-badge">{{ issue.status }}</span>
             </div>
-            <h3>Descripció</h3>
-            <p class="description-text">{{ issue.description|linebreaksbr|default:"Sin descripción." }}</p>
+            <h3>Description</h3>
+            <p class="description-text">{{ issue.description|linebreaksbr|default:"No description" }}</p>
+
+            <h3>Attachments</h3>
+                {% if issue.attachments.count > 0 %}
+                    {% for attachment in attachments %}
+                        <div class="attachment" style="display: inline">
+                            <a target="_blank" href={{ attachment.file.url }} >{{ attachment.name }} </a>
+
+                            {% if attachment.creator == request.user %}
+                            <form method="POST" action="{% url 'delete_attachment' attachment.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-issue-delete-trigger">
+                                    Delete
+                                </button>
+                            </form>
+                            {% endif %}
+
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="description-text">No attachments</p>
+                {% endif %}
+                <form method="POST" action="{% url 'add_attachment' issue.id %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form.file }}
+
+                    <input type="submit" />
+                </form>
         </div>
 
         <div class="taiga-panel">
@@ -210,9 +237,6 @@
                 <span class="sidebar-value">{% if issue.assignee %}@{{ issue.assignee.username }}{% else %}Nadie{% endif %}</span>
             </div>
 
-            <div class="attachments">
-                <p>{{ attach_num }} attachments</p>
-            </div>
         </div>
 
         <div style="margin-top: 40px;">

@@ -1,3 +1,5 @@
+import os
+
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -51,4 +53,6 @@ class Comment(models.Model):
 
 class Attachment(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name='attachments')
-    path = models.TextField()
+    creator = models.ForeignKey(User, on_delete=models.CASCADE)
+    file = models.FileField(upload_to='attachments')
+    name = models.TextField()
