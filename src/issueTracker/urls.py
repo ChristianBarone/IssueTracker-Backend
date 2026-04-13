@@ -17,7 +17,7 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
-from issues.views import login_page, issue_list, issue_create, issue_bulk_create, issue_detail, issue_delete, issue_update_status, comment_add, comment_edit, comment_delete, user_comments_view
+from issues.views import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -34,6 +34,9 @@ urlpatterns = [
     path('comment/<int:comment_id>/delete/', comment_delete, name='comment_delete'),
     path('users/<str:username>/', user_comments_view, name='user_profile'),
     path('accounts/', include('allauth.urls')),
+
+    path('issue/<int:issue_id>/attachments', add_attachment, name='add_attachment'),
+    path('attachments/<int:attachment_id>/delete', delete_attachment, name='delete_attachment')
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

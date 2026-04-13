@@ -112,9 +112,41 @@
         border-radius: 12px; font-weight: 700; width: 100%;
         cursor: pointer; transition: all 0.2s; margin-top: 25px;
     }
-    .btn-issue-delete-trigger:hover { background: var(--danger); color: white; }
+    .btn-issue-delete-trigger:hover, .btn-delete-file:hover { background: var(--danger); color: white; }
 
     .btn-action-delete { color: var(--danger); background: none; border: none; font-weight: 700; cursor: pointer; padding: 0; font-family: inherit; }
+
+    .attachments-header, .attachment { display: flex; justify-content: space-between; align-items: center;}
+
+    .attachment { margin-bottom: 10px; }
+
+    .attachments-header { margin-top: 30px; }
+
+    .attachment a:link, .attachment a:visited { text-decoration: none; color: var(--taiga-green-dark); font-weight: 600;}
+
+    .btn-add-file {
+        display: flex; align-items: center; justify-content: center; align-content: flex-start;
+        width: 30px; height: 25px;
+        background-color: var(--taiga-green);
+        font-weight: 700; color: white;
+        cursor: pointer; border-radius: 3px;
+        padding-bottom: 5px;
+        box-shadow: 0 4px 15px rgba(93, 197, 181, 0.3);
+        transition: all 0.3s;
+    }
+
+    .btn-add-file:hover {
+        background-color: var(--taiga-green-dark)
+    }
+
+    .btn-delete-file {
+        background: #fff; color: var(--danger);
+        border: 2px solid var(--danger); padding: 5px;
+        border-radius: 3px; font-weight: 700; width: 30px;
+        cursor: pointer; transition: all 0.2s;
+        height: 30px;
+    }
+
 </style>
 
 <div class="taiga-detail-wrapper">
@@ -127,7 +159,7 @@
                 <h1 class="issue-subject">{{ issue.subject }}</h1>
             </div>
             <div class="issue-dates">
-                Registrada el {{ issue.created_at|date:"d M Y" }} | Actualizada {{ issue.modified_at|date:"H:i" }}
+                Created {{ issue.created_at|date:"d M Y" }} | Updated {{ issue.modified_at|date:"H:i" }}
             </div>
         </div>
 
@@ -135,8 +167,37 @@
             <div style="margin-bottom: 25px;">
                 <span class="taiga-status-badge">{{ issue.status }}</span>
             </div>
-            <h3>Descripció</h3>
-            <p class="description-text">{{ issue.description|linebreaksbr|default:"Sin descripción." }}</p>
+            <h3>Description</h3>
+            <p class="description-text">{{ issue.description|linebreaksbr|default:"No description" }}</p>
+
+            <div class="attachments-header">
+                {% if issue.attachments.count == 1 %}
+                    <h3>{{ issue.attachments.count }} Attachment</h3>
+                {% else %}
+                    <h3>{{ issue.attachments.count }} Attachments</h3>
+                {% endif %}
+                <form id="FileUploadForm" method="POST" action="{% url 'add_attachment' issue.id %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="file" id="files" name="files" onChange="let form=document.getElementById('FileUploadForm'); form.submit()" hidden/>
+                        <label class="btn-add-file" for="files">+</label>
+                </form>
+            </div>
+            {% if issue.attachments.count > 0 %}
+                {% for attachment in attachments %}
+                    <div class="attachment">
+                        <a target="_blank" href={{ attachment.file.url }} >{{ attachment.name }} </a>
+
+                        {% if request.user.is_authenticated and attachment.creator == request.user %}
+                        <form style="margin: 0" method="POST" action="{% url 'delete_attachment' attachment.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-delete-file">
+                                X
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
         </div>
 
         <div class="taiga-panel">
@@ -209,6 +270,7 @@
                 <span class="sidebar-label">Assigned</span>
                 <span class="sidebar-value">{% if issue.assignee %}@{{ issue.assignee.username }}{% else %}Nadie{% endif %}</span>
             </div>
+
         </div>
 
         <div style="margin-top: 40px;">

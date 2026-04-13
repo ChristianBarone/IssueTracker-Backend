@@ -12,8 +12,9 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 import os
 from pathlib import Path
-import dj_database_url
 from dotenv import load_dotenv
+import dj_database_url
+from google.oauth2 import service_account
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,11 +34,20 @@ DATABASES = {
     )
 }
 
-#EXTRA QUE SE PUEDE ELIMINAR SOLO PRUEBA
-CSRF_TRUSTED_ORIGINS = [
-    'https://8886e6181fdc44dfbb69832587320098.vfs.cloud9.us-east-1.amazonaws.com'
-]
+STORAGES = {
+    "default": {
+        "BACKEND": 'storages.backends.gcloud.GoogleCloudStorage'
+    },
+    "staticfiles": {
+        "BACKEND": 'storages.backends.gcloud.GoogleCloudStorage'
+    },
+}
 
+GS_BUCKET_NAME = 'issue-tracker2026-media'
+MEDIA_URL = 'https://storage.googleapis.com/{}/'.format(GS_BUCKET_NAME)
+GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+    os.path.join(BASE_DIR, '../gcloud_credentials.json')
+)
 
 # Application definition
 
@@ -53,7 +63,8 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.github',
-    "issues.apps.IssuesConfig",
+    'issues.apps.IssuesConfig',
+    'storages'
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -135,12 +146,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 STATIC_URL = '/static/'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 if not DEBUG:
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field

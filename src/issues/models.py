@@ -1,3 +1,5 @@
+import os
+
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -47,4 +49,10 @@ class Comment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def is_edited(self):
-        return self.updated_at > self.created_at
+         return self.updated_at > self.created_at
+
+class Attachment(models.Model):
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name='attachments')
+    creator = models.ForeignKey(User, on_delete=models.CASCADE)
+    file = models.FileField(upload_to='attachments')
+    name = models.TextField()

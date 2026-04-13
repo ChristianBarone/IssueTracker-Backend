@@ -21,7 +21,7 @@
         .description-area { width: 100%; border: 1px solid #ccd6dd; padding: 15px; font-size: 14px; border-radius: 3px; min-height: 250px; resize: vertical; outline: none; color: #475569; }
 
         .tag-link { color: #5dc5b5; font-size: 13px; text-decoration: none; display: inline-block; margin-bottom: 20px; }
-        .drop-zone { margin-top: 20px; border: 1px dashed #cbd5e1; padding: 30px; text-align: center; color: #94a3b8; border-radius: 4px; font-size: 14px; }
+        .drop-zone { margin-top: 5px; border: 1px dashed #cbd5e1; padding: 30px; text-align: center; color: #94a3b8; border-radius: 4px; font-size: 14px; }
 
         /* SELECTS DERECHA */
         .status-wrapper { margin-bottom: 25px; }
@@ -47,6 +47,8 @@
         .btn-submit { width: 100%; background: #92e7d9; color: #16a085; border: none; padding: 16px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer; border-radius: 3px; margin-top: 25px; }
         .btn-submit:hover { background: #5dc5b5; color: white; }
         .cancel-link { display: block; text-align: center; margin-top: 15px; color: #94a3b8; text-decoration: none; font-size: 13px; }
+
+        .attachment-title { color: #34495e; font-size: 18px; margin-top: 30px; font-weight: 200; }
     </style>
 </head>
 <body>
@@ -54,7 +56,7 @@
 <div class="create-container">
     <h1 class="header-title">New issue</h1>
 
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="form-layout">
 
@@ -65,8 +67,9 @@
 
                 <textarea name="description" class="description-area" placeholder="Please add descriptive text to help others better understand this issue"></textarea>
 
+                <h2 class="attachment-title">Add attachments</h2>
                 <div class="drop-zone">
-                    Drop attachments here!
+                    <input type="file" id="files" name="files"/>
                 </div>
             </div>
 

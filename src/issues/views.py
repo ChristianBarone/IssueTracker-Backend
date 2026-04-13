@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Issue, Comment, Profile
+
+from .forms import UploadFileForm
+from .models import *
 from django.contrib.auth.models import User
 from django.db.models import Q, Count
 
@@ -110,6 +112,7 @@ def issue_list(request):
         },
     }
     return render(request, 'issues/list.html', context)
+
 @login_required
 def issue_create(request):
     if request.method == "POST":
@@ -124,10 +127,14 @@ def issue_create(request):
         assignee=request.user  #if request.user.is_authenticated else default_user
         
         # Creem l'issue i l'assignem a nosaltres mateixos (Requisit)
-        issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
+        issue = issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
                               assignee)
+
+        if request.FILES.get('files') is not None:
+            attachment_create_instance(issue.id, creator, request.FILES.get('files'))
+
         return redirect('issue_list')
-    
+
     return render(request, 'issues/create.html')
 
 @login_required
@@ -157,7 +164,7 @@ def issue_bulk_create(request):
 
 def issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
                           assignee):
-    Issue.objects.create(
+    return Issue.objects.create(
         subject=subject,
         description=description,
         issue_type=issue_type,
@@ -176,7 +183,9 @@ def issue_detail(request, issue_id):
     if edit_comment_id:
         edit_comment_obj = get_object_or_404(Comment, id=edit_comment_id, issue=issue)
 
-    return render(request, 'issues/detail.html', {'issue': issue,'edit_comment_obj': edit_comment_obj})
+    attachments = issue.attachments.all()
+
+    return render(request, 'issues/detail.html', {'issue': issue, 'attachments': attachments, 'edit_comment_obj': edit_comment_obj})
 
 def issue_delete(request, issue_id):
     if request.method == 'POST':
@@ -231,11 +240,8 @@ def comment_delete(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     issue_id = getattr(comment, 'issue_id')
 
-    # Simulamos el admin
-    current_user = request.user
-
     # Només el creador esborra request.user
-    if comment.author == current_user:
+    if comment.author == request.user:
         comment.delete()
     return redirect('issue_detail', issue_id=issue_id)
 
@@ -266,4 +272,30 @@ def user_comments_view(request, username):
         'assigned_issues': assigned_issues,
         'comments_count': comments_count,
     })
+
+def add_attachment(request, issue_id):
+    if request.method == 'POST':
+
+        form = UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            if not request.user.is_authenticated:
+                return redirect('account_login')  # allauth
+
+            attachment_create_instance(issue_id, request.user, request.FILES['files'])
+
+    return redirect('issue_detail', issue_id=issue_id)
+
+def attachment_create_instance(issue_id, creator, file):
+    issue = get_object_or_404(Issue, id=issue_id)
+
+    attachment = Attachment(issue=issue, creator=creator, file=file, name=os.path.basename(file.name))
+    attachment.save()
+
+def delete_attachment(request, attachment_id):
+    attachment = get_object_or_404(Attachment, id=attachment_id)
+    issue_id = getattr(attachment, 'issue_id')
+
+    attachment.delete()
+
+    return redirect('issue_detail', issue_id=issue_id)
 
