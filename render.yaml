@@ -9,6 +9,7 @@ services:
     plan: free
     name: issueTracker
     runtime: python
+    region: frankfurt
     buildCommand: './build.sh'
     startCommand: 'cd src && python -m gunicorn issueTracker.asgi:application -k uvicorn.workers.UvicornWorker'
     envVars:
