@@ -1,4 +1,4 @@
 from django import forms
 
 class UploadFileForm(forms.Form):
-    file = forms.FileField()
+    files = forms.FileField(label="Upload Attachment")

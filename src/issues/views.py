@@ -125,14 +125,13 @@ def issue_create(request):
         d_line = request.POST.get('deadline')
         creator=request.user  #if request.user.is_authenticated else default_user
         assignee=request.user  #if request.user.is_authenticated else default_user
-        file = request.POST.get('attachment')
         
         # Creem l'issue i l'assignem a nosaltres mateixos (Requisit)
         issue = issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
                               assignee)
 
-        if file is not None:
-            attachment_create_instance(issue.id, creator, file)
+        if request.FILES.get('files') is not None:
+            attachment_create_instance(issue.id, creator, request.FILES.get('files'))
 
         return redirect('issue_list')
 
@@ -186,7 +185,7 @@ def issue_detail(request, issue_id):
 
     attachments = issue.attachments.all()
 
-    return render(request, 'issues/detail.html', {'issue': issue, 'attachments': attachments, 'edit_comment_obj': edit_comment_obj, 'form': UploadFileForm})
+    return render(request, 'issues/detail.html', {'issue': issue, 'attachments': attachments, 'edit_comment_obj': edit_comment_obj})
 
 def issue_delete(request, issue_id):
     if request.method == 'POST':
@@ -276,12 +275,13 @@ def user_comments_view(request, username):
 
 def add_attachment(request, issue_id):
     if request.method == 'POST':
+
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             if not request.user.is_authenticated:
                 return redirect('account_login')  # allauth
 
-            attachment_create_instance(issue_id, request.user, request.FILES['file'])
+            attachment_create_instance(issue_id, request.user, request.FILES['files'])
 
     return redirect('issue_detail', issue_id=issue_id)
 
