@@ -48,3 +48,20 @@ class Comment(models.Model):
 
     def is_edited(self):
         return self.updated_at > self.created_at
+
+
+class IssueActivity(models.Model):
+    objects = models.Manager()
+
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name='activities')
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    field_name = models.CharField(max_length=80)
+    old_value = models.TextField(blank=True)
+    new_value = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"#{self.issue_id} {self.field_name}: {self.old_value} -> {self.new_value}"

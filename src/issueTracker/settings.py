@@ -19,8 +19,9 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load local environment variables from src/.env (preferred) and src/env (legacy).
-load_dotenv(BASE_DIR / '.env')
-load_dotenv(BASE_DIR / 'env')
+# Force .env to win over stale shell variables from previous terminal sessions.
+load_dotenv(BASE_DIR / '.env', override=False)
+load_dotenv(BASE_DIR / 'env', override=False)
 
 SECRET_KEY = os.environ.get('SECRET_KEY', default='dummy_key')
 DEBUG = 'RENDER' not in os.environ
@@ -32,6 +33,12 @@ DATABASES = {
         conn_max_age=600
     )
 }
+
+# Keep localhost as the configured host, but force IPv4 transport to avoid
+# intermittent localhost/IPv6 reset issues on Windows + Docker.
+if DATABASES['default'].get('HOST') in {'localhost', '::1'}:
+    DATABASES['default'].setdefault('OPTIONS', {})
+    DATABASES['default']['OPTIONS']['hostaddr'] = '127.0.0.1'
 
 #EXTRA QUE SE PUEDE ELIMINAR SOLO PRUEBA
 CSRF_TRUSTED_ORIGINS = [

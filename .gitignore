@@ -13,3 +13,4 @@ venv
 .ENV
 docker-services/env
 src/env
+src/media/avatars

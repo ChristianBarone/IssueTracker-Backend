@@ -115,6 +115,72 @@
     .btn-issue-delete-trigger:hover { background: var(--danger); color: white; }
 
     .btn-action-delete { color: var(--danger); background: none; border: none; font-weight: 700; cursor: pointer; padding: 0; font-family: inherit; }
+
+    .detail-tabs {
+        display: flex;
+        gap: 22px;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 20px;
+        padding-bottom: 8px;
+    }
+
+    .detail-tab-link {
+        text-decoration: none;
+        color: #64748b;
+        font-weight: 700;
+        padding-bottom: 8px;
+        border-bottom: 3px solid transparent;
+    }
+
+    .detail-tab-link.active {
+        color: #1f2937;
+        border-bottom-color: #5dc5b5;
+    }
+
+    .activity-item {
+        display: flex;
+        gap: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 12px;
+        background: #ffffff;
+    }
+
+    .activity-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: #d1c4e9;
+        color: #4a2f7d;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .activity-meta {
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #64748b;
+    }
+
+    .activity-change {
+        font-size: 16px;
+        color: #1f2937;
+    }
+
+    .activity-field {
+        background: #eef2ff;
+        color: #3730a3;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 6px;
+        margin-right: 8px;
+        text-transform: lowercase;
+    }
 </style>
 
 <div class="taiga-detail-wrapper">
@@ -140,53 +206,85 @@
         </div>
 
         <div class="taiga-panel">
-            <h2>Comentaris</h2>
-
-            <div class="comment-form-panel">
-                <form method="POST" action="{% url 'comment_add' issue.id %}">
-                    {% csrf_token %}
-                    <textarea name="body" class="taiga-textarea" placeholder="Escribe algo..." required></textarea>
-                    <div style="text-align: right; margin-top: 15px;">
-                        <button type="submit" class="btn-taiga-primary">PUBLICAR</button>
-                    </div>
-                </form>
+            <div class="detail-tabs">
+                <a href="{% url 'issue_detail' issue.id %}?tab=comments" class="detail-tab-link {% if active_tab != 'activities' %}active{% endif %}">{{ issue.comments.count }} Comments</a>
+                <a href="{% url 'issue_detail' issue.id %}?tab=activities" class="detail-tab-link {% if active_tab == 'activities' %}active{% endif %}">{{ activities.count }} Activities</a>
             </div>
 
-            <div class="comments-list" style="margin-top: 40px;">
-                {% for comment in issue.comments.all|dictsortreversed:"created_at" %}
-                <div class="comment-item" id="comment-{{ comment.id }}">
-                    <div class="comment-meta">
-                        <span class="comment-author">@{{ comment.author.username }}</span>
-                        hace {{ comment.created_at|timesince }}
-                    </div>
-
-                    {% if edit_comment_obj and edit_comment_obj.id == comment.id %}
-                    <form method="POST" action="{% url 'comment_edit' comment.id %}">
-                        {% csrf_token %}
-                        <textarea name="body" class="taiga-textarea" style="min-height: 80px;" required>{{ comment.body }}</textarea>
-                        <div style="text-align: right; margin-top: 10px;">
-                            <a href="{% url 'issue_detail' issue.id %}" style="text-decoration: none; color: #95a5a6; font-size: 0.9em; margin-right: 15px;">Cancelar</a>
-                            <button type="submit" class="btn-taiga-primary" style="padding: 8px 20px; font-size: 0.9em;">GUARDAR</button>
+            {% if active_tab == 'activities' %}
+                {% for activity in activities %}
+                <div class="activity-item">
+                    <div class="activity-avatar">{{ activity.actor.username|default:"S"|slice:":1"|upper }}</div>
+                    <div>
+                        <div class="activity-meta">
+                            <strong>{{ activity.actor.username|default:"System" }}</strong>
+                            {{ activity.created_at|date:"d M Y H:i" }}
                         </div>
-                    </form>
-                    {% else %}
-                    <p class="comment-text">{{ comment.body|linebreaksbr }}</p>
 
-                    {% if request.user.is_authenticated and comment.author == request.user %}
-                    <div style="margin-top: 15px; border-top: 1px solid #edf2f5; padding-top: 10px;">
-                        <a href="?edit_comment={{ comment.id }}#comment-{{ comment.id }}" style="color: var(--taiga-green); text-decoration: none; font-weight: 700; margin-right:15px;">Editar</a>
-                        <form method="POST" action="{% url 'comment_delete' comment.id %}" style="display:inline;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-action-delete">Eliminar</button>
-                        </form>
+                        <div class="activity-change">
+                            <span class="activity-field">{{ activity.field_name }}</span>
+                            {% if activity.field_name == 'issue' %}
+                                {{ activity.new_value|capfirst }}
+                            {% else %}
+                                {{ activity.old_value|default:"-" }}
+                                <span style="color:#94a3b8; margin: 0 6px;">&gt;</span>
+                                {{ activity.new_value|default:"-" }}
+                            {% endif %}
+                        </div>
                     </div>
-                    {% endif %}
-                    {% endif %}
                 </div>
                 {% empty %}
-                <p style="text-align: center; color: #bdc3c7; padding: 20px;">No hi ha comentaris.</p>
+                <p style="text-align: center; color: #bdc3c7; padding: 20px;">No hi ha activitat registrada.</p>
                 {% endfor %}
-            </div>
+            {% else %}
+                <h2>Comentaris</h2>
+
+                <div class="comment-form-panel">
+                    <form method="POST" action="{% url 'comment_add' issue.id %}">
+                        {% csrf_token %}
+                        <textarea name="body" class="taiga-textarea" placeholder="Escribe algo..." required></textarea>
+                        <div style="text-align: right; margin-top: 15px;">
+                            <button type="submit" class="btn-taiga-primary">PUBLICAR</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="comments-list" style="margin-top: 40px;">
+                    {% for comment in issue.comments.all|dictsortreversed:"created_at" %}
+                    <div class="comment-item" id="comment-{{ comment.id }}">
+                        <div class="comment-meta">
+                            <span class="comment-author">@{{ comment.author.username }}</span>
+                            hace {{ comment.created_at|timesince }}
+                        </div>
+
+                        {% if edit_comment_obj and edit_comment_obj.id == comment.id %}
+                        <form method="POST" action="{% url 'comment_edit' comment.id %}">
+                            {% csrf_token %}
+                            <textarea name="body" class="taiga-textarea" style="min-height: 80px;" required>{{ comment.body }}</textarea>
+                            <div style="text-align: right; margin-top: 10px;">
+                                <a href="{% url 'issue_detail' issue.id %}" style="text-decoration: none; color: #95a5a6; font-size: 0.9em; margin-right: 15px;">Cancelar</a>
+                                <button type="submit" class="btn-taiga-primary" style="padding: 8px 20px; font-size: 0.9em;">GUARDAR</button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <p class="comment-text">{{ comment.body|linebreaksbr }}</p>
+
+                        {% if request.user.is_authenticated and comment.author == request.user %}
+                        <div style="margin-top: 15px; border-top: 1px solid #edf2f5; padding-top: 10px;">
+                            <a href="?edit_comment={{ comment.id }}#comment-{{ comment.id }}" style="color: var(--taiga-green); text-decoration: none; font-weight: 700; margin-right:15px;">Editar</a>
+                            <form method="POST" action="{% url 'comment_delete' comment.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-action-delete">Eliminar</button>
+                            </form>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p style="text-align: center; color: #bdc3c7; padding: 20px;">No hi ha comentaris.</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
     </div>
 
