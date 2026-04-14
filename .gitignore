@@ -13,6 +13,7 @@ venv
 .ENV
 docker-services/env
 src/env
+<<<<<<< HEAD
 gcloud_credentials.json
 =======
 src/media/avatars
