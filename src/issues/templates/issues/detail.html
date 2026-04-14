@@ -311,4 +311,33 @@
         <button type="submit" class="btn-new" style="padding: 5px 10px; margin: 0; box-shadow: none;">+</button>
     </form>
     </div>
+    <div class="sidebar-section">
+    <h3>WATCHERS ({{ issue.watchers.count }})</h3>
+
+    <ul class="watchers-list" style="list-style: none; margin-bottom: 15px;">
+        {% for w in issue.watchers.all %}
+        <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+            <span class="user-avatar">{{ w.username|slice:":2"|upper }}</span>
+            <span style="font-size: 14px;">{{ w.username }}</span>
+
+            <form method="POST" action="{% url 'toggle_watcher' issue.id %}" style="margin-left: auto;">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ w.id }}">
+                <button type="submit" style="background: none; border: none; color: #ff5f5f; cursor: pointer;">✕</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <form method="POST" action="{% url 'add_watcher' issue.id %}" style="display: flex; gap: 5px;">
+        {% csrf_token %}
+        <select name="user_id" style="flex-grow: 1; padding: 5px; border-radius: 4px; border: 1px solid #ddd;">
+            <option value="">Add user...</option>
+            {% for user in available_users %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn-new" style="padding: 5px 10px; margin: 0; box-shadow: none;">+</button>
+    </form>
+    </div>
 </div>
