@@ -119,14 +119,14 @@ def issue_create(request):
     if request.method == "POST":
         subject = request.POST.get('subject')
         description = request.POST.get('description')
-        issue_type=request.POST.get('issue_type')
-        issue_severity=request.POST.get('issue_severity')
-        priority=request.POST.get('priority')
+        issue_type = request.POST.get('issue_type')
+        issue_severity = request.POST.get('issue_severity')
+        priority = request.POST.get('priority')
         status = request.POST.get('status') or 'New'
         d_line = request.POST.get('deadline')
         deadline_value = d_line if d_line and d_line.strip() != "" else None
-        creator=default_user #if request.user.is_authenticated else default_user
-        assignee=default_user #if request.user.is_authenticated else default_user
+        creator = request.user
+        assignee= request.user
         
         # Creem l'issue i l'assignem a nosaltres mateixos (Requisit)
         issue = issue_create_instance(subject, description, issue_type, issue_severity, priority, status, deadline_value, creator,
@@ -281,10 +281,8 @@ def comment_edit(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     issue_id = getattr(comment, 'issue_id')
 
-    #Simulamos que el admin puede hacer todo
-    current_user = request.user
     # Només el creador edita request.user
-    if request.method == 'POST' and comment.author == current_user:
+    if request.method == 'POST' and comment.author == request.user:
         text = request.POST.get('body', '').strip()
         if text:
             comment.body = text

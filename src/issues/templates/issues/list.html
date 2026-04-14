@@ -48,7 +48,7 @@
         .btn-bulk {
             background: #d1d5db; color: #374151; padding: 10px 18px;
             border-radius: 5px; text-decoration: none; font-weight: bold;
-            box-shadow: 0 3px 0 #469b8e;
+            box-shadow: 0 3px 0 #64748b;
         }
 
         .main-layout { display: flex; gap: 25px; }
@@ -120,7 +120,7 @@
         .prio-high { background-color: #32CD32; } .prio-normal { background-color: #FFFF00; border: 1px solid #ccc; } .prio-low { background-color: #e67e22; }
 
         .ref-number { color: var(--taiga-orange); font-weight: bold; text-decoration: none; margin-right: 5px; }
-        .subject-link { text-decoration: none; color: var(--taiga-main); font-weight: 500; font-size: 15px; }
+        .subject-link { text-decoration: none; color: var(--taiga-main); font-weight: 500; font-size: 15px; white-space: initial}
         .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: #34495e; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-right: 8px; }
 
         .btn-save-status {
@@ -129,8 +129,15 @@
         }
 
         .th-content { display: flex; align-items: center; gap: 5px; text-decoration: none; color: #94a3b8; }
-        .sort-arrows { display: flex; flex-direction: column; font-size: 8px; line-height: 1; color: #cbd5e1; }
+        .sort-arrows { display: flex; flex-direction: column; font-size: 8px; line-height: 1; color: #cbd5e1;}
         .sort-arrows .active { color: #34495e; }
+        .sort-arrows a { text-decoration: none }
+
+        .btn-delete-deadline {
+            background: none; border: none;
+            padding-left: 5px; cursor: pointer;
+            color: #e74c3c
+        }
 
     </style>
 </head>
