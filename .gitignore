@@ -14,3 +14,6 @@ venv
 docker-services/env
 src/env
 gcloud_credentials.json
+=======
+src/media/avatars
+>>>>>>> hala

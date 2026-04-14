@@ -1,15 +1,20 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-
-from .forms import UploadFileForm
-from .models import *
+from .models import Issue, Comment, Profile, IssueActivity, Attachment
+from .forms import UploadFileForm, ProfileForm
 from django.contrib.auth.models import User
 from django.db.models import Q, Count
+import os
 
 
-def login_page(_request):
-    _ = _request
-    return redirect('/accounts/github/login/?next=/issues/')
+def login_page(request):
+    if request.user.is_authenticated:
+        return redirect('issue_list')
+
+    github_login_url = '/accounts/github/login/?next=/issues/'
+    return render(request, 'issues/login.html', {
+        'github_login_url': github_login_url,
+    })
 
 @login_required(login_url='/')
 def issue_list(request):
@@ -176,7 +181,7 @@ def issue_bulk_create(request):
 
 def issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
                           assignee):
-    return Issue.objects.create(
+    issue = Issue.objects.create(
         subject=subject,
         description=description,
         issue_type=issue_type,
@@ -188,6 +193,16 @@ def issue_create_instance(subject, description, issue_type, issue_severity, prio
         assignee=assignee
     )
 
+    IssueActivity.objects.create(
+        issue=issue,
+        actor=creator,
+        field_name='issue',
+        old_value='',
+        new_value='created'
+    )
+
+    return issue
+
 def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
 
@@ -195,6 +210,8 @@ def issue_detail(request, issue_id):
 
     edit_comment_id = request.GET.get('edit_comment')
     edit_comment_obj = None
+    active_tab = request.GET.get('tab', 'comments')
+
     if edit_comment_id:
         edit_comment_obj = get_object_or_404(Comment, id=edit_comment_id, issue=issue)
 
@@ -204,6 +221,8 @@ def issue_detail(request, issue_id):
         'issue': issue,
         'attachments': attachments,
         'edit_comment_obj': edit_comment_obj,
+        'active_tab': active_tab,
+        'activities': issue.activities.select_related('actor').all(),
         'available_users': available_users,
     }
     return render(request, 'issues/detail.html', context)
@@ -222,8 +241,13 @@ def issue_update_status(request, issue_id):
         issue = get_object_or_404(Issue, id=issue_id)
 
         nuevo_estado = request.POST.get('status')
-        if nuevo_estado:
+        status_changed = False
+        old_status = ''
+
+        if nuevo_estado and nuevo_estado != issue.status:
+            old_status = issue.status
             issue.status = nuevo_estado
+            status_changed = True
 
         nueva_deadline = request.POST.get('deadline')
         if nueva_deadline == "":
@@ -232,6 +256,15 @@ def issue_update_status(request, issue_id):
             issue.deadline = nueva_deadline
 
         issue.save()
+
+        if status_changed:
+            IssueActivity.objects.create(
+                issue=issue,
+                actor=request.user if request.user.is_authenticated else None,
+                field_name='status',
+                old_value=old_status,
+                new_value=nuevo_estado,
+            )
     return redirect('issue_list')
 
 def add_watcher(request, issue_id):
@@ -308,24 +341,53 @@ def user_comments_view(request, username):
     tab = request.GET.get('tab', 'assigned')
 
     created_issues = Issue.objects.filter(creator=profile_user).count()
-    assigned_issues = Issue.objects.filter(assignee=profile_user).count()
+    open_assigned_issues = Issue.objects.filter(assignee=profile_user).exclude(status='Closed').count()
     comments_count = Comment.objects.filter(author=profile_user).count()
+    watched_issues = 0
 
     if tab == 'assigned':
-        items = Issue.objects.filter(assignee=profile_user, status='New').order_by('-modified_at')
+        items = Issue.objects.filter(assignee=profile_user).exclude(status='Closed').order_by('-modified_at')
     elif tab == 'watched':
         items = Issue.objects.none()
     else:
         items = Comment.objects.filter(author=profile_user).order_by('-created_at')
 
-    return render(request, 'users/profile_comments_tab.html', {
+    is_owner = request.user.is_authenticated and request.user == profile_user
+
+    return render(request, 'users/profile.html', {
         'profile_user': profile_user,
         'profile_obj': profile_obj,
         'tab': tab,
         'items': items,
         'created_issues': created_issues,
-        'assigned_issues': assigned_issues,
+        'open_assigned_issues': open_assigned_issues,
         'comments_count': comments_count,
+        'watched_issues': watched_issues,
+        'is_owner': is_owner,
+    })
+
+
+@login_required
+def edit_profile(request, username):
+    profile_user = get_object_or_404(User, username=username)
+
+    if request.user != profile_user:
+        return redirect('user_profile', username=username)
+
+    profile_obj, _ = Profile.objects.get_or_create(user=profile_user)
+
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, request.FILES, instance=profile_obj)
+        if form.is_valid():
+            form.save()
+            return redirect('user_profile', username=username)
+    else:
+        form = ProfileForm(instance=profile_obj)
+
+    return render(request, 'users/edit_profile.html', {
+        'profile_user': profile_user,
+        'profile_obj': profile_obj,
+        'form': form,
     })
 
 def add_attachment(request, issue_id):

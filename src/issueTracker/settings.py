@@ -14,14 +14,14 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
-from google.oauth2 import service_account
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load local environment variables from src/.env (preferred) and src/env (legacy).
-load_dotenv(BASE_DIR / '.env')
-load_dotenv(BASE_DIR / 'env')
+# Force .env to win over stale shell variables from previous terminal sessions.
+load_dotenv(BASE_DIR / '.env', override=False)
+load_dotenv(BASE_DIR / 'env', override=False)
 
 SECRET_KEY = os.environ.get('SECRET_KEY', default='dummy_key')
 DEBUG = 'RENDER' not in os.environ
@@ -34,20 +34,45 @@ DATABASES = {
     )
 }
 
-STORAGES = {
-    "default": {
-        "BACKEND": 'storages.backends.gcloud.GoogleCloudStorage'
-    },
-    "staticfiles": {
-        "BACKEND": 'storages.backends.gcloud.GoogleCloudStorage'
-    },
-}
+# Keep localhost as the configured host, but force IPv4 transport to avoid
+# intermittent localhost/IPv6 reset issues on Windows + Docker.
+if DATABASES['default'].get('HOST') in {'localhost', '::1'}:
+    db_options = DATABASES['default'].setdefault('OPTIONS', {})
+    db_options['hostaddr'] = '127.0.0.1'
 
-GS_BUCKET_NAME = 'issue-tracker2026-media'
-MEDIA_URL = 'https://storage.googleapis.com/{}/'.format(GS_BUCKET_NAME)
-GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
-    os.path.join(BASE_DIR, '../gcloud_credentials.json')
-)
+if DEBUG:
+    STORAGES = {
+        "default": {
+            "BACKEND": 'django.core.files.storage.FileSystemStorage'
+        },
+        "staticfiles": {
+            "BACKEND": 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        },
+    }
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+else:
+    from google.oauth2 import service_account
+
+    STORAGES = {
+        "default": {
+            "BACKEND": 'storages.backends.gcloud.GoogleCloudStorage'
+        },
+        "staticfiles": {
+            "BACKEND": 'storages.backends.gcloud.GoogleCloudStorage'
+        },
+    }
+
+    GS_BUCKET_NAME = 'issue-tracker2026-media'
+    MEDIA_URL = 'https://storage.googleapis.com/{}/'.format(GS_BUCKET_NAME)
+
+    credentials_path = os.path.join(BASE_DIR, '../gcloud_credentials.json')
+    if os.path.exists(credentials_path):
+        GS_CREDENTIALS = service_account.Credentials.from_service_account_file(credentials_path)
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://8886e6181fdc44dfbb69832587320098.vfs.cloud9.us-east-1.amazonaws.com'
+]
 
 # Application definition
 
