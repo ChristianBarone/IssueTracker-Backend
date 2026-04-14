@@ -68,7 +68,9 @@
 
     .description-text { line-height: 1.8; color: #50667f; font-size: 1.05em; }
 
-    .sidebar-block h4 {
+    .sidebar-block { margin-bottom: 35px;}
+
+    .taiga-sidebar h4 {
         font-size: 0.85em; color: var(--text-muted);
         margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1.5px;
     }
@@ -145,6 +147,25 @@
         border-radius: 3px; font-weight: 700; width: 30px;
         cursor: pointer; transition: all 0.2s;
         height: 30px;
+    }
+
+    .watchers-list {
+        list-style: none; margin-bottom: 15px; padding: 0;
+    }
+
+    .watchers-list form { margin: 0 0 0 auto; }
+
+    .watchers-select {
+        width: 100%; padding: 10px; border: 1px solid #e2e8f0;
+        border-radius: 3px; background: white; font-size: 14px;
+        color: #475569; outline: none; flex-grow: 1;
+        cursor: pointer;
+    }
+
+    .btn-new-watcher {
+        padding: 5px 10px; border: 1px solid #e2e8f0;
+        margin: 0; box-shadow: none; font-weight: 700;
+        width: 40px; cursor: pointer; border-radius: 3px;
     }
 
 </style>
@@ -273,11 +294,41 @@
 
         </div>
 
+        <div class="watchers-section">
+            <h4>WATCHERS ({{ issue.watchers.count }})</h4>
+
+            <ul class="watchers-list">
+                {% for w in issue.watchers.all %}
+                <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <span class="user-avatar">{{ w.username|slice:":2"|upper }}</span>
+                    <span style="font-size: 14px;">{{ w.username }}</span>
+
+                    <form method="POST" action="{% url 'toggle_watcher' issue.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ w.id }}">
+                        <button type="submit" style="background: none; border: none; color: #ff5f5f; cursor: pointer;">✕</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <form method="POST" action="{% url 'add_watcher' issue.id %}" style="display: flex; gap: 5px;">
+                {% csrf_token %}
+                <select name="user_id" class="watchers-select">
+                    <option value="">Add user...</option>
+                    {% for user in available_users %}
+                        <option value="{{ user.id }}">{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn-new-watcher">+</button>
+            </form>
+        </div>
+
         <div style="margin-top: 40px;">
             <form method="POST" action="{% url 'issue_delete' issue.id %}">
                 {% csrf_token %}
                 <button type="submit" class="btn-issue-delete-trigger">
-                    ELIMINAR ISSUE
+                    DELETE ISSUE
                 </button>
             </form>
         </div>

@@ -109,6 +109,7 @@ def issue_list(request):
             'stat': toggle_order('status'),
             'assign': toggle_order('assignee'),
             'mod': toggle_order('modified_at'),
+            'deadline': toggle_order('deadline'),
         },
     }
     return render(request, 'issues/list.html', context)
@@ -118,17 +119,18 @@ def issue_create(request):
     if request.method == "POST":
         subject = request.POST.get('subject')
         description = request.POST.get('description')
-        issue_type=request.POST.get('issue_type')
-        issue_severity=request.POST.get('issue_severity')
-        priority=request.POST.get('priority')
+        issue_type = request.POST.get('issue_type')
+        issue_severity = request.POST.get('issue_severity')
+        priority = request.POST.get('priority')
         status = request.POST.get('status') or 'New'
         d_line = request.POST.get('deadline')
-        creator=request.user  #if request.user.is_authenticated else default_user
-        assignee=request.user  #if request.user.is_authenticated else default_user
+        deadline_value = d_line if d_line and d_line.strip() != "" else None
+        creator = request.user
+        assignee= request.user
         
         # Creem l'issue i l'assignem a nosaltres mateixos (Requisit)
-        issue = issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
-                              assignee)
+        issue = issue_create_instance(subject, description, issue_type, issue_severity, priority, status, deadline_value, creator,
+                                      assignee)
 
         if request.FILES.get('files') is not None:
             attachment_create_instance(issue.id, creator, request.FILES.get('files'))
@@ -136,6 +138,16 @@ def issue_create(request):
         return redirect('issue_list')
 
     return render(request, 'issues/create.html')
+
+# sobreescribir metodo save para notificar a watchers cada vez que se guardan cambios
+def save(self, *args, **kwargs):
+    is_update = self.pk is not None
+    super().save(*args, **kwargs)
+    if is_update:
+        try:
+            self.notify_watchers("ha sido actualizado")
+        except Exception as e:
+            print(f"Error al notificar: {e}")
 
 @login_required
 def issue_bulk_create(request):
@@ -171,13 +183,16 @@ def issue_create_instance(subject, description, issue_type, issue_severity, prio
         issue_severity=issue_severity,
         priority=priority,
         status=status,
-        deadline=d_line if d_line else None,
+        deadline=d_line,
         creator=creator,
         assignee=assignee
     )
 
 def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
+
+    available_users = User.objects.exclude(id__in=issue.watchers.all())
+
     edit_comment_id = request.GET.get('edit_comment')
     edit_comment_obj = None
     if edit_comment_id:
@@ -185,7 +200,13 @@ def issue_detail(request, issue_id):
 
     attachments = issue.attachments.all()
 
-    return render(request, 'issues/detail.html', {'issue': issue, 'attachments': attachments, 'edit_comment_obj': edit_comment_obj})
+    context = {
+        'issue': issue,
+        'attachments': attachments,
+        'edit_comment_obj': edit_comment_obj,
+        'available_users': available_users,
+    }
+    return render(request, 'issues/detail.html', context)
 
 def issue_delete(request, issue_id):
     if request.method == 'POST':
@@ -195,14 +216,50 @@ def issue_delete(request, issue_id):
         issue.delete()
     return redirect('issue_list')
 
+
 def issue_update_status(request, issue_id):
     if request.method == 'POST':
         issue = get_object_or_404(Issue, id=issue_id)
+
         nuevo_estado = request.POST.get('status')
         if nuevo_estado:
             issue.status = nuevo_estado
-            issue.save()
+
+        nueva_deadline = request.POST.get('deadline')
+        if nueva_deadline == "":
+            issue.deadline = None
+        elif nueva_deadline:
+            issue.deadline = nueva_deadline
+
+        issue.save()
     return redirect('issue_list')
+
+def add_watcher(request, issue_id):
+    if request.method == "POST":
+        issue = get_object_or_404(Issue, id=issue_id)
+        user_id = request.POST.get('user_id')
+        if user_id:
+            user_to_add = get_object_or_404(User, id=user_id)
+            issue.watchers.add(user_to_add)
+    return redirect('issue_detail', issue_id=issue_id)
+
+
+def toggle_watcher(request, issue_id):
+    if request.method == "POST":
+        issue = get_object_or_404(Issue, id=issue_id)
+        target_user_id = request.POST.get('user_id')
+
+        if target_user_id:
+            user = get_object_or_404(User, id=target_user_id)
+        else:
+            user = request.user
+
+        if user in issue.watchers.all():
+            issue.watchers.remove(user)
+        else:
+            issue.watchers.add(user)
+
+    return redirect(request.META.get('HTTP_REFERER', 'issue_list'))
 
 @login_required
 def comment_add(request, issue_id):
@@ -224,10 +281,8 @@ def comment_edit(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     issue_id = getattr(comment, 'issue_id')
 
-    #Simulamos que el admin puede hacer todo
-    current_user = request.user
     # Només el creador edita request.user
-    if request.method == 'POST' and comment.author == current_user:
+    if request.method == 'POST' and comment.author == request.user:
         text = request.POST.get('body', '').strip()
         if text:
             comment.body = text

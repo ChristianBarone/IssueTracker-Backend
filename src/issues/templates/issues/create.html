@@ -26,11 +26,12 @@
         /* SELECTS DERECHA */
         .status-wrapper { margin-bottom: 25px; }
         .status-select {
-            width: 100%; background: #64748b; color: white; padding: 12px;
+            width: 100%;
+            color: white; padding: 12px;
             border-radius: 4px; border: none; font-weight: bold; font-size: 14px;
             cursor: pointer; appearance: none; -webkit-appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
-            background-repeat: no-repeat; background-position: right 10px center; background-size: 18px;
+            background: #64748b url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e") no-repeat right 10px center;
+            background-size: 18px;
         }
 
         .side-group { margin-bottom: 20px; }
@@ -121,6 +122,10 @@
                     </select>
                 </div>
 
+                <div class="side-group">
+                    <label class="side-label">Deadline</label>
+                    <input type="date" name="deadline" class="side-select">
+                </div>
             </div>
         </div>
 
