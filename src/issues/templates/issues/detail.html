@@ -305,6 +305,8 @@
                             <span class="activity-field">{{ activity.field_name }}</span>
                             {% if activity.field_name == 'issue' %}
                                 {{ activity.new_value|capfirst }}
+                            {% elif activity.field_name == 'watchers' %}
+                                {{ activity.new_value }}
                             {% else %}
                                 {{ activity.old_value|default:"-" }}
                                 <span style="color:#94a3b8; margin: 0 6px;">&gt;</span>

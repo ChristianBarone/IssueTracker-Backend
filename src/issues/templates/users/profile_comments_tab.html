@@ -263,10 +263,10 @@
             </div>
 
             <h1>@{{ profile_user.username }}</h1>
-            <p class="email">{{ profile_user.email|default:"No email disponible" }}</p>
+            <p class="email">{{ profile_user.email|default:"No email provided" }}</p>
 
             <div class="meta">
-                <div><strong>Registrat:</strong> {{ profile_user.date_joined|date:"d/m/Y" }}</div>
+                <div><strong>Registred:</strong> {{ profile_user.date_joined|date:"d/m/Y" }}</div>
             </div>
 
             <div class="bio">
@@ -275,7 +275,7 @@
         </section>
 
         <section class="panel activity">
-            <h2>Perfil d'usuari</h2>
+            <h2>User Activity</h2>
 
             <div class="tabs">
                 <a href="?tab=assigned" class="{% if tab == 'assigned' %}active{% endif %}">Open Assigned Issues</a>
@@ -318,11 +318,11 @@
                         </div>
                     </div>
                     {% empty %}
-                    <div class="empty">No hi ha issues assignades per mostrar.</div>
+                    <div class="empty">No issues assigned</div>
                     {% endfor %}
                 </div>
             {% elif tab == 'watched' %}
-                <div class="empty">Watched issues encara no està implementat.</div>
+                <div class="empty">no watched issues</div>
             {% else %}
                 {% for comment in items %}
                 <div class="activity-item">
@@ -333,7 +333,7 @@
                     <small>{{ comment.created_at|date:"d/m/Y H:i" }}</small>
                 </div>
                 {% empty %}
-                <div class="empty">Aquest usuari encara no ha publicat comentaris.</div>
+                <div class="empty">No comments posted yet.</div>
                 {% endfor %}
             {% endif %}
         </section>
