@@ -51,6 +51,13 @@
             box-shadow: 0 3px 0 #64748b;
         }
 
+        .btn-settings {
+            background: #d1d5db; color: #374151; padding: 10px 18px;
+            border-radius: 5px; text-decoration: none; font-weight: bold;
+            box-shadow: 0 3px 0 #64748b;
+        }
+        .btn-settings:hover { background: #b8bfc8; }
+
         .main-layout { display: flex; gap: 25px; }
 
         /* SIDEBAR */
@@ -82,16 +89,6 @@
         /* Estilo para simular el checkbox activo en el label */
         .filter-item { display: flex; align-items: center; gap: 8px; }
 
-        /* BORDES DE COLORES */
-        .link-bug { border-left-color: #e74c3c; }
-        .link-question { border-left-color: #3498db; }
-        .link-enhancement { border-left-color: #00FFFF; }
-        .link-wishlist { border-left-color: #3498db; }
-        .link-minor { border-left-color: #3498db; }
-        .link-normal { border-left-color: #2ecc71; }
-        .link-important { border-left-color: #e67e22; }
-        .link-critical { border-left-color: #c0392b; }
-
         .count-pill { background: #ebf0f5; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
 
         .filtered-by-box { background: #f1f8e9; border: 1px solid #dcedc8; margin: 10px; padding: 10px; border-radius: 4px; }
@@ -115,9 +112,6 @@
         td { padding: 18px 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
 
         .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-        .type-bug { background-color: #e74c3c; } .type-question { background-color: #3498db; } .type-enhancement { background-color: #00FFFF; }
-        .sev-wishlist { background-color: #b3e5fc; } .sev-minor { background-color: #3498db; } .sev-normal { background-color: #2ecc71; } .sev-important { background-color: #e67e22; } .sev-critical { background-color: #c0392b; }
-        .prio-high { background-color: #32CD32; } .prio-normal { background-color: #FFFF00; border: 1px solid #ccc; } .prio-low { background-color: #e67e22; }
 
         .ref-number { color: var(--taiga-orange); font-weight: bold; text-decoration: none; margin-right: 5px; }
         .subject-link { text-decoration: none; color: var(--taiga-main); font-weight: 500; font-size: 15px; white-space: initial}
@@ -161,6 +155,7 @@
             <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
             <a href="{% url 'user_profile' request.user.username %}" class="btn-profile">VIEW PROFILE</a>
             <a href="{% url 'issue_bulk_create' %}" class="btn-bulk">BULK ADD</a>
+            <a href="{% url 'settings_page' %}" class="btn-settings">SETTINGS</a>
         </div>
 
         <div class="main-layout">
@@ -183,12 +178,12 @@
                     <summary>Type <span>▾</span></summary>
                     <div class="filter-content">
                         {% for t in all_types %}
-                        <label class="filter-label link-{{ t|lower }}">
+                        <label class="filter-label" style="border-left-color: {{ t.color }};">
                             <div class="filter-item">
-                                <input type="checkbox" name="issue_type" value="{{ t }}" {% if t in selected_types %}checked{% endif %}>
-                                <span>{{ t }}</span>
+                                <input type="checkbox" name="issue_type" value="{{ t.name }}" {% if t.name in selected_types %}checked{% endif %}>
+                                <span>{{ t.name }}</span>
                             </div>
-                            <span class="count-pill">{% if t == 'Bug' %}{{ counts.bug }}{% elif t == 'Question' %}{{ counts.question }}{% else %}{{ counts.enhancement }}{% endif %}</span>
+                            <span class="count-pill">{{ t.issue_count }}</span>
                         </label>
                         {% endfor %}
                     </div>
@@ -198,14 +193,12 @@
                     <summary>Severity <span>▾</span></summary>
                     <div class="filter-content">
                         {% for s in all_severities %}
-                        <label class="filter-label link-{{ s|lower }}">
+                        <label class="filter-label" style="border-left-color: {{ s.color }};">
                             <div class="filter-item">
-                                <input type="checkbox" name="issue_severity" value="{{ s }}" {% if s in selected_severities %}checked{% endif %}>
-                                <span>{{ s }}</span>
+                                <input type="checkbox" name="issue_severity" value="{{ s.name }}" {% if s.name in selected_severities %}checked{% endif %}>
+                                <span>{{ s.name }}</span>
                             </div>
-                            <span class="count-pill">
-                                {% if s == 'Critical' %}{{ counts.critical }}{% elif s == 'Important' %}{{ counts.important }}{% elif s == 'Normal' %}{{ counts.normal_sev }}{% elif s == 'Minor' %}{{ counts.minor }}{% else %}{{ counts.wishlist }}{% endif %}
-                            </span>
+                            <span class="count-pill">{{ s.issue_count }}</span>
                         </label>
                         {% endfor %}
                     </div>
@@ -215,14 +208,12 @@
                     <summary>Status <span>▾</span></summary>
                     <div class="filter-content">
                         {% for st in all_statuses %}
-                        <label class="filter-label">
+                        <label class="filter-label" style="border-left-color: {{ st.color }};">
                             <div class="filter-item">
-                                <input type="checkbox" name="status" value="{{ st }}" {% if st in selected_statuses %}checked{% endif %}>
-                                <span>{{ st }}</span>
+                                <input type="checkbox" name="status" value="{{ st.name }}" {% if st.name in selected_statuses %}checked{% endif %}>
+                                <span>{{ st.name }}</span>
                             </div>
-                            <span class="count-pill">
-                                {% if st == 'New' %}{{ counts.new }}{% elif st == 'In Progress' %}{{ counts.in_progress }}{% elif st == 'Closed' %}{{ counts.closed }}{% else %}0{% endif %}
-                            </span>
+                            <span class="count-pill">{{ st.issue_count }}</span>
                         </label>
                         {% endfor %}
                     </div>
@@ -322,9 +313,9 @@
                     <tbody>
                     {% for issue in issues %}
                     <tr>
-                        <td align="center"><span class="dot type-{{ issue.issue_type|lower }}"></span></td>
-                        <td align="center"><span class="dot sev-{{ issue.issue_severity|lower }}"></span></td>
-                        <td align="center"><span class="dot prio-{{ issue.priority|lower }}"></span></td>
+                        <td align="center"><span class="dot" style="background-color: {{ issue.issue_type.color }};"></span></td>
+                        <td align="center"><span class="dot" style="background-color: {{ issue.issue_severity.color }};"></span></td>
+                        <td align="center"><span class="dot" style="background-color: {{ issue.priority.color }};"></span></td>
                         <td>
                             <a href="{% url 'issue_detail' issue.id %}" class="ref-number">#{{ issue.id }}</a>
                             <a href="{% url 'issue_detail' issue.id %}" class="subject-link">{{ issue.subject }}</a>
@@ -333,7 +324,7 @@
                             <div style="display:flex; align-items:center;">
                                 <select name="status" form="update-form-{{ issue.id }}" style="padding: 4px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 13px; flex-grow:1;">
                                     {% for st in all_statuses %}
-                                    <option value="{{ st }}" {% if issue.status == st %}selected{% endif %}>{{ st }}</option>
+                                    <option value="{{ st.name }}" {% if issue.status.pk == st.pk %}selected{% endif %}>{{ st.name }}</option>
                                     {% endfor %}
                                 </select>
                                 <button type="submit" form="update-form-{{ issue.id }}" class="btn-save-status">OK</button>

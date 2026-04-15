@@ -459,9 +459,9 @@
 						<div class="issue-row">
 							<div class="issue-left">
 								<span class="badge-stack">
-									<span class="dot type-{{ issue.issue_type|lower }}"></span>
-									<span class="dot sev-{{ issue.issue_severity|lower }}"></span>
-									<span class="dot prio-{{ issue.priority|lower }}"></span>
+									<span class="dot type-{{ issue.issue_type.name|lower }}"></span>
+									<span class="dot sev-{{ issue.issue_severity.name|lower }}"></span>
+									<span class="dot prio-{{ issue.priority.name|lower }}"></span>
 								</span>
 								<a href="{% url 'issue_detail' issue.id %}" class="issue-link">#{{ issue.id }}</a>
 								<a href="{% url 'issue_detail' issue.id %}" class="issue-subject">{{ issue.subject }}</a>

@@ -14,25 +14,21 @@ class Profile(models.Model):
 
 class Issue(models.Model):
     objects = models.Manager()
-    # Valors predefinits per a la Sessió 2 (Hardcoded com diuen les instruccions)
-    STATUS_CHOICES = [('New', 'New'), ('In Progress', 'In Progress'), ('Ready for test', 'Ready for test'), ('Closed', 'Closed'), ('Needs Info', 'Needs Info'), ('Rejected', 'Rejected'), ('Postponed', 'Postponed')]
-    PRIORITY_CHOICES = [('Low', 'Low'), ('Normal', 'Normal'), ('High', 'High')]
-    TYPE_CHOICES = [('Bug', 'Bug'), ('Question', 'Question'), ('Enhancement', 'Enhancement')]
-    SEVERITY_CHOICES = [('Minor', 'Minor'), ('Normal', 'Normal'), ('Important', 'Important'), ('Critical', 'Critical')]
 
     subject = models.CharField(max_length=200) # En Taiga és 'Subject', no 'Title'
     description = models.TextField(blank=True)
-    
-    # Relacions
+
+    # Relacions amb usuaris
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_issues')
     assignee = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_issues')
     watchers = models.ManyToManyField(User, related_name='watched_issues', blank=True)
+    tags = models.ManyToManyField('Tag', blank=True)
 
-    # Atributs amb valors per defecte
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='New')
-    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='Normal')
-    issue_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Bug')
-    issue_severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='Normal')
+    # Atributs dinàmics (gestionats des de Settings)
+    status = models.ForeignKey('Status', on_delete=models.SET_NULL, null=True, blank=True)
+    priority = models.ForeignKey('Priority', on_delete=models.SET_NULL, null=True, blank=True)
+    issue_type = models.ForeignKey('IssueType', on_delete=models.SET_NULL, null=True, blank=True)
+    issue_severity = models.ForeignKey('Severity', on_delete=models.SET_NULL, null=True, blank=True)
 
     deadline = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -74,3 +70,94 @@ class Attachment(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE)
     file = models.FileField(upload_to='attachments')
     name = models.TextField()
+
+
+#Models dels atributs
+
+class Status(models.Model):
+    objects = models.Manager()
+    name = models.CharField(max_length=50, unique=True)
+    slug = models.SlugField(max_length=50, unique=True, blank=True)
+    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#70728F"
+    is_default = models.BooleanField(default=False)
+    is_closed = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class Priority(models.Model):
+    objects = models.Manager()
+    name = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#E4CE40"
+    is_default = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class IssueType(models.Model):
+    objects = models.Manager()
+    name = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#E44057"
+    is_default = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class Severity(models.Model):
+    objects = models.Manager()
+    name = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#E44057"
+    is_default = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class Tag(models.Model):
+    objects = models.Manager()
+    name = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#5dc5b5"
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class DueDate(models.Model):
+    BEFORE = 'before'
+    AFTER  = 'after'
+    DIRECTION_CHOICES = [(BEFORE, 'Before'), (AFTER, 'After')]
+
+    objects = models.Manager()
+    name            = models.CharField(max_length=50, unique=True)
+    color           = models.CharField(max_length=7, blank=True)
+    days_offset     = models.IntegerField(null=True, blank=True)   # null = default/always
+    before_or_after = models.CharField(max_length=6, choices=DIRECTION_CHOICES, null=True, blank=True)
+    order           = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return self.name
