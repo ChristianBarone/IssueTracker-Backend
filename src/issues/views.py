@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Issue, Comment, Profile, IssueActivity, Attachment, Status, Priority, IssueType, Severity
-from .forms import UploadFileForm, ProfileForm
+from .models import Issue, Comment, Profile, IssueActivity, Attachment, Status, Priority, IssueType, Severity, Tag, DueDate
+from .forms import UploadFileForm, ProfileForm, StatusForm, PriorityForm, IssueTypeForm, SeverityForm, TagForm, DueDateForm
 from django.contrib.auth.models import User
 from django.db.models import Q, Count
 import os
@@ -60,41 +60,15 @@ def issue_list(request):
             return f"-{field}" # Si ya es asc, pasamos a desc
         return field # Si es cualquier otra cosa, ponemos asc
 
-    base_stats = Issue.objects.all()
-
     users = User.objects.annotate(num_issues=Count('assigned_issues'))
 
-    # Listas desde BD (dinámicas)
-    all_types = list(IssueType.objects.values_list('name', flat=True))
-    all_severities = list(Severity.objects.values_list('name', flat=True))
-    all_statuses = list(Status.objects.values_list('name', flat=True))
-
-    counts = {
-        # Types
-        'bug': base_stats.filter(issue_type__name='Bug').count(),
-        'question': base_stats.filter(issue_type__name='Question').count(),
-        'enhancement': base_stats.filter(issue_type__name='Enhancement').count(),
-
-        # Severities
-        'wishlist': base_stats.filter(issue_severity__name='Wishlist').count(),
-        'minor': base_stats.filter(issue_severity__name='Minor').count(),
-        'normal_sev': base_stats.filter(issue_severity__name='Normal').count(),
-        'important': base_stats.filter(issue_severity__name='Important').count(),
-        'critical': base_stats.filter(issue_severity__name='Critical').count(),
-
-        # Status
-        'new': base_stats.filter(status__name='New').count(),
-        'in_progress': base_stats.filter(status__name='In Progress').count(),
-        'ready_test': base_stats.filter(status__name='Ready for test').count(),
-        'needs_info': base_stats.filter(status__name='Needs Info').count(),
-        'rejected': base_stats.filter(status__name='Rejected').count(),
-        'postponed': base_stats.filter(status__name='Postponed').count(),
-        'closed': base_stats.filter(status__name='Closed').count(),
-    }
+    # Listas desde BD (dinámicas) — queryset con color e issue_count por anotación
+    all_types = IssueType.objects.annotate(issue_count=Count('issue')).order_by('order', 'name')
+    all_severities = Severity.objects.annotate(issue_count=Count('issue')).order_by('order', 'name')
+    all_statuses = Status.objects.annotate(issue_count=Count('issue')).order_by('order', 'name')
 
     context = {
         'issues': issues,
-        'counts': counts,
         'users': users,
         'show_filters': request.GET.get('show_filters') == '1',
         'all_types': all_types,
@@ -422,4 +396,166 @@ def delete_attachment(request, attachment_id):
     attachment.delete()
 
     return redirect('issue_detail', issue_id=issue_id)
+
+
+SETTINGS_MODELS = {
+    'statuses':   Status,
+    'priorities': Priority,
+    'types':      IssueType,
+    'severities': Severity,
+    'tags':       Tag,
+    'duedates':   DueDate,
+}
+
+SETTINGS_FORMS = {
+    'statuses':   StatusForm,
+    'priorities': PriorityForm,
+    'types':      IssueTypeForm,
+    'severities': SeverityForm,
+    'tags':       TagForm,
+    'duedates':   DueDateForm,
+}
+
+ENTITY_LABELS = {
+    'statuses':   'Status',
+    'priorities': 'Priority',
+    'types':      'Type',
+    'severities': 'Severity',
+    'tags':       'Tag',
+    'duedates':   'Due Date Status',
+}
+
+@login_required
+def settings_page(request):
+    active_tab = request.GET.get('tab', 'statuses')
+    context = {
+        'statuses':   Status.objects.all(),
+        'priorities': Priority.objects.all(),
+        'types':      IssueType.objects.all(),
+        'severities': Severity.objects.all(),
+        'tags':       Tag.objects.all(),
+        'duedates':   DueDate.objects.all(),
+        'active_tab': active_tab,
+    }
+    return render(request, 'issues/settings.html', context)
+
+
+REASSIGNABLE_FIELD = {
+    'statuses':   'status',
+    'priorities': 'priority',
+    'types':      'issue_type',
+    'severities': 'issue_severity',
+}
+
+@login_required
+def settings_delete(request, entity, pk):
+    if entity not in SETTINGS_MODELS:
+        return redirect(f'/settings/?tab={entity}')
+
+    model = SETTINGS_MODELS[entity]
+    obj = get_object_or_404(model, pk=pk)
+
+    if request.method == 'POST':
+        if entity in REASSIGNABLE_FIELD:
+            if model.objects.count() <= 1:
+                return redirect(f'/settings/?tab={entity}')
+            replacement_pk = request.POST.get('replacement_pk')
+            if replacement_pk:
+                replacement = get_object_or_404(model, pk=replacement_pk)
+                field_name = REASSIGNABLE_FIELD[entity]
+                Issue.objects.filter(**{field_name: obj}).update(**{field_name: replacement})
+        obj.delete()
+        return redirect(f'/settings/?tab={entity}')
+
+    # GET — show confirmation page
+    replacements = None
+    if entity in REASSIGNABLE_FIELD:
+        if model.objects.count() <= 1:
+            return redirect(f'/settings/?tab={entity}')   # can't delete last
+        replacements = model.objects.exclude(pk=pk).order_by('order', 'name')
+
+    return render(request, 'issues/settings_delete_confirm.html', {
+        'obj': obj,
+        'entity': entity,
+        'entity_label': ENTITY_LABELS.get(entity, entity),
+        'replacements': replacements,
+    })
+
+
+ORDERABLE_ENTITIES = {'statuses', 'priorities', 'types', 'severities', 'duedates'}
+
+def _do_move(request, entity, pk, direction):
+    if request.method != 'POST' or entity not in ORDERABLE_ENTITIES:
+        return redirect(f'/settings/?tab={entity}')
+
+    model = SETTINGS_MODELS[entity]
+    obj = get_object_or_404(model, pk=pk)
+
+    items = list(model.objects.order_by('order', 'name'))
+    idx = next((i for i, item in enumerate(items) if item.pk == pk), None)
+    if idx is None:
+        return redirect(f'/settings/?tab={entity}')
+
+    if direction == 'up' and idx > 0:
+        swap_idx = idx - 1
+    elif direction == 'down' and idx < len(items) - 1:
+        swap_idx = idx + 1
+    else:
+        return redirect(f'/settings/?tab={entity}')
+
+    items[idx], items[swap_idx] = items[swap_idx], items[idx]
+    for i, item in enumerate(items):
+        item.order = i + 1
+        item.save(update_fields=['order'])
+
+    return redirect(f'/settings/?tab={entity}')
+
+@login_required
+def settings_toggle_closed(request, pk):
+    if request.method == 'POST':
+        status = get_object_or_404(Status, pk=pk)
+        status.is_closed = not status.is_closed
+        status.save(update_fields=['is_closed'])
+    return redirect('/settings/?tab=statuses')
+
+
+@login_required
+def settings_move_up(request, entity, pk):
+    return _do_move(request, entity, pk, 'up')
+
+@login_required
+def settings_move_down(request, entity, pk):
+    return _do_move(request, entity, pk, 'down')
+
+
+@login_required
+def settings_save(request, entity, pk=None):
+    if entity not in SETTINGS_MODELS:
+        return redirect(f'/settings/?tab={entity}')
+
+    model = SETTINGS_MODELS[entity]
+    FormClass = SETTINGS_FORMS[entity]
+    instance = get_object_or_404(model, pk=pk) if pk else None
+
+    if request.method == 'POST':
+        form = FormClass(request.POST, instance=instance)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            if not instance and entity in ORDERABLE_ENTITIES:
+                from django.db.models import Max
+                max_order = model.objects.aggregate(m=Max('order'))['m'] or 0
+                obj.order = max_order + 1
+            obj.save()
+            return redirect(f'/settings/?tab={entity}')
+    else:
+        form = FormClass(instance=instance)
+
+    action = 'Edit' if instance else 'Add'
+    return render(request, 'issues/settings_form.html', {
+        'form': form,
+        'entity': entity,
+        'instance': instance,
+        'action': action,
+        'entity_label': ENTITY_LABELS.get(entity, entity),
+    })
 

@@ -77,8 +77,10 @@ class Attachment(models.Model):
 class Status(models.Model):
     objects = models.Manager()
     name = models.CharField(max_length=50, unique=True)
-    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#34495e"
+    slug = models.SlugField(max_length=50, unique=True, blank=True)
+    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#70728F"
     is_default = models.BooleanField(default=False)
+    is_closed = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -91,6 +93,7 @@ class Status(models.Model):
 class Priority(models.Model):
     objects = models.Manager()
     name = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#E4CE40"
     is_default = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
 
@@ -104,6 +107,7 @@ class Priority(models.Model):
 class IssueType(models.Model):
     objects = models.Manager()
     name = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#E44057"
     is_default = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
 
@@ -117,6 +121,7 @@ class IssueType(models.Model):
 class Severity(models.Model):
     objects = models.Manager()
     name = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#E44057"
     is_default = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
 
@@ -140,12 +145,19 @@ class Tag(models.Model):
 
 
 class DueDate(models.Model):
+    BEFORE = 'before'
+    AFTER  = 'after'
+    DIRECTION_CHOICES = [(BEFORE, 'Before'), (AFTER, 'After')]
+
     objects = models.Manager()
-    name = models.CharField(max_length=50, unique=True)
-    date = models.DateField()
+    name            = models.CharField(max_length=50, unique=True)
+    color           = models.CharField(max_length=7, blank=True)
+    days_offset     = models.IntegerField(null=True, blank=True)   # null = default/always
+    before_or_after = models.CharField(max_length=6, choices=DIRECTION_CHOICES, null=True, blank=True)
+    order           = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ['date']
+        ordering = ['order']
 
     def __str__(self):
         return self.name

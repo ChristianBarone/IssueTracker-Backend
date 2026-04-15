@@ -40,7 +40,15 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
 
     path('issue/<int:issue_id>/attachments', add_attachment, name='add_attachment'),
-    path('attachments/<int:attachment_id>/delete', delete_attachment, name='delete_attachment')
+    path('attachments/<int:attachment_id>/delete', delete_attachment, name='delete_attachment'),
+
+    path('settings/', settings_page, name='settings_page'),
+    path('settings/<str:entity>/add/', settings_save, name='settings_add'),
+    path('settings/<str:entity>/<int:pk>/edit/', settings_save, name='settings_edit'),
+    path('settings/<str:entity>/<int:pk>/delete/', settings_delete, name='settings_delete'),
+    path('settings/statuses/<int:pk>/toggle-closed/', settings_toggle_closed, name='settings_toggle_closed'),
+    path('settings/<str:entity>/<int:pk>/move-up/', settings_move_up, name='settings_move_up'),
+    path('settings/<str:entity>/<int:pk>/move-down/', settings_move_down, name='settings_move_down'),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

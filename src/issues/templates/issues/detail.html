@@ -59,7 +59,6 @@
     }
 
     .taiga-status-badge {
-        background: linear-gradient(135deg, #79a6d8, #5a8bc0);
         color: white; padding: 6px 14px;
         border-radius: 50px; font-weight: 700;
         font-size: 0.75em; text-transform: uppercase;
@@ -251,7 +250,7 @@
 
         <div class="taiga-panel">
             <div style="margin-bottom: 25px;">
-                <span class="taiga-status-badge">{{ issue.status }}</span>
+                <span class="taiga-status-badge" style="background-color: {{ issue.status.color }};">{{ issue.status }}</span>
             </div>
             <h3>Description</h3>
             <p class="description-text">{{ issue.description|linebreaksbr|default:"No description" }}</p>
@@ -374,11 +373,24 @@
             <h4>DETAILS</h4>
             <div class="sidebar-item">
                 <span class="sidebar-label">Type</span>
-                <span class="sidebar-value" style="color: var(--taiga-green);">{{ issue.issue_type }}</span>
+                <span class="sidebar-value" style="display:flex; align-items:center; gap:6px;">
+                    <span style="width:10px; height:10px; border-radius:50%; background-color:{{ issue.issue_type.color }}; display:inline-block; flex-shrink:0;"></span>
+                    {{ issue.issue_type }}
+                </span>
+            </div>
+            <div class="sidebar-item">
+                <span class="sidebar-label">Severity</span>
+                <span class="sidebar-value" style="display:flex; align-items:center; gap:6px;">
+                    <span style="width:10px; height:10px; border-radius:50%; background-color:{{ issue.issue_severity.color }}; display:inline-block; flex-shrink:0;"></span>
+                    {{ issue.issue_severity }}
+                </span>
             </div>
             <div class="sidebar-item">
                 <span class="sidebar-label">Priority</span>
-                <span class="sidebar-value">{{ issue.priority }}</span>
+                <span class="sidebar-value" style="display:flex; align-items:center; gap:6px;">
+                    <span style="width:10px; height:10px; border-radius:50%; background-color:{{ issue.priority.color }}; display:inline-block; flex-shrink:0;"></span>
+                    {{ issue.priority }}
+                </span>
             </div>
             <div class="sidebar-item">
                 <span class="sidebar-label">Creator</span>
