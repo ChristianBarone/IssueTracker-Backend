@@ -267,13 +267,30 @@ def issue_update_status(request, issue_id):
             )
     return redirect('issue_list')
 
+
+def _log_watcher_activity(issue, actor, action, watcher_user):
+    IssueActivity.objects.create(
+        issue=issue,
+        actor=actor,
+        field_name='watchers',
+        old_value='',
+        new_value=f"{action} @{watcher_user.username}",
+    )
+
 def add_watcher(request, issue_id):
     if request.method == "POST":
         issue = get_object_or_404(Issue, id=issue_id)
         user_id = request.POST.get('user_id')
         if user_id:
             user_to_add = get_object_or_404(User, id=user_id)
-            issue.watchers.add(user_to_add)
+            if not issue.watchers.filter(id=user_to_add.id).exists():
+                issue.watchers.add(user_to_add)
+                _log_watcher_activity(
+                    issue,
+                    request.user if request.user.is_authenticated else None,
+                    'added',
+                    user_to_add,
+                )
     return redirect('issue_detail', issue_id=issue_id)
 
 
@@ -289,8 +306,20 @@ def toggle_watcher(request, issue_id):
 
         if user in issue.watchers.all():
             issue.watchers.remove(user)
+            _log_watcher_activity(
+                issue,
+                request.user if request.user.is_authenticated else None,
+                'removed',
+                user,
+            )
         else:
             issue.watchers.add(user)
+            _log_watcher_activity(
+                issue,
+                request.user if request.user.is_authenticated else None,
+                'added',
+                user,
+            )
 
     return redirect(request.META.get('HTTP_REFERER', 'issue_list'))
 
