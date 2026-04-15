@@ -74,3 +74,82 @@ class Attachment(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE)
     file = models.FileField(upload_to='attachments')
     name = models.TextField()
+
+
+#Models dels atributs
+
+class Status(models.Model):
+    objects = models.Manager()
+    name = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#34495e"
+    is_default = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class Priority(models.Model):
+    objects = models.Manager()
+    name = models.CharField(max_length=50, unique=True)
+    is_default = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class IssueType(models.Model):
+    objects = models.Manager()
+    name = models.CharField(max_length=50, unique=True)
+    is_default = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class Severity(models.Model):
+    objects = models.Manager()
+    name = models.CharField(max_length=50, unique=True)
+    is_default = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class Tag(models.Model):
+    objects = models.Manager()
+    name = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=7, blank=True)  # hex, e.g. "#5dc5b5"
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class DueDate(models.Model):
+    objects = models.Manager()
+    name = models.CharField(max_length=50, unique=True)
+    date = models.DateField()
+
+    class Meta:
+        ordering = ['date']
+
+    def __str__(self):
+        return self.name
