@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Issue, Comment, Profile, IssueActivity, Attachment
+from .models import Issue, Comment, Profile, IssueActivity, Attachment, Status, Priority, IssueType, Severity
 from .forms import UploadFileForm, ProfileForm
 from django.contrib.auth.models import User
 from django.db.models import Q, Count
@@ -37,18 +37,18 @@ def issue_list(request):
 
     # Filtrado por TYPE (Acumulativo)
     if selected_types:
-        issues = issues.filter(issue_type__in=selected_types)
+        issues = issues.filter(issue_type__name__in=selected_types)
 
     # Filtrado por SEVERITY (Acumulativo)
     if selected_severities:
-        issues = issues.filter(issue_severity__in=selected_severities)
+        issues = issues.filter(issue_severity__name__in=selected_severities)
 
     # Filtrado por STATUS (Acumulativo)
     if selected_statuses:
-        issues = issues.filter(status__in=selected_statuses)
+        issues = issues.filter(status__name__in=selected_statuses)
 
     if selected_priorities:
-        issues = issues.filter(priority__in=selected_priorities)
+        issues = issues.filter(priority__name__in=selected_priorities)
 
     # Filtrado por ASIGNADO (Uno solo)
     if f_assignee:
@@ -64,32 +64,32 @@ def issue_list(request):
 
     users = User.objects.annotate(num_issues=Count('assigned_issues'))
 
-    # Listas para iterar en el HTML
-    all_types = ['Bug', 'Question', 'Enhancement']
-    all_severities = ['Wishlist', 'Minor', 'Normal', 'Important', 'Critical']
-    all_statuses = ['New', 'In Progress', 'Ready for test', 'Needs Info', 'Rejected', 'Postponed', 'Closed']
+    # Listas desde BD (dinámicas)
+    all_types = list(IssueType.objects.values_list('name', flat=True))
+    all_severities = list(Severity.objects.values_list('name', flat=True))
+    all_statuses = list(Status.objects.values_list('name', flat=True))
 
     counts = {
         # Types
-        'bug': base_stats.filter(issue_type='Bug').count(),
-        'question': base_stats.filter(issue_type='Question').count(),
-        'enhancement': base_stats.filter(issue_type='Enhancement').count(),
+        'bug': base_stats.filter(issue_type__name='Bug').count(),
+        'question': base_stats.filter(issue_type__name='Question').count(),
+        'enhancement': base_stats.filter(issue_type__name='Enhancement').count(),
 
         # Severities
-        'wishlist': base_stats.filter(issue_severity='Wishlist').count(),
-        'minor': base_stats.filter(issue_severity='Minor').count(),
-        'normal_sev': base_stats.filter(issue_severity='Normal').count(),
-        'important': base_stats.filter(issue_severity='Important').count(),
-        'critical': base_stats.filter(issue_severity='Critical').count(),
+        'wishlist': base_stats.filter(issue_severity__name='Wishlist').count(),
+        'minor': base_stats.filter(issue_severity__name='Minor').count(),
+        'normal_sev': base_stats.filter(issue_severity__name='Normal').count(),
+        'important': base_stats.filter(issue_severity__name='Important').count(),
+        'critical': base_stats.filter(issue_severity__name='Critical').count(),
 
         # Status
-        'new': base_stats.filter(status='New').count(),
-        'in_progress': base_stats.filter(status='In Progress').count(),
-        'ready_test': base_stats.filter(status='Ready for test').count(),
-        'needs_info': base_stats.filter(status='Needs Info').count(),
-        'rejected': base_stats.filter(status='Rejected').count(),
-        'postponed': base_stats.filter(status='Postponed').count(),
-        'closed': base_stats.filter(status='Closed').count(),
+        'new': base_stats.filter(status__name='New').count(),
+        'in_progress': base_stats.filter(status__name='In Progress').count(),
+        'ready_test': base_stats.filter(status__name='Ready for test').count(),
+        'needs_info': base_stats.filter(status__name='Needs Info').count(),
+        'rejected': base_stats.filter(status__name='Rejected').count(),
+        'postponed': base_stats.filter(status__name='Postponed').count(),
+        'closed': base_stats.filter(status__name='Closed').count(),
     }
 
     context = {
@@ -142,7 +142,12 @@ def issue_create(request):
 
         return redirect('issue_list')
 
-    return render(request, 'issues/create.html')
+    return render(request, 'issues/create.html', {
+        'statuses': Status.objects.all(),
+        'priorities': Priority.objects.all(),
+        'issue_types': IssueType.objects.all(),
+        'severities': Severity.objects.all(),
+    })
 
 # sobreescribir metodo save para notificar a watchers cada vez que se guardan cambios
 def save(self, *args, **kwargs):
@@ -184,10 +189,10 @@ def issue_create_instance(subject, description, issue_type, issue_severity, prio
     issue = Issue.objects.create(
         subject=subject,
         description=description,
-        issue_type=issue_type,
-        issue_severity=issue_severity,
-        priority=priority,
-        status=status,
+        issue_type=IssueType.objects.filter(name=issue_type).first(),
+        issue_severity=Severity.objects.filter(name=issue_severity).first(),
+        priority=Priority.objects.filter(name=priority).first(),
+        status=Status.objects.filter(name=status).first(),
         deadline=d_line,
         creator=creator,
         assignee=assignee
@@ -240,14 +245,16 @@ def issue_update_status(request, issue_id):
     if request.method == 'POST':
         issue = get_object_or_404(Issue, id=issue_id)
 
-        nuevo_estado = request.POST.get('status')
+        nuevo_estado_str = request.POST.get('status')
         status_changed = False
-        old_status = ''
+        old_status_name = ''
 
-        if nuevo_estado and nuevo_estado != issue.status:
-            old_status = issue.status
-            issue.status = nuevo_estado
-            status_changed = True
+        if nuevo_estado_str:
+            new_status = Status.objects.filter(name=nuevo_estado_str).first()
+            if new_status and new_status != issue.status:
+                old_status_name = issue.status.name if issue.status else ''
+                issue.status = new_status
+                status_changed = True
 
         nueva_deadline = request.POST.get('deadline')
         if nueva_deadline == "":
@@ -262,8 +269,8 @@ def issue_update_status(request, issue_id):
                 issue=issue,
                 actor=request.user if request.user.is_authenticated else None,
                 field_name='status',
-                old_value=old_status,
-                new_value=nuevo_estado,
+                old_value=old_status_name,
+                new_value=nuevo_estado_str,
             )
     return redirect('issue_list')
 
@@ -341,12 +348,12 @@ def user_comments_view(request, username):
     tab = request.GET.get('tab', 'assigned')
 
     created_issues = Issue.objects.filter(creator=profile_user).count()
-    open_assigned_issues = Issue.objects.filter(assignee=profile_user).exclude(status='Closed').count()
+    open_assigned_issues = Issue.objects.filter(assignee=profile_user).exclude(status__name='Closed').count()
     comments_count = Comment.objects.filter(author=profile_user).count()
     watched_issues = 0
 
     if tab == 'assigned':
-        items = Issue.objects.filter(assignee=profile_user).exclude(status='Closed').order_by('-modified_at')
+        items = Issue.objects.filter(assignee=profile_user).exclude(status__name='Closed').order_by('-modified_at')
     elif tab == 'watched':
         items = Issue.objects.none()
     else:

@@ -322,9 +322,9 @@
                     <tbody>
                     {% for issue in issues %}
                     <tr>
-                        <td align="center"><span class="dot type-{{ issue.issue_type|lower }}"></span></td>
-                        <td align="center"><span class="dot sev-{{ issue.issue_severity|lower }}"></span></td>
-                        <td align="center"><span class="dot prio-{{ issue.priority|lower }}"></span></td>
+                        <td align="center"><span class="dot type-{{ issue.issue_type.name|lower }}"></span></td>
+                        <td align="center"><span class="dot sev-{{ issue.issue_severity.name|lower }}"></span></td>
+                        <td align="center"><span class="dot prio-{{ issue.priority.name|lower }}"></span></td>
                         <td>
                             <a href="{% url 'issue_detail' issue.id %}" class="ref-number">#{{ issue.id }}</a>
                             <a href="{% url 'issue_detail' issue.id %}" class="subject-link">{{ issue.subject }}</a>
@@ -333,7 +333,7 @@
                             <div style="display:flex; align-items:center;">
                                 <select name="status" form="update-form-{{ issue.id }}" style="padding: 4px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 13px; flex-grow:1;">
                                     {% for st in all_statuses %}
-                                    <option value="{{ st }}" {% if issue.status == st %}selected{% endif %}>{{ st }}</option>
+                                    <option value="{{ st }}" {% if issue.status.name == st %}selected{% endif %}>{{ st }}</option>
                                     {% endfor %}
                                 </select>
                                 <button type="submit" form="update-form-{{ issue.id }}" class="btn-save-status">OK</button>
