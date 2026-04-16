@@ -109,7 +109,11 @@ def issue_create(request):
         d_line = request.POST.get('deadline')
         deadline_value = d_line if d_line and d_line.strip() != "" else None
         creator = request.user
+        assignee_id = request.POST.get('assignee_id', '').strip()
         assignee = None
+
+        if assignee_id:
+            assignee = get_object_or_404(User, id=assignee_id)
         
         # Creem l'issue amb assignació per defecte: unassigned
         issue = issue_create_instance(subject, description, issue_type, issue_severity, priority, status, deadline_value, creator,
@@ -125,6 +129,7 @@ def issue_create(request):
         'priorities': Priority.objects.all(),
         'issue_types': IssueType.objects.all(),
         'severities': Severity.objects.all(),
+        'assignable_users': User.objects.all().order_by('username'),
     })
 
 # sobreescribir metodo save para notificar a watchers cada vez que se guardan cambios

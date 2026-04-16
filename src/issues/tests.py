@@ -138,3 +138,35 @@ class IssueAssignmentAndWatcherTests(TestCase):
 		self.assertIn(watched_issue.id, returned_issue_ids)
 		self.assertNotIn(other_issue.id, returned_issue_ids)
 		self.assertEqual(response.context['watched_issues'], 1)
+
+	def test_issue_create_assigns_selected_user(self):
+		self.client.force_login(self.actor)
+		response = self.client.post(reverse('issue_create'), {
+			'subject': 'Create with selected assignee',
+			'description': 'desc',
+			'issue_type': 'Bug',
+			'issue_severity': 'Normal',
+			'priority': 'Normal',
+			'status': 'New',
+			'assignee_id': str(self.target.id),
+		})
+
+		self.assertEqual(response.status_code, 302)
+		created_issue = Issue.objects.get(subject='Create with selected assignee')
+		self.assertEqual(created_issue.assignee, self.target)
+
+	def test_issue_create_without_assignee_stays_unassigned(self):
+		self.client.force_login(self.actor)
+		response = self.client.post(reverse('issue_create'), {
+			'subject': 'Create unassigned issue',
+			'description': 'desc',
+			'issue_type': 'Bug',
+			'issue_severity': 'Normal',
+			'priority': 'Normal',
+			'status': 'New',
+			'assignee_id': '',
+		})
+
+		self.assertEqual(response.status_code, 302)
+		created_issue = Issue.objects.get(subject='Create unassigned issue')
+		self.assertIsNone(created_issue.assignee)

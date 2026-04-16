@@ -39,10 +39,22 @@
         .side-select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 3px; background: white; font-size: 14px; color: #475569; outline: none; }
 
         /* ASIGNACIÓN */
-        .assign-box { display: flex; align-items: center; gap: 12px; margin-bottom: 25px; }
+        .assign-box { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 25px; }
         .avatar-placeholder { width: 40px; height: 40px; background: #e2e8f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 20px; }
-        .assign-links { font-size: 13px; line-height: 1.4; }
-        .assign-links a { color: #3182ce; text-decoration: none; }
+        .assign-links { font-size: 13px; line-height: 1.4; width: 100%; }
+        .assign-actions { color: #3182ce; margin-bottom: 8px; }
+        .assign-actions button {
+            color: #3182ce;
+            text-decoration: none;
+            border: none;
+            background: none;
+            font-size: 13px;
+            padding: 0;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .assign-actions button:hover { text-decoration: underline; }
+        .assign-select { margin-top: 2px; }
 
         /* BOTONES ACCIÓN */
         .btn-submit { width: 100%; background: #92e7d9; color: #16a085; border: none; padding: 16px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer; border-radius: 3px; margin-top: 25px; }
@@ -87,8 +99,16 @@
                 <div class="assign-box">
                     <div class="avatar-placeholder">👤</div>
                     <div class="assign-links">
-                        <a href="#">Assign</a> or <br>
-                        <a href="#">Assign to me</a>
+                        <div class="assign-actions">
+                            <button type="button" id="btn-focus-assignee">Assign</button> or
+                            <button type="button" id="btn-assign-me">Assign to me</button>
+                        </div>
+                        <select name="assignee_id" id="assignee_id" class="side-select assign-select" aria-label="Assign issue to user">
+                            <option value="">Unassigned</option>
+                            {% for user in assignable_users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                 </div>
 
@@ -130,6 +150,25 @@
         <a href="{% url 'issue_list' %}" class="cancel-link">CANCEL</a>
     </form>
 </div>
+
+<script>
+    const assigneeSelect = document.getElementById('assignee_id');
+    const assignMeButton = document.getElementById('btn-assign-me');
+    const focusAssigneeButton = document.getElementById('btn-focus-assignee');
+
+    if (assignMeButton && assigneeSelect) {
+        assignMeButton.addEventListener('click', function () {
+            assigneeSelect.value = '{{ request.user.id }}';
+            assigneeSelect.focus();
+        });
+    }
+
+    if (focusAssigneeButton && assigneeSelect) {
+        focusAssigneeButton.addEventListener('click', function () {
+            assigneeSelect.focus();
+        });
+    }
+</script>
 
 </body>
 </html>
