@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 from .models import Issue, Comment, Profile, IssueActivity, Attachment, Status, Priority, IssueType, Severity, Tag, DueDate
 from .forms import UploadFileForm, ProfileForm, StatusForm, PriorityForm, IssueTypeForm, SeverityForm, TagForm, DueDateForm
 from django.contrib.auth.models import User
@@ -132,16 +133,6 @@ def issue_create(request):
         'assignable_users': User.objects.all().order_by('username'),
     })
 
-# sobreescribir metodo save para notificar a watchers cada vez que se guardan cambios
-def save(self, *args, **kwargs):
-    is_update = self.pk is not None
-    super().save(*args, **kwargs)
-    if is_update:
-        try:
-            self.notify_watchers("ha sido actualizado")
-        except Exception as e:
-            print(f"Error al notificar: {e}")
-
 @login_required
 def issue_bulk_create(request):
     # S'ha de canviar en tenir la funcionalitat dels usuaris
@@ -191,6 +182,7 @@ def issue_create_instance(subject, description, issue_type, issue_severity, prio
 
     return issue
 
+@login_required
 def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
 
@@ -200,11 +192,16 @@ def issue_detail(request, issue_id):
     edit_comment_id = request.GET.get('edit_comment')
     edit_comment_obj = None
     active_tab = request.GET.get('tab', 'comments')
+    editing = request.GET.get('editing', '')
+    subject_error = request.GET.get('subject_error', '')
+    is_creator = request.user.is_authenticated and request.user == issue.creator
 
     if edit_comment_id:
         edit_comment_obj = get_object_or_404(Comment, id=edit_comment_id, issue=issue)
 
     attachments = issue.attachments.all()
+    issue_tags = issue.tags.all()
+    available_tags = Tag.objects.exclude(pk__in=issue_tags.values_list('pk', flat=True)).order_by('name')
 
     context = {
         'issue': issue,
@@ -214,18 +211,28 @@ def issue_detail(request, issue_id):
         'activities': issue.activities.select_related('actor').all(),
         'available_users': available_users,
         'assignable_users': assignable_users,
+        'editing': editing,
+        'subject_error': subject_error,
+        'is_creator': is_creator,
+        'all_types': IssueType.objects.order_by('order', 'name'),
+        'all_severities': Severity.objects.order_by('order', 'name'),
+        'all_statuses': Status.objects.order_by('order', 'name'),
+        'all_priorities': Priority.objects.order_by('order', 'name'),
+        'issue_tags': issue_tags,
+        'available_tags': available_tags,
     }
     return render(request, 'issues/detail.html', context)
 
+@login_required
 def issue_delete(request, issue_id):
     if request.method == 'POST':
         issue = get_object_or_404(Issue, id=issue_id)
-        # Només el creador pot esborrar
-        #if issue.creator == request.user:
-        issue.delete()
+        if issue.creator == request.user:
+            issue.delete()
     return redirect('issue_list')
 
 
+@login_required
 def issue_update_status(request, issue_id):
     if request.method == 'POST':
         issue = get_object_or_404(Issue, id=issue_id)
@@ -299,6 +306,7 @@ def _log_watcher_activity(issue, actor, action, watcher_user):
         new_value=f"{action} @{watcher_user.username}",
     )
 
+@login_required
 def add_watcher(request, issue_id):
     if request.method == "POST":
         issue = get_object_or_404(Issue, id=issue_id)
@@ -316,6 +324,7 @@ def add_watcher(request, issue_id):
     return redirect('issue_detail', issue_id=issue_id)
 
 
+@login_required
 def toggle_watcher(request, issue_id):
     if request.method == "POST":
         issue = get_object_or_404(Issue, id=issue_id)
@@ -351,11 +360,7 @@ def comment_add(request, issue_id):
     if request.method == "POST":
         text = request.POST.get('body', '').strip()
         if text:
-            # Si el usuario no está logueado, usamos el primero de la base de datos
-            if not request.user.is_authenticated:
-                return redirect('account_login')  # allauth
-            author = request.user
-            Comment.objects.create(issue=issue, author=author, body=text)
+            Comment.objects.create(issue=issue, author=request.user, body=text)
 
     # Importante: Usa issue_id=issue_id para coincidir con tu nombre en urls.py
     return redirect('issue_detail', issue_id=issue_id)
@@ -441,14 +446,12 @@ def edit_profile(request, username):
         'form': form,
     })
 
+@login_required
 def add_attachment(request, issue_id):
     if request.method == 'POST':
 
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
-            if not request.user.is_authenticated:
-                return redirect('account_login')  # allauth
-
             attachment_create_instance(issue_id, request.user, request.FILES['files'])
 
     return redirect('issue_detail', issue_id=issue_id)
@@ -459,6 +462,7 @@ def attachment_create_instance(issue_id, creator, file):
     attachment = Attachment(issue=issue, creator=creator, file=file, name=os.path.basename(file.name))
     attachment.save()
 
+@login_required
 def delete_attachment(request, attachment_id):
     attachment = get_object_or_404(Attachment, id=attachment_id)
     issue_id = getattr(attachment, 'issue_id')
@@ -596,6 +600,142 @@ def settings_move_up(request, entity, pk):
 @login_required
 def settings_move_down(request, entity, pk):
     return _do_move(request, entity, pk, 'down')
+
+
+# ─── Issue detail inline-edit views ──────────────────────────────────────────
+
+def _update_fk_field(request, issue_id, field_name, model, activity_label):
+    """Generic handler: update one FK field on an issue, log activity, redirect to detail."""
+    issue = get_object_or_404(Issue, id=issue_id)
+    if issue.creator != request.user:
+        return HttpResponseForbidden()
+    if request.method == 'POST':
+        pk = request.POST.get('value_pk')
+        if pk:
+            new_obj = get_object_or_404(model, pk=pk)
+            old_obj = getattr(issue, field_name)
+            if new_obj != old_obj:
+                old_name = old_obj.name if old_obj else '—'
+                setattr(issue, field_name, new_obj)
+                issue.save()
+                IssueActivity.objects.create(
+                    issue=issue, actor=request.user,
+                    field_name=activity_label,
+                    old_value=old_name,
+                    new_value=new_obj.name,
+                )
+    return redirect('issue_detail', issue_id=issue_id)
+
+
+@login_required
+def issue_update_type(request, issue_id):
+    return _update_fk_field(request, issue_id, 'issue_type', IssueType, 'type')
+
+
+@login_required
+def issue_update_severity(request, issue_id):
+    return _update_fk_field(request, issue_id, 'issue_severity', Severity, 'severity')
+
+
+@login_required
+def issue_update_priority(request, issue_id):
+    return _update_fk_field(request, issue_id, 'priority', Priority, 'priority')
+
+
+@login_required
+def issue_update_status_detail(request, issue_id):
+    return _update_fk_field(request, issue_id, 'status', Status, 'status')
+
+
+@login_required
+def issue_update_subject(request, issue_id):
+    issue = get_object_or_404(Issue, id=issue_id)
+    if issue.creator != request.user:
+        return HttpResponseForbidden()
+    if request.method == 'POST':
+        subject = request.POST.get('subject', '').strip()
+        if not subject:
+            return redirect(f'/issue/{issue_id}/?editing=subject&subject_error=1')
+        old = issue.subject
+        issue.subject = subject
+        issue.save()
+        IssueActivity.objects.create(
+            issue=issue, actor=request.user,
+            field_name='subject', old_value=old, new_value=subject,
+        )
+    return redirect('issue_detail', issue_id=issue_id)
+
+
+@login_required
+def issue_update_description(request, issue_id):
+    issue = get_object_or_404(Issue, id=issue_id)
+    if issue.creator != request.user:
+        return HttpResponseForbidden()
+    if request.method == 'POST':
+        description = request.POST.get('description', '').strip()
+        old = issue.description or ''
+        issue.description = description
+        issue.save()
+        IssueActivity.objects.create(
+            issue=issue, actor=request.user,
+            field_name='description',
+            old_value=old[:120],
+            new_value=description[:120],
+        )
+    return redirect('issue_detail', issue_id=issue_id)
+
+
+@login_required
+def issue_update_deadline_detail(request, issue_id):
+    issue = get_object_or_404(Issue, id=issue_id)
+    if issue.creator != request.user:
+        return HttpResponseForbidden()
+    if request.method == 'POST':
+        deadline_str = request.POST.get('deadline', '').strip()
+        old = str(issue.deadline) if issue.deadline else '—'
+        issue.deadline = deadline_str if deadline_str else None
+        issue.save()
+        IssueActivity.objects.create(
+            issue=issue, actor=request.user,
+            field_name='deadline',
+            old_value=old,
+            new_value=deadline_str or '—',
+        )
+    return redirect('issue_detail', issue_id=issue_id)
+
+
+@login_required
+def issue_add_tag(request, issue_id):
+    issue = get_object_or_404(Issue, id=issue_id)
+    if issue.creator != request.user:
+        return HttpResponseForbidden()
+    if request.method == 'POST':
+        tag_pk = request.POST.get('tag_pk')
+        if tag_pk:
+            tag = get_object_or_404(Tag, pk=tag_pk)
+            if not issue.tags.filter(pk=tag.pk).exists():
+                issue.tags.add(tag)
+                IssueActivity.objects.create(
+                    issue=issue, actor=request.user,
+                    field_name='tags', old_value='', new_value=f'added {tag.name}',
+                )
+    return redirect('issue_detail', issue_id=issue_id)
+
+
+@login_required
+def issue_remove_tag(request, issue_id, tag_id):
+    issue = get_object_or_404(Issue, id=issue_id)
+    if issue.creator != request.user:
+        return HttpResponseForbidden()
+    if request.method == 'POST':
+        tag = get_object_or_404(Tag, pk=tag_id)
+        if issue.tags.filter(pk=tag.pk).exists():
+            issue.tags.remove(tag)
+            IssueActivity.objects.create(
+                issue=issue, actor=request.user,
+                field_name='tags', old_value=f'removed {tag.name}', new_value='',
+            )
+    return redirect('issue_detail', issue_id=issue_id)
 
 
 @login_required
