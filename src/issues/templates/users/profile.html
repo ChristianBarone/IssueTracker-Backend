@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Perfil - {{ profile_user.username }}</title>
+	<title>Profile - {{ profile_user.username }}</title>
 	<style>
 		:root {
 			--bg: #f5f7fb;
@@ -390,7 +390,7 @@
 		<aside class="card profile-card">
 			<div class="avatar">
 				{% if profile_obj.avatar %}
-					<img src="{{ profile_obj.avatar.url }}" alt="Avatar de {{ profile_user.username }}">
+					<img src="{{ profile_obj.avatar.url }}" alt="Avatar of {{ profile_user.username }}">
 				{% else %}
 					{{ profile_user.username|slice:":2"|upper }}
 				{% endif %}
@@ -414,10 +414,10 @@
 				</div>
 			</div>
 
-			<div class="bio">{{ profile_obj.bio|default:"Aquest usuari encara no ha afegit biografia." }}</div>
+			<div class="bio">{{ profile_obj.bio|default:"This user has not added a biography yet." }}</div>
 
 			<div class="meta-line" style="margin-bottom: 16px;">
-				<strong>Registrat:</strong> {{ profile_user.date_joined|date:"d M Y" }}
+				<strong>Registered:</strong> {{ profile_user.date_joined|date:"d M Y" }}
 			</div>
 
 			<div class="profile-actions">
@@ -444,8 +444,8 @@
 			<div class="content">
 				<div class="profile-header">
 					<div>
-						<h2>Perfil d'usuari</h2>
-						<div class="meta-line">{{ profile_user.email|default:"No email disponible" }}</div>
+						<h2>User Profile</h2>
+						<div class="meta-line">{{ profile_user.email|default:"No email available" }}</div>
 					</div>
 
 					{% if is_owner %}
@@ -470,11 +470,11 @@
 							<div class="issue-date">{{ issue.modified_at|date:"d M Y" }}</div>
 						</div>
 						{% empty %}
-						<div class="empty-state">No hi ha issues assignades per mostrar.</div>
+						<div class="empty-state">No issues to show.</div>
 						{% endfor %}
 					</div>
 				{% elif tab == 'watched' %}
-					<div class="empty-state">Watched issues encara no està implementat.</div>
+					<div class="empty-state">Watched issues is not implemented yet.</div>
 				{% else %}
 					<div class="comment-list">
 						{% for comment in items %}
@@ -486,7 +486,7 @@
 							<small>{{ comment.created_at|date:"d/m/Y H:i" }}</small>
 						</div>
 						{% empty %}
-						<div class="empty-state">Aquest usuari encara no ha publicat comentaris.</div>
+						<div class="empty-state">This user has not posted any comments yet.</div>
 						{% endfor %}
 					</div>
 				{% endif %}

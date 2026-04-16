@@ -51,7 +51,9 @@ def issue_list(request):
         issues = issues.filter(priority__name__in=selected_priorities)
 
     # Filtrado por ASIGNADO (Uno solo)
-    if f_assignee:
+    if f_assignee == 'unassigned':
+        issues = issues.filter(assignee__isnull=True)
+    elif f_assignee:
         issues = issues.filter(assignee_id=f_assignee)
 
 
@@ -61,6 +63,7 @@ def issue_list(request):
         return field # Si es cualquier otra cosa, ponemos asc
 
     users = User.objects.annotate(num_issues=Count('assigned_issues'))
+    unassigned_issues_count = Issue.objects.filter(assignee__isnull=True).count()
 
     # Listas desde BD (dinámicas) — queryset con color e issue_count por anotación
     all_types = IssueType.objects.annotate(issue_count=Count('issue')).order_by('order', 'name')
@@ -79,6 +82,7 @@ def issue_list(request):
         'selected_statuses': selected_statuses,
         'search_query': search_query,
         'f_assignee': f_assignee,
+        'unassigned_issues_count': unassigned_issues_count,
         'current_order':order_param,
         'order_links': {
             'type': toggle_order('issue_type'),
@@ -105,9 +109,9 @@ def issue_create(request):
         d_line = request.POST.get('deadline')
         deadline_value = d_line if d_line and d_line.strip() != "" else None
         creator = request.user
-        assignee= request.user
+        assignee = None
         
-        # Creem l'issue i l'assignem a nosaltres mateixos (Requisit)
+        # Creem l'issue amb assignació per defecte: unassigned
         issue = issue_create_instance(subject, description, issue_type, issue_severity, priority, status, deadline_value, creator,
                                       assignee)
 
@@ -148,7 +152,7 @@ def issue_bulk_create(request):
         status = 'New'
         d_line = None
         creator = user
-        assignee = user
+        assignee = None
 
         for subject in subjects:
             issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
@@ -186,6 +190,7 @@ def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
 
     available_users = User.objects.exclude(id__in=issue.watchers.all())
+    assignable_users = User.objects.all().order_by('username')
 
     edit_comment_id = request.GET.get('edit_comment')
     edit_comment_obj = None
@@ -203,6 +208,7 @@ def issue_detail(request, issue_id):
         'active_tab': active_tab,
         'activities': issue.activities.select_related('actor').all(),
         'available_users': available_users,
+        'assignable_users': assignable_users,
     }
     return render(request, 'issues/detail.html', context)
 
@@ -247,6 +253,36 @@ def issue_update_status(request, issue_id):
                 new_value=nuevo_estado_str,
             )
     return redirect('issue_list')
+
+
+@login_required
+def issue_update_assignee(request, issue_id):
+    issue = get_object_or_404(Issue, id=issue_id)
+
+    if request.method == 'POST':
+        assignee_id = request.POST.get('assignee_id', '').strip()
+        previous_assignee = issue.assignee
+        new_assignee = None
+
+        if assignee_id:
+            new_assignee = get_object_or_404(User, id=assignee_id)
+
+        if previous_assignee != new_assignee:
+            issue.assignee = new_assignee
+            issue.save(update_fields=['assignee', 'modified_at'])
+
+            old_value = f"@{previous_assignee.username}" if previous_assignee else 'Unassigned'
+            new_value = f"@{new_assignee.username}" if new_assignee else 'Unassigned'
+
+            IssueActivity.objects.create(
+                issue=issue,
+                actor=request.user if request.user.is_authenticated else None,
+                field_name='assignee',
+                old_value=old_value,
+                new_value=new_value,
+            )
+
+    return redirect('issue_detail', issue_id=issue_id)
 
 
 def _log_watcher_activity(issue, actor, action, watcher_user):

@@ -222,6 +222,17 @@
                 <details open>
                     <summary>Assigned to <span>▾</span></summary>
                     <div class="filter-content">
+                        <label class="filter-label">
+                            <div class="filter-item">
+                                <input type="checkbox" name="assigned_to" value="unassigned" {% if f_assignee == 'unassigned' %}checked{% endif %}>
+                                <div class="user-info">
+                                    <span class="user-avatar">--</span>
+                                    <span>Unassigned</span>
+                                </div>
+                            </div>
+                            <span class="count-pill">{{ unassigned_issues_count }}</span>
+                        </label>
+
                         {% for u in users %}
                         <label class="filter-label">
                             <div class="filter-item">

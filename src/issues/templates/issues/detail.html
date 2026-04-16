@@ -167,6 +167,33 @@
         width: 40px; cursor: pointer; border-radius: 3px;
     }
 
+    .assign-form {
+        display: flex;
+        gap: 6px;
+        width: 100%;
+    }
+
+    .assign-btn {
+        padding: 5px 10px;
+        border: 1px solid #e2e8f0;
+        margin: 0;
+        box-shadow: none;
+        font-weight: 700;
+        cursor: pointer;
+        border-radius: 3px;
+        background: #ffffff;
+    }
+
+    .assign-me-form {
+        margin-top: 8px;
+    }
+
+    .assign-me-btn {
+        width: 100%;
+        background: #f8fafc;
+        color: #334155;
+    }
+
     .detail-tabs {
         display: flex;
         gap: 22px;
@@ -400,8 +427,25 @@
             </div>
             <div class="sidebar-item">
                 <span class="sidebar-label">Assigned</span>
-                <span class="sidebar-value">{% if issue.assignee %}@{{ issue.assignee.username }}{% else %}Nadie{% endif %}</span>
+                <span class="sidebar-value">{% if issue.assignee %}@{{ issue.assignee.username }}{% else %}Unassigned{% endif %}</span>
             </div>
+
+            <form method="POST" action="{% url 'issue_update_assignee' issue.id %}" class="assign-form">
+                {% csrf_token %}
+                <select name="assignee_id" class="watchers-select" aria-label="Assign issue to user">
+                    <option value="">Unassigned</option>
+                    {% for user in assignable_users %}
+                        <option value="{{ user.id }}" {% if issue.assignee and issue.assignee.id == user.id %}selected{% endif %}>{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="assign-btn">Save</button>
+            </form>
+
+            <form method="POST" action="{% url 'issue_update_assignee' issue.id %}" class="assign-me-form">
+                {% csrf_token %}
+                <input type="hidden" name="assignee_id" value="{{ request.user.id }}">
+                <button type="submit" class="assign-btn assign-me-btn">Assign to me</button>
+            </form>
 
         </div>
 
