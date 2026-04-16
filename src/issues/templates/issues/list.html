@@ -349,24 +349,13 @@
                         </td>
                         <td class="deadline-column">
                             {% if issue.deadline %}
-                                <div class="deadline-pill {% if issue.deadline_status == 'overdue' %}deadline-overdue{% elif issue.deadline_status == 'soon' %}deadline-soon{% endif %}">
-
-                                    <span style="color: #94a3b8; font-size: 12px;">
-                                        {{ issue.deadline|date:"d M Y" }}
-                                    </span>
-
-                                    <button type="button"
-                                            class="btn-delete-deadline"
-                                            onclick="clearAndSubmit('{{ issue.id }}')"
-                                            title="Eliminar fecha">
-                                        ✕
-                                    </button>
-
-                                    <input type="hidden"
-                                           name="deadline"
-                                           id="deadline-input-{{ issue.id }}"
-                                           value="{{ issue.deadline|date:'Y-m-d' }}"
-                                           form="update-form-{{ issue.id }}">
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <span style="color: #94a3b8; font-size: 12px;">{{ issue.deadline|date:"d M Y" }}</span>
+                                    <form method="POST" action="{% url 'issue_update_status' issue.id %}" style="margin:0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="deadline" value="">
+                                        <button type="submit" class="btn-delete-deadline" title="Clear deadline">✕</button>
+                                    </form>
                                 </div>
                             {% else %}
                                 <span style="color: #94a3b8; font-size: 12px;">No date</span>
@@ -387,14 +376,5 @@
     </form>
     {% endfor %}
 </div>
-<script>
-function clearAndSubmit(issueId) {
-    if (confirm('Delete deadline?')) {
-        const input = document.getElementById('deadline-input-' + issueId);
-        input.value = "";
-        document.getElementById('update-form-' + issueId).submit();
-    }
-}
-</script>
 </body>
 </html>

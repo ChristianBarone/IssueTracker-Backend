@@ -133,16 +133,6 @@ def issue_create(request):
         'assignable_users': User.objects.all().order_by('username'),
     })
 
-# sobreescribir metodo save para notificar a watchers cada vez que se guardan cambios
-def save(self, *args, **kwargs):
-    is_update = self.pk is not None
-    super().save(*args, **kwargs)
-    if is_update:
-        try:
-            self.notify_watchers("ha sido actualizado")
-        except Exception as e:
-            print(f"Error al notificar: {e}")
-
 @login_required
 def issue_bulk_create(request):
     # S'ha de canviar en tenir la funcionalitat dels usuaris
@@ -192,6 +182,7 @@ def issue_create_instance(subject, description, issue_type, issue_severity, prio
 
     return issue
 
+@login_required
 def issue_detail(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
 
@@ -232,15 +223,16 @@ def issue_detail(request, issue_id):
     }
     return render(request, 'issues/detail.html', context)
 
+@login_required
 def issue_delete(request, issue_id):
     if request.method == 'POST':
         issue = get_object_or_404(Issue, id=issue_id)
-        # Només el creador pot esborrar
-        #if issue.creator == request.user:
-        issue.delete()
+        if issue.creator == request.user:
+            issue.delete()
     return redirect('issue_list')
 
 
+@login_required
 def issue_update_status(request, issue_id):
     if request.method == 'POST':
         issue = get_object_or_404(Issue, id=issue_id)
@@ -314,6 +306,7 @@ def _log_watcher_activity(issue, actor, action, watcher_user):
         new_value=f"{action} @{watcher_user.username}",
     )
 
+@login_required
 def add_watcher(request, issue_id):
     if request.method == "POST":
         issue = get_object_or_404(Issue, id=issue_id)
@@ -331,6 +324,7 @@ def add_watcher(request, issue_id):
     return redirect('issue_detail', issue_id=issue_id)
 
 
+@login_required
 def toggle_watcher(request, issue_id):
     if request.method == "POST":
         issue = get_object_or_404(Issue, id=issue_id)
@@ -366,11 +360,7 @@ def comment_add(request, issue_id):
     if request.method == "POST":
         text = request.POST.get('body', '').strip()
         if text:
-            # Si el usuario no está logueado, usamos el primero de la base de datos
-            if not request.user.is_authenticated:
-                return redirect('account_login')  # allauth
-            author = request.user
-            Comment.objects.create(issue=issue, author=author, body=text)
+            Comment.objects.create(issue=issue, author=request.user, body=text)
 
     # Importante: Usa issue_id=issue_id para coincidir con tu nombre en urls.py
     return redirect('issue_detail', issue_id=issue_id)
@@ -456,14 +446,12 @@ def edit_profile(request, username):
         'form': form,
     })
 
+@login_required
 def add_attachment(request, issue_id):
     if request.method == 'POST':
 
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
-            if not request.user.is_authenticated:
-                return redirect('account_login')  # allauth
-
             attachment_create_instance(issue_id, request.user, request.FILES['files'])
 
     return redirect('issue_detail', issue_id=issue_id)
@@ -474,6 +462,7 @@ def attachment_create_instance(issue_id, creator, file):
     attachment = Attachment(issue=issue, creator=creator, file=file, name=os.path.basename(file.name))
     attachment.save()
 
+@login_required
 def delete_attachment(request, attachment_id):
     attachment = get_object_or_404(Attachment, id=attachment_id)
     issue_id = getattr(attachment, 'issue_id')
