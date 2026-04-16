@@ -112,3 +112,29 @@ class IssueAssignmentAndWatcherTests(TestCase):
 		returned_issue_ids = {issue.id for issue in response.context['issues']}
 		self.assertIn(unassigned_issue.id, returned_issue_ids)
 		self.assertNotIn(self.issue.id, returned_issue_ids)
+
+	def test_profile_watched_tab_shows_watched_issues(self):
+		watched_issue = Issue.objects.create(
+			subject='Watched issue',
+			description='desc',
+			creator=self.target,
+		)
+		watched_issue.watchers.add(self.actor)
+
+		other_issue = Issue.objects.create(
+			subject='Not watched issue',
+			description='desc',
+			creator=self.target,
+		)
+		other_issue.watchers.add(self.target)
+
+		response = self.client.get(
+			reverse('user_profile', args=[self.actor.username]),
+			{'tab': 'watched'},
+		)
+
+		self.assertEqual(response.status_code, 200)
+		returned_issue_ids = {issue.id for issue in response.context['items']}
+		self.assertIn(watched_issue.id, returned_issue_ids)
+		self.assertNotIn(other_issue.id, returned_issue_ids)
+		self.assertEqual(response.context['watched_issues'], 1)

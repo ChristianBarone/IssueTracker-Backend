@@ -389,12 +389,12 @@ def user_comments_view(request, username):
     created_issues = Issue.objects.filter(creator=profile_user).count()
     open_assigned_issues = Issue.objects.filter(assignee=profile_user).exclude(status__name='Closed').count()
     comments_count = Comment.objects.filter(author=profile_user).count()
-    watched_issues = 0
+    watched_issues = Issue.objects.filter(watchers=profile_user).count()
 
     if tab == 'assigned':
         items = Issue.objects.filter(assignee=profile_user).exclude(status__name='Closed').order_by('-modified_at')
     elif tab == 'watched':
-        items = Issue.objects.none()
+        items = Issue.objects.filter(watchers=profile_user).order_by('-modified_at')
     else:
         items = Comment.objects.filter(author=profile_user).order_by('-created_at')
 

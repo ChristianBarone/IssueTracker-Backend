@@ -474,7 +474,25 @@
 						{% endfor %}
 					</div>
 				{% elif tab == 'watched' %}
-					<div class="empty-state">Watched issues is not implemented yet.</div>
+					<div class="issue-list">
+						{% for issue in items %}
+						<div class="issue-row">
+							<div class="issue-left">
+								<span class="badge-stack">
+									<span class="dot type-{{ issue.issue_type.name|lower }}"></span>
+									<span class="dot sev-{{ issue.issue_severity.name|lower }}"></span>
+									<span class="dot prio-{{ issue.priority.name|lower }}"></span>
+								</span>
+								<a href="{% url 'issue_detail' issue.id %}" class="issue-link">#{{ issue.id }}</a>
+								<a href="{% url 'issue_detail' issue.id %}" class="issue-subject">{{ issue.subject }}</a>
+							</div>
+							<div class="issue-status">{{ issue.status }}</div>
+							<div class="issue-date">{{ issue.modified_at|date:"d M Y" }}</div>
+						</div>
+						{% empty %}
+						<div class="empty-state">This user is not watching any issues yet.</div>
+						{% endfor %}
+					</div>
 				{% else %}
 					<div class="comment-list">
 						{% for comment in items %}
