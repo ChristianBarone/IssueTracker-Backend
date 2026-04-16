@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Issue Tracker - Taiga Style</title>
@@ -116,6 +116,10 @@
         .ref-number { color: var(--taiga-orange); font-weight: bold; text-decoration: none; margin-right: 5px; }
         .subject-link { text-decoration: none; color: var(--taiga-main); font-weight: 500; font-size: 15px; white-space: initial}
         .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: #34495e; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-right: 8px; }
+        .user-info {display: flex; justify-content: start; align-items: center}
+        .user-name {
+            color: var(--taiga-main); text-decoration: none; font-size: 13px;
+        }
 
         .btn-save-status {
             background: #cbd5e1; color: white; border: none; padding: 5px 8px;
@@ -153,9 +157,9 @@
             </div>
             <button type="submit" class="btn-action active">SEARCH</button>
             <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
-            <a href="{% url 'user_profile' request.user.username %}" class="btn-profile">VIEW PROFILE</a>
             <a href="{% url 'issue_bulk_create' %}" class="btn-bulk">BULK ADD</a>
             <a href="{% url 'settings_page' %}" class="btn-settings">SETTINGS</a>
+            <a href="{% url 'user_profile' request.user.username %}" class="btn-profile">PROFILE</a>
         </div>
 
         <div class="main-layout">
@@ -238,7 +242,13 @@
                             <div class="filter-item">
                                 <input type="checkbox" name="assigned_to" value="{{ u.id }}" {% if f_assignee == u.id|slugify %}checked{% endif %}>
                                 <div class="user-info">
-                                    <span class="user-avatar">{{ u.username|slice:":2" }}</span>
+
+                                    {% if u.profile.avatar %}
+                                        <img class="user-avatar" src="{{ u.profile.avatar.url }}" alt="N/A"/>
+                                    {% else %}
+                                        <span class="user-avatar">{{ u.username|slice:":2"|default:"--" }}</span>
+                                    {% endif %}
+
                                     <span>{{ u.username }}</span>
                                 </div>
                             </div>
@@ -343,8 +353,17 @@
                         </td>
                         <td>
                             <div class="user-info">
-                                <span class="user-avatar">{{ issue.assignee.username|slice:":2"|default:"--" }}</span>
-                                <span style="font-size: 13px;">{{ issue.assignee.username|default:"Unassigned" }}</span>
+                                {% if issue.assignee.profile.avatar %}
+                                    <img class="user-avatar" src="{{ issue.assignee.profile.avatar.url }}" alt="N/A"/>
+                                {% else %}
+                                    <span class="user-avatar">{{ issue.assignee.username|slice:":2"|default:"--" }}</span>
+                                {% endif %}
+
+                                {% if issue.assignee.username %}
+                                    <a class="user-name" href={% url 'user_profile' issue.assignee.username %}>{{ issue.assignee.username }}</a>
+                                {% else %}
+                                    <span class="user-name" >Unassigned</span>
+                                {% endif %}
                             </div>
                         </td>
                         <td class="deadline-column">

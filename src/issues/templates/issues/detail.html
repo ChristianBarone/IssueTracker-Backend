@@ -1,4 +1,9 @@
-<style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Issue #{{ issue.id }}</title>
+    <style>
     /* VARIABLES DE DISEÑO MODERNO */
     :root {
         --taiga-green: #5dc5b5;
@@ -181,7 +186,7 @@
     }
     .comment-item:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
     .comment-meta { font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px; }
-    .comment-author { font-weight: 800; color: var(--taiga-green); }
+    .comment-author { font-weight: 800; color: var(--taiga-green); text-decoration: none}
 
     .taiga-textarea {
         width: 100%; min-height: 120px; padding: 20px;
@@ -272,6 +277,8 @@
         display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
     .activity-meta { margin-bottom: 8px; font-size: 14px; color: #64748b; }
+    .activity-meta a { text-decoration: none; font-size: inherit; color: inherit; font-weight: 700}
+
     .activity-change { font-size: 16px; color: #1f2937; }
     .activity-field {
         background: #eef2ff; color: #3730a3;
@@ -284,13 +291,22 @@
         display: inline-flex; align-items: center; justify-content: center;
         font-size: 10px; font-weight: bold;
     }
-</style>
+    .user-avatar-big {
 
-<div class="taiga-detail-wrapper">
+    }
+    .user-name {
+        text-decoration: none;
+        color: inherit;
+        font-weight: 700;
+    }
+</style>
+</head>
+<body>
+    <div class="taiga-detail-wrapper">
 
     <div class="taiga-main-content">
         <div class="issue-header">
-            <a href="{% url 'issue_list' %}" class="back-link">← Retornar al Llistat</a>
+            <a href="{% url 'issue_list' %}" class="back-link">← Back to issues</a>
             <div class="issue-title-wrapper">
                 <span class="issue-id">#{{ issue.id }}</span>
 
@@ -402,10 +418,21 @@
             {% if active_tab == 'activities' %}
                 {% for activity in activities %}
                 <div class="activity-item">
-                    <div class="activity-avatar">{{ activity.actor.username|default:"S"|slice:":1"|upper }}</div>
+                    <div class="activity-avatar">
+                        {% if activity.actor.profile.avatar %}
+                            <img class="activity-avatar" src="{{ activity.actor.profile.avatar.url }}" alt="N/A"/>
+                        {% else %}
+                            {{ activity.actor.username|default:"S"|slice:":1"|upper }}
+                        {% endif %}
+
+                    </div>
                     <div>
                         <div class="activity-meta">
-                            <strong>{{ activity.actor.username|default:"System" }}</strong>
+                            {% if activity.actor.username %}
+                                <a class="activity-actor-username" href={% url 'user_profile' activity.actor.username %}>{{ activity.actor.username }}</a>
+                            {% else %}
+                                <strong>System</strong>
+                            {% endif %}
                             {{ activity.created_at|date:"d M Y H:i" }}
                         </div>
                         <div class="activity-change">
@@ -424,14 +451,14 @@
                 <p style="text-align: center; color: #bdc3c7; padding: 20px;">No hi ha activitat registrada.</p>
                 {% endfor %}
             {% else %}
-                <h2>Comentaris</h2>
+                <h2>Comments</h2>
 
                 <div class="comment-form-panel">
                     <form method="POST" action="{% url 'comment_add' issue.id %}">
                         {% csrf_token %}
-                        <textarea name="body" class="taiga-textarea" placeholder="Escribe algo..." required></textarea>
+                        <textarea name="body" class="taiga-textarea" placeholder="Write something..." required></textarea>
                         <div style="text-align: right; margin-top: 15px;">
-                            <button type="submit" class="btn-taiga-primary">PUBLICAR</button>
+                            <button type="submit" class="btn-taiga-primary">PUBLISH</button>
                         </div>
                     </form>
                 </div>
@@ -440,8 +467,8 @@
                     {% for comment in issue.comments.all|dictsortreversed:"created_at" %}
                     <div class="comment-item" id="comment-{{ comment.id }}">
                         <div class="comment-meta">
-                            <span class="comment-author">@{{ comment.author.username }}</span>
-                            hace {{ comment.created_at|timesince }}
+                            <a class="comment-author" href={% url 'user_profile' comment.author.username %}>@{{ issue.assignee.username }}</a>
+                            {{ comment.created_at|timesince }} ago
                         </div>
 
                         {% if edit_comment_obj and edit_comment_obj.id == comment.id %}
@@ -468,7 +495,7 @@
                         {% endif %}
                     </div>
                     {% empty %}
-                    <p style="text-align: center; color: #bdc3c7; padding: 20px;">No hi ha comentaris.</p>
+                    <p style="text-align: center; color: #bdc3c7; padding: 20px;">No comments.</p>
                     {% endfor %}
                 </div>
             {% endif %}
@@ -588,7 +615,7 @@
             <!-- CREATOR -->
             <div class="sidebar-item">
                 <span class="sidebar-label">Creator</span>
-                <span class="sidebar-value">@{{ issue.creator.username }}</span>
+                <a class="user-name" href={% url 'user_profile' issue.creator.username %}>@{{ issue.creator.username }}</a>
             </div>
 
             <!-- ASSIGNED -->
@@ -612,8 +639,12 @@
                 {% else %}
                 <span class="sidebar-value">
                     {% if issue.assignee %}
-                    <span class="user-avatar">{{ issue.assignee.username|slice:":2"|upper }}</span>
-                    @{{ issue.assignee.username }}
+                        {% if issue.assignee.profile.avatar %}
+                            <img class="user-avatar" src="{{ issue.assignee.profile.avatar.url }}" alt="N/A"/>
+                        {% else %}
+                            <span class="user-avatar">{{ issue.assignee.username|slice:":2"|upper }}</span>
+                        {% endif %}
+                            <a class="user-name" href={% url 'user_profile' issue.assignee.username %}>@{{ issue.assignee.username }}</a>
                     {% else %}
                     <span style="color: var(--text-muted); font-weight: 400;">Unassigned</span>
                     {% endif %}
@@ -663,8 +694,14 @@
             <ul class="watchers-list">
                 {% for w in issue.watchers.all %}
                 <li style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                    <span class="user-avatar">{{ w.username|slice:":2"|upper }}</span>
-                    <span style="font-size: 14px;">{{ w.username }}</span>
+                    {% if w.profile.avatar %}
+                        <img class="user-avatar" src="{{ w.profile.avatar.url }}" alt="N/A"/>
+                    {% else %}
+                        <span class="user-avatar">{{ w.username|slice:":2"|upper }}</span>
+                    {% endif %}
+
+                    <a class="user-name" style="font-size: 14px; font-weight: normal" href={% url 'user_profile' w.username %}>@{{ w.username }}</a>
+
 
                     <form method="POST" action="{% url 'toggle_watcher' issue.id %}">
                         {% csrf_token %}
@@ -687,6 +724,7 @@
             </form>
         </div>
 
+        {% if is_creator %}
         <div style="margin-top: 40px;">
             <form method="POST" action="{% url 'issue_delete' issue.id %}">
                 {% csrf_token %}
@@ -695,5 +733,7 @@
                 </button>
             </form>
         </div>
+        {% endif %}
     </div>
 </div>
+</body>
