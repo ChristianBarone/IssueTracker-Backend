@@ -1,0 +1,199 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+}
+
+:root {
+    --green: #5dc5b5;
+    --green-dark: #469b8e;
+    --bg: #f8fafc;
+    --main: #34495e;
+    --muted: #94a3b8;
+    --danger: #e74c3c;
+    --border: #e2e8f0;
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+}
+
+body {
+    background: var(--bg);
+    color: var(--main);
+    padding: 40px 20px;
+}
+
+.container {
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.top-nav {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+}
+
+.back-link {
+    background: #e2e8f0;
+    color: var(--main);
+    padding: 9px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.back-link:hover {
+    background: #cbd5e1;
+}
+
+.page-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--main);
+}
+
+.card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 22px 28px 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.card-header h2 {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--main);
+}
+
+.form-body {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-field > label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* Text / number inputs */
+.form-field input[type="text"],
+.form-field input[type="number"],
+.form-field select {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--main);
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+}
+
+.form-field input[type="text"]:focus,
+.form-field input[type="number"]:focus,
+.form-field select:focus {
+    border-color: var(--green);
+}
+
+/* Color picker */
+.form-field input[type="color"] {
+    width: 54px;
+    height: 40px;
+    padding: 3px 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    display: block;
+}
+
+/* Checkbox */
+.check-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--main);
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.check-label input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+    accent-color: var(--green);
+}
+
+/* Errors */
+.field-errors {
+    font-size: 12px;
+    color: var(--danger);
+    margin-top: 2px;
+}
+
+.field-errors ul {
+    list-style: none;
+}
+
+.form-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 18px 28px;
+    border-top: 1px solid var(--border);
+    background: #f8fafc;
+}
+
+.btn-cancel {
+    background: #e2e8f0;
+    color: var(--main);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-cancel:hover {
+    background: #cbd5e1;
+}
+
+.btn-save {
+    background: var(--green);
+    color: white;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 0 var(--green-dark);
+}
+
+.btn-save:hover {
+    background: var(--green-dark);
+}

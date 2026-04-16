@@ -1,0 +1,328 @@
+/* RESET & PALETA DINÁMICA (Sin cambios) */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Ubuntu", sans-serif;
+}
+
+:root {
+  --taiga-main: #34495e;
+  --taiga-accent: #5dc5b5;
+  --taiga-orange: #ff8c00;
+  --taiga-bg: #f8fafc;
+  --sidebar-header: #edf2f7;
+}
+
+body {
+  background: var(--taiga-bg);
+  color: var(--taiga-main);
+  padding: 20px;
+}
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.btn-action {
+  background: #d1d5db;
+  color: #374151;
+  padding: 10px 18px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  cursor: pointer;
+}
+.btn-action.active {
+  background: var(--taiga-main);
+  color: white;
+}
+
+.search-wrapper {
+  position: relative;
+  flex-grow: 1;
+  max-width: 450px;
+}
+.search-wrapper input {
+  width: 100%;
+  padding: 10px 15px;
+  border: 2px solid #e2e8f0;
+  border-radius: 5px;
+  outline: none;
+  font-size: 14px;
+}
+
+.btn-new {
+  background: var(--taiga-accent);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: bold;
+  box-shadow: 0 3px 0 #469b8e;
+  margin-left: auto;
+}
+
+.btn-profile {
+  background: #64748b;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: bold;
+  box-shadow: 0 3px 0 #475569;
+}
+
+.btn-bulk {
+  background: #d1d5db;
+  color: #374151;
+  padding: 10px 18px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: bold;
+  box-shadow: 0 3px 0 #64748b;
+}
+
+.btn-settings {
+  background: #d1d5db;
+  color: #374151;
+  padding: 10px 18px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: bold;
+  box-shadow: 0 3px 0 #64748b;
+}
+
+.main-layout {
+  display: flex;
+  gap: 25px;
+}
+
+/* SIDEBAR */
+.filters-sidebar {
+  width: 280px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  height: fit-content;
+}
+.sidebar-top {
+  padding: 15px;
+  background: var(--sidebar-header);
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+details {
+  border-bottom: 1px solid #f1f5f9;
+}
+summary {
+  padding: 12px 15px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  background: white;
+  list-style: none;
+}
+
+.filter-content {
+  padding: 5px 10px 15px 10px;
+}
+
+.filter-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 14px;
+  border-left: 4px solid transparent;
+  margin-bottom: 2px;
+  background: #fcfcfc;
+  border-radius: 5px;
+}
+.filter-label:hover {
+  background: #f1f5f9;
+}
+
+/* Estilo para simular el checkbox activo en el label */
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.count-pill {
+  background: #ebf0f5;
+  color: #475569;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.filtered-by-box {
+  background: #f1f8e9;
+  border: 1px solid #dcedc8;
+  margin: 10px;
+  padding: 10px;
+  border-radius: 4px;
+}
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  margin: 2px;
+}
+.filter-tag button {
+  border: none;
+  background: none;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+/* BOTÓN APPLY (Sustituye el auto-submit de JS) */
+.btn-apply-filters {
+  width: 100%;
+  background: var(--taiga-accent);
+  color: white;
+  border: none;
+  padding: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* TABLA */
+.table-wrapper {
+  flex-grow: 1;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th {
+  background: #f8fafc;
+  padding: 15px;
+  text-align: left;
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+td {
+  padding: 18px 15px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.ref-number {
+  color: var(--taiga-orange);
+  font-weight: bold;
+  text-decoration: none;
+  margin-right: 5px;
+}
+.subject-link {
+  text-decoration: none;
+  color: var(--taiga-main);
+  font-weight: 500;
+  font-size: 15px;
+  white-space: initial;
+}
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #34495e;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  margin-right: 8px;
+}
+.user-info {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+}
+.user-name {
+  color: var(--taiga-main);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.btn-save-status {
+  background: #cbd5e1;
+  color: white;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.th-content {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  color: #94a3b8;
+}
+.sort-arrows {
+  display: flex;
+  flex-direction: column;
+  font-size: 8px;
+  line-height: 1;
+  color: #cbd5e1;
+}
+.sort-arrows .active {
+  color: #34495e;
+}
+.sort-arrows a {
+  text-decoration: none;
+}
+
+.btn-delete-deadline {
+  background: none;
+  border: none;
+  padding-left: 5px;
+  cursor: pointer;
+  color: #e74c3c;
+}

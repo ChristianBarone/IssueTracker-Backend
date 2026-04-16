@@ -1,0 +1,83 @@
+/* BASE */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Ubuntu", sans-serif;
+}
+body {
+  background: #f4f7f6;
+  display: flex;
+  justify-content: center;
+  padding: 50px 20px;
+}
+
+.create-container {
+  width: 950px;
+  background: white;
+  padding: 40px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+.header-title {
+  text-align: center;
+  color: #34495e;
+  font-size: 28px;
+  margin-bottom: 30px;
+  font-weight: 300;
+}
+
+/* LAYOUT */
+.form-layout {
+  display: flex;
+  gap: 40px;
+}
+.main-fields {
+  flex: 2;
+}
+
+/* INPUTS IZQUIERDA */
+.text-area {
+  width: 100%;
+  border: 1px solid #ccd6dd;
+  padding: 15px;
+  font-size: 14px;
+  border-radius: 3px;
+  min-height: 250px;
+  resize: vertical;
+  outline: none;
+  color: #475569;
+}
+
+/* ASIGNACIÓN */
+.assign-links a {
+  color: #3182ce;
+  text-decoration: none;
+}
+
+/* BOTONES ACCIÓN */
+.btn-submit {
+  width: 100%;
+  background: #92e7d9;
+  color: #16a085;
+  border: none;
+  padding: 16px;
+  font-weight: bold;
+  font-size: 14px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 3px;
+  margin-top: 25px;
+}
+.btn-submit:hover {
+  background: #5dc5b5;
+  color: white;
+}
+.cancel-link {
+  display: block;
+  text-align: center;
+  margin-top: 15px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 13px;
+}
