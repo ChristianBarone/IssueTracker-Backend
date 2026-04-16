@@ -74,11 +74,104 @@
         margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1.5px;
     }
     .sidebar-item {
-        display: flex; justify-content: space-between;
+        display: flex; justify-content: space-between; align-items: flex-start;
         padding: 12px 0; border-bottom: 1px solid #f1f4f6;
     }
-    .sidebar-label { color: var(--text-muted); font-size: 0.9em; }
-    .sidebar-value { font-weight: 700; color: #2c3e50; }
+    .sidebar-label { color: var(--text-muted); font-size: 0.9em; flex-shrink: 0; margin-right: 12px; padding-top: 2px; }
+    .sidebar-value { font-weight: 700; color: #2c3e50; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+    /* ── Inline-edit controls ───────────────────────────── */
+    .edit-trigger {
+        color: var(--text-muted); text-decoration: none; font-size: 0.8em;
+        margin-left: 4px; opacity: 0.5;
+        transition: opacity 0.15s;
+    }
+    .edit-trigger:hover { opacity: 1; color: var(--taiga-green); }
+
+    .edit-dropdown {
+        display: flex; flex-direction: column; gap: 4px; width: 100%;
+    }
+    .edit-option {
+        display: flex; align-items: center; gap: 8px;
+        background: #f8fafc; border: 1px solid #e2e8f0;
+        border-radius: 6px; padding: 7px 12px;
+        font-size: 13px; font-weight: 600; color: #2c3e50;
+        cursor: pointer; text-align: left; width: 100%;
+        transition: background 0.12s;
+    }
+    .edit-option:hover { background: #edf2f7; }
+    .edit-option.current { background: #e8f5f3; border-color: var(--taiga-green); color: var(--taiga-green-dark); }
+    .edit-cancel {
+        font-size: 12px; color: var(--text-muted); text-decoration: none;
+        padding: 4px 0; text-align: right;
+    }
+    .edit-cancel:hover { color: var(--danger); }
+
+    /* inline text/textarea edit forms */
+    .inline-edit-form { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .inline-edit-form input[type="text"],
+    .inline-edit-form input[type="date"],
+    .inline-edit-form textarea {
+        width: 100%; padding: 10px 14px; border: 2px solid var(--taiga-green);
+        border-radius: 8px; font-size: 14px; font-family: inherit;
+        color: var(--text-main); outline: none; box-sizing: border-box;
+    }
+    .inline-edit-form textarea { min-height: 160px; resize: vertical; }
+    .inline-edit-actions { display: flex; gap: 8px; }
+    .btn-inline-save {
+        background: var(--taiga-green); color: white; border: none;
+        padding: 8px 20px; border-radius: 6px; font-size: 13px;
+        font-weight: 700; cursor: pointer;
+    }
+    .btn-inline-save:hover { background: var(--taiga-green-dark); }
+    .btn-inline-cancel {
+        background: #e2e8f0; color: var(--text-main); border: none;
+        padding: 8px 16px; border-radius: 6px; font-size: 13px;
+        font-weight: 700; cursor: pointer; text-decoration: none;
+        display: inline-flex; align-items: center;
+    }
+    .btn-inline-cancel:hover { background: #cbd5e1; }
+    .field-error {
+        color: var(--danger); font-size: 12px; font-weight: 600;
+        background: #fff5f5; border: 1px solid #fecaca;
+        border-radius: 4px; padding: 4px 10px;
+    }
+
+    /* subject inline edit */
+    .subject-edit-wrapper { display: flex; flex-direction: column; gap: 8px; }
+    .subject-edit-wrapper input[type="text"] {
+        font-size: 1.6em; font-weight: 700; padding: 10px 14px;
+        border: 2px solid var(--taiga-green); border-radius: 8px;
+        color: #2c3e50; outline: none; width: 100%; box-sizing: border-box;
+    }
+
+    /* tags */
+    .tag-pill {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 3px 10px; border-radius: 20px;
+        font-size: 12px; font-weight: 700; color: white;
+    }
+    .tag-remove-btn {
+        background: none; border: none; color: rgba(255,255,255,0.8);
+        cursor: pointer; padding: 0; font-size: 11px; line-height: 1;
+    }
+    .tag-remove-btn:hover { color: white; }
+    .tags-add-form { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .tags-add-form select {
+        flex-grow: 1; padding: 6px 8px; border: 1px solid #e2e8f0;
+        border-radius: 6px; font-size: 13px; color: var(--text-main); outline: none;
+    }
+    .btn-add-tag {
+        background: var(--taiga-green); color: white; border: none;
+        padding: 6px 14px; border-radius: 6px; font-size: 13px;
+        font-weight: 700; cursor: pointer;
+    }
+    .btn-add-tag:hover { background: var(--taiga-green-dark); }
+
+    .color-dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        display: inline-block; flex-shrink: 0;
+    }
 
     .comment-item {
         background: #f8fbff; border-radius: 15px;
@@ -106,7 +199,6 @@
     }
     .btn-taiga-primary:hover { background: var(--taiga-green-dark); transform: translateY(-2px); }
 
-    /* BOTÓN BORRAR SIN ONCLICK */
     .btn-issue-delete-trigger {
         background: #fff; color: var(--danger);
         border: 2px solid var(--danger); padding: 12px;
@@ -118,11 +210,8 @@
     .btn-action-delete { color: var(--danger); background: none; border: none; font-weight: 700; cursor: pointer; padding: 0; font-family: inherit; }
 
     .attachments-header, .attachment { display: flex; justify-content: space-between; align-items: center;}
-
     .attachment { margin-bottom: 10px; }
-
     .attachments-header { margin-top: 30px; }
-
     .attachment a:link, .attachment a:visited { text-decoration: none; color: var(--taiga-green-dark); font-weight: 600;}
 
     .btn-add-file {
@@ -135,10 +224,7 @@
         box-shadow: 0 4px 15px rgba(93, 197, 181, 0.3);
         transition: all 0.3s;
     }
-
-    .btn-add-file:hover {
-        background-color: var(--taiga-green-dark)
-    }
+    .btn-add-file:hover { background-color: var(--taiga-green-dark) }
 
     .btn-delete-file {
         background: #fff; color: var(--danger);
@@ -148,17 +234,13 @@
         height: 30px;
     }
 
-    .watchers-list {
-        list-style: none; margin-bottom: 15px; padding: 0;
-    }
-
+    .watchers-list { list-style: none; margin-bottom: 15px; padding: 0; }
     .watchers-list form { margin: 0 0 0 auto; }
 
     .watchers-select {
         width: 100%; padding: 10px; border: 1px solid #e2e8f0;
         border-radius: 3px; background: white; font-size: 14px;
-        color: #475569; outline: none; flex-grow: 1;
-        cursor: pointer;
+        color: #475569; outline: none; flex-grow: 1; cursor: pointer;
     }
 
     .btn-new-watcher {
@@ -167,97 +249,40 @@
         width: 40px; cursor: pointer; border-radius: 3px;
     }
 
-    .assign-form {
-        display: flex;
-        gap: 6px;
-        width: 100%;
-    }
-
-    .assign-btn {
-        padding: 5px 10px;
-        border: 1px solid #e2e8f0;
-        margin: 0;
-        box-shadow: none;
-        font-weight: 700;
-        cursor: pointer;
-        border-radius: 3px;
-        background: #ffffff;
-    }
-
-    .assign-me-form {
-        margin-top: 8px;
-    }
-
-    .assign-me-btn {
-        width: 100%;
-        background: #f8fafc;
-        color: #334155;
-    }
-
     .detail-tabs {
-        display: flex;
-        gap: 22px;
+        display: flex; gap: 22px;
         border-bottom: 1px solid #e2e8f0;
-        margin-bottom: 20px;
-        padding-bottom: 8px;
+        margin-bottom: 20px; padding-bottom: 8px;
     }
-
     .detail-tab-link {
-        text-decoration: none;
-        color: #64748b;
-        font-weight: 700;
-        padding-bottom: 8px;
+        text-decoration: none; color: #64748b;
+        font-weight: 700; padding-bottom: 8px;
         border-bottom: 3px solid transparent;
     }
-
-    .detail-tab-link.active {
-        color: #1f2937;
-        border-bottom-color: #5dc5b5;
-    }
+    .detail-tab-link.active { color: #1f2937; border-bottom-color: #5dc5b5; }
 
     .activity-item {
-        display: flex;
-        gap: 14px;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 14px;
-        margin-bottom: 12px;
-        background: #ffffff;
+        display: flex; gap: 14px;
+        border: 1px solid #e2e8f0; border-radius: 12px;
+        padding: 14px; margin-bottom: 12px; background: #ffffff;
     }
-
     .activity-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 8px;
-        background: #d1c4e9;
-        color: #4a2f7d;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+        width: 40px; height: 40px; border-radius: 8px;
+        background: #d1c4e9; color: #4a2f7d; font-weight: 700;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-
-    .activity-meta {
-        margin-bottom: 8px;
-        font-size: 14px;
-        color: #64748b;
-    }
-
-    .activity-change {
-        font-size: 16px;
-        color: #1f2937;
-    }
-
+    .activity-meta { margin-bottom: 8px; font-size: 14px; color: #64748b; }
+    .activity-change { font-size: 16px; color: #1f2937; }
     .activity-field {
-        background: #eef2ff;
-        color: #3730a3;
-        font-size: 13px;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 6px;
-        margin-right: 8px;
-        text-transform: lowercase;
+        background: #eef2ff; color: #3730a3;
+        font-size: 13px; font-weight: 700;
+        padding: 2px 8px; border-radius: 6px;
+        margin-right: 8px; text-transform: lowercase;
+    }
+    .user-avatar {
+        width: 28px; height: 28px; border-radius: 50%; background: #34495e; color: white;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 10px; font-weight: bold;
     }
 </style>
 
@@ -268,7 +293,29 @@
             <a href="{% url 'issue_list' %}" class="back-link">← Retornar al Llistat</a>
             <div class="issue-title-wrapper">
                 <span class="issue-id">#{{ issue.id }}</span>
-                <h1 class="issue-subject">{{ issue.subject }}</h1>
+
+                {% if is_creator and editing == 'subject' %}
+                <div class="subject-edit-wrapper">
+                    {% if subject_error %}
+                    <p class="field-error">Subject cannot be empty.</p>
+                    {% endif %}
+                    <form class="inline-edit-form" method="POST" action="{% url 'issue_update_subject' issue.id %}">
+                        {% csrf_token %}
+                        <input type="text" name="subject" value="{{ issue.subject }}" required autofocus>
+                        <div class="inline-edit-actions">
+                            <button type="submit" class="btn-inline-save">Save</button>
+                            <a href="{% url 'issue_detail' issue.id %}" class="btn-inline-cancel">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <h1 class="issue-subject">
+                    {{ issue.subject }}
+                    {% if is_creator %}
+                    <a href="?editing=subject" class="edit-trigger" title="Edit subject">✎</a>
+                    {% endif %}
+                </h1>
+                {% endif %}
             </div>
             <div class="issue-dates">
                 Created {{ issue.created_at|date:"d M Y" }} | Updated {{ issue.modified_at|date:"H:i" }}
@@ -277,10 +324,46 @@
 
         <div class="taiga-panel">
             <div style="margin-bottom: 25px;">
+                {% if is_creator and editing == 'status' %}
+                <div class="edit-dropdown" style="max-width: 280px;">
+                    {% for st in all_statuses %}
+                    <form method="POST" action="{% url 'issue_update_status_detail' issue.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="value_pk" value="{{ st.pk }}">
+                        <button type="submit" class="edit-option {% if issue.status.pk == st.pk %}current{% endif %}">
+                            <span class="color-dot" style="background-color: {{ st.color }};"></span>
+                            {{ st.name }}
+                        </button>
+                    </form>
+                    {% endfor %}
+                    <a href="{% url 'issue_detail' issue.id %}?tab={{ active_tab }}" class="edit-cancel">Cancel</a>
+                </div>
+                {% else %}
                 <span class="taiga-status-badge" style="background-color: {{ issue.status.color }};">{{ issue.status }}</span>
+                {% if is_creator %}
+                <a href="?editing=status&tab={{ active_tab }}" class="edit-trigger" title="Change status">✎</a>
+                {% endif %}
+                {% endif %}
             </div>
-            <h3>Description</h3>
+
+            <h3>Description
+                {% if is_creator and editing != 'description' %}
+                <a href="?editing=description&tab={{ active_tab }}" class="edit-trigger" title="Edit description">✎</a>
+                {% endif %}
+            </h3>
+
+            {% if is_creator and editing == 'description' %}
+            <form class="inline-edit-form" method="POST" action="{% url 'issue_update_description' issue.id %}">
+                {% csrf_token %}
+                <textarea name="description">{{ issue.description }}</textarea>
+                <div class="inline-edit-actions">
+                    <button type="submit" class="btn-inline-save">Save</button>
+                    <a href="{% url 'issue_detail' issue.id %}?tab={{ active_tab }}" class="btn-inline-cancel">Cancel</a>
+                </div>
+            </form>
+            {% else %}
             <p class="description-text">{{ issue.description|linebreaksbr|default:"No description" }}</p>
+            {% endif %}
 
             <div class="attachments-header">
                 {% if issue.attachments.count == 1 %}
@@ -302,9 +385,7 @@
                         {% if request.user.is_authenticated and attachment.creator == request.user %}
                         <form style="margin: 0" method="POST" action="{% url 'delete_attachment' attachment.id %}">
                             {% csrf_token %}
-                            <button type="submit" class="btn-delete-file">
-                                X
-                            </button>
+                            <button type="submit" class="btn-delete-file">X</button>
                         </form>
                         {% endif %}
                     </div>
@@ -327,13 +408,10 @@
                             <strong>{{ activity.actor.username|default:"System" }}</strong>
                             {{ activity.created_at|date:"d M Y H:i" }}
                         </div>
-
                         <div class="activity-change">
                             <span class="activity-field">{{ activity.field_name }}</span>
                             {% if activity.field_name == 'issue' %}
                                 {{ activity.new_value|capfirst }}
-                            {% elif activity.field_name == 'watchers' %}
-                                {{ activity.new_value }}
                             {% else %}
                                 {{ activity.old_value|default:"-" }}
                                 <span style="color:#94a3b8; margin: 0 6px;">&gt;</span>
@@ -400,55 +478,185 @@
     <div class="taiga-sidebar">
         <div class="sidebar-block">
             <h4>DETAILS</h4>
+
+            <!-- TYPE -->
             <div class="sidebar-item">
                 <span class="sidebar-label">Type</span>
-                <span class="sidebar-value" style="display:flex; align-items:center; gap:6px;">
-                    <span style="width:10px; height:10px; border-radius:50%; background-color:{{ issue.issue_type.color }}; display:inline-block; flex-shrink:0;"></span>
+                <div style="flex:1; display:flex; justify-content:flex-end; align-items:flex-start;">
+                {% if is_creator and editing == 'type' %}
+                <div class="edit-dropdown">
+                    {% for t in all_types %}
+                    <form method="POST" action="{% url 'issue_update_type' issue.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="value_pk" value="{{ t.pk }}">
+                        <button type="submit" class="edit-option {% if issue.issue_type.pk == t.pk %}current{% endif %}">
+                            <span class="color-dot" style="background-color: {{ t.color }};"></span>
+                            {{ t.name }}
+                        </button>
+                    </form>
+                    {% endfor %}
+                    <a href="{% url 'issue_detail' issue.id %}" class="edit-cancel">Cancel</a>
+                </div>
+                {% else %}
+                <span class="sidebar-value">
+                    <span class="color-dot" style="background-color: {{ issue.issue_type.color }};"></span>
                     {{ issue.issue_type }}
+                    {% if is_creator %}<a href="?editing=type" class="edit-trigger" title="Edit">✎</a>{% endif %}
                 </span>
+                {% endif %}
+                </div>
             </div>
+
+            <!-- SEVERITY -->
             <div class="sidebar-item">
                 <span class="sidebar-label">Severity</span>
-                <span class="sidebar-value" style="display:flex; align-items:center; gap:6px;">
-                    <span style="width:10px; height:10px; border-radius:50%; background-color:{{ issue.issue_severity.color }}; display:inline-block; flex-shrink:0;"></span>
+                <div style="flex:1; display:flex; justify-content:flex-end; align-items:flex-start;">
+                {% if is_creator and editing == 'severity' %}
+                <div class="edit-dropdown">
+                    {% for s in all_severities %}
+                    <form method="POST" action="{% url 'issue_update_severity' issue.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="value_pk" value="{{ s.pk }}">
+                        <button type="submit" class="edit-option {% if issue.issue_severity.pk == s.pk %}current{% endif %}">
+                            <span class="color-dot" style="background-color: {{ s.color }};"></span>
+                            {{ s.name }}
+                        </button>
+                    </form>
+                    {% endfor %}
+                    <a href="{% url 'issue_detail' issue.id %}" class="edit-cancel">Cancel</a>
+                </div>
+                {% else %}
+                <span class="sidebar-value">
+                    <span class="color-dot" style="background-color: {{ issue.issue_severity.color }};"></span>
                     {{ issue.issue_severity }}
+                    {% if is_creator %}<a href="?editing=severity" class="edit-trigger" title="Edit">✎</a>{% endif %}
                 </span>
+                {% endif %}
+                </div>
             </div>
+
+            <!-- PRIORITY -->
             <div class="sidebar-item">
                 <span class="sidebar-label">Priority</span>
-                <span class="sidebar-value" style="display:flex; align-items:center; gap:6px;">
-                    <span style="width:10px; height:10px; border-radius:50%; background-color:{{ issue.priority.color }}; display:inline-block; flex-shrink:0;"></span>
+                <div style="flex:1; display:flex; justify-content:flex-end; align-items:flex-start;">
+                {% if is_creator and editing == 'priority' %}
+                <div class="edit-dropdown">
+                    {% for p in all_priorities %}
+                    <form method="POST" action="{% url 'issue_update_priority' issue.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="value_pk" value="{{ p.pk }}">
+                        <button type="submit" class="edit-option {% if issue.priority.pk == p.pk %}current{% endif %}">
+                            <span class="color-dot" style="background-color: {{ p.color }};"></span>
+                            {{ p.name }}
+                        </button>
+                    </form>
+                    {% endfor %}
+                    <a href="{% url 'issue_detail' issue.id %}" class="edit-cancel">Cancel</a>
+                </div>
+                {% else %}
+                <span class="sidebar-value">
+                    <span class="color-dot" style="background-color: {{ issue.priority.color }};"></span>
                     {{ issue.priority }}
+                    {% if is_creator %}<a href="?editing=priority" class="edit-trigger" title="Edit">✎</a>{% endif %}
                 </span>
+                {% endif %}
+                </div>
             </div>
+
+            <!-- DEADLINE -->
+            <div class="sidebar-item">
+                <span class="sidebar-label">Deadline</span>
+                <div style="flex:1; display:flex; justify-content:flex-end; align-items:flex-start;">
+                {% if is_creator and editing == 'deadline' %}
+                <form class="inline-edit-form" method="POST" action="{% url 'issue_update_deadline_detail' issue.id %}">
+                    {% csrf_token %}
+                    <input type="date" name="deadline" value="{{ issue.deadline|date:'Y-m-d' }}">
+                    <div class="inline-edit-actions">
+                        <button type="submit" class="btn-inline-save">Save</button>
+                        <a href="{% url 'issue_detail' issue.id %}" class="btn-inline-cancel">Cancel</a>
+                    </div>
+                </form>
+                {% else %}
+                <span class="sidebar-value">
+                    {% if issue.deadline %}{{ issue.deadline|date:"d M Y" }}{% else %}<span style="color: var(--text-muted); font-weight: 400;">No date</span>{% endif %}
+                    {% if is_creator %}<a href="?editing=deadline" class="edit-trigger" title="Edit">✎</a>{% endif %}
+                </span>
+                {% endif %}
+                </div>
+            </div>
+
+            <!-- CREATOR -->
             <div class="sidebar-item">
                 <span class="sidebar-label">Creator</span>
                 <span class="sidebar-value">@{{ issue.creator.username }}</span>
             </div>
+
+            <!-- ASSIGNED -->
             <div class="sidebar-item">
                 <span class="sidebar-label">Assigned</span>
-                <span class="sidebar-value">{% if issue.assignee %}@{{ issue.assignee.username }}{% else %}Unassigned{% endif %}</span>
+                <div style="flex:1; display:flex; justify-content:flex-end; align-items:flex-start;">
+                {% if is_creator and editing == 'assignee' %}
+                <form class="inline-edit-form" method="POST" action="{% url 'issue_update_assignee' issue.id %}">
+                    {% csrf_token %}
+                    <select name="assignee_id" style="width:100%; padding:8px; border:2px solid var(--taiga-green); border-radius:6px; font-size:13px; outline:none;">
+                        <option value="">Unassigned</option>
+                        {% for u in assignable_users %}
+                        <option value="{{ u.id }}" {% if issue.assignee and issue.assignee.id == u.id %}selected{% endif %}>{{ u.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="inline-edit-actions">
+                        <button type="submit" class="btn-inline-save">Save</button>
+                        <a href="{% url 'issue_detail' issue.id %}" class="btn-inline-cancel">Cancel</a>
+                    </div>
+                </form>
+                {% else %}
+                <span class="sidebar-value">
+                    {% if issue.assignee %}
+                    <span class="user-avatar">{{ issue.assignee.username|slice:":2"|upper }}</span>
+                    @{{ issue.assignee.username }}
+                    {% else %}
+                    <span style="color: var(--text-muted); font-weight: 400;">Unassigned</span>
+                    {% endif %}
+                    {% if is_creator %}<a href="?editing=assignee" class="edit-trigger" title="Edit">✎</a>{% endif %}
+                </span>
+                {% endif %}
+                </div>
             </div>
-
-            <form method="POST" action="{% url 'issue_update_assignee' issue.id %}" class="assign-form">
-                {% csrf_token %}
-                <select name="assignee_id" class="watchers-select" aria-label="Assign issue to user">
-                    <option value="">Unassigned</option>
-                    {% for user in assignable_users %}
-                        <option value="{{ user.id }}" {% if issue.assignee and issue.assignee.id == user.id %}selected{% endif %}>{{ user.username }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="assign-btn">Save</button>
-            </form>
-
-            <form method="POST" action="{% url 'issue_update_assignee' issue.id %}" class="assign-me-form">
-                {% csrf_token %}
-                <input type="hidden" name="assignee_id" value="{{ request.user.id }}">
-                <button type="submit" class="assign-btn assign-me-btn">Assign to me</button>
-            </form>
 
         </div>
 
+        <!-- TAGS -->
+        <div class="sidebar-block">
+            <h4>TAGS</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                {% for tag in issue_tags %}
+                <span class="tag-pill" style="background-color: {{ tag.color }};">
+                    {{ tag.name }}
+                    {% if is_creator %}
+                    <form method="POST" action="{% url 'issue_remove_tag' issue.id tag.id %}" style="display:inline; margin:0;">
+                        {% csrf_token %}
+                        <button type="submit" class="tag-remove-btn" title="Remove tag">✕</button>
+                    </form>
+                    {% endif %}
+                </span>
+                {% empty %}
+                <span style="color: var(--text-muted); font-size: 13px;">No tags</span>
+                {% endfor %}
+            </div>
+            {% if is_creator and available_tags %}
+            <form class="tags-add-form" method="POST" action="{% url 'issue_add_tag' issue.id %}">
+                {% csrf_token %}
+                <select name="tag_pk">
+                    {% for tag in available_tags %}
+                    <option value="{{ tag.pk }}">{{ tag.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn-add-tag">+ Add</button>
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- WATCHERS -->
         <div class="watchers-section">
             <h4>WATCHERS ({{ issue.watchers.count }})</h4>
 
