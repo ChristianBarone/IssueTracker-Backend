@@ -1,0 +1,51 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ action }} {{ entity_label }} - Settings</title>
+    <link rel="stylesheet" href="{% static 'css/settings/settings_form.css'%}">
+</head>
+<body>
+<div class="container">
+
+    <div class="top-nav">
+        <a href="/settings/?tab={{ entity }}" class="back-link">← Cancel</a>
+        <span class="page-title">{{ action }} {{ entity_label }}</span>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>{% if instance %}Editing: {{ instance.name }}{% else %}New {{ entity_label }}{% endif %}</h2>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-body">
+                {% for field in form %}
+                <div class="form-field">
+                    {% if field.field.widget.input_type == 'checkbox' %}
+                    <label class="check-label">
+                        {{ field }}
+                        <span>{{ field.label }}</span>
+                    </label>
+                    {% else %}
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% endif %}
+                    {% if field.errors %}
+                    <div class="field-errors">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="form-footer">
+                <a href="/settings/?tab={{ entity }}" class="btn-cancel">Cancel</a>
+                <button type="submit" class="btn-save">Save</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+</body>
+</html>

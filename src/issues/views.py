@@ -511,7 +511,7 @@ def settings_page(request):
         'duedates':   DueDate.objects.all(),
         'active_tab': active_tab,
     }
-    return render(request, 'issues/settings.html', context)
+    return render(request, 'settings/settings.html', context)
 
 
 REASSIGNABLE_FIELD = {
@@ -548,7 +548,7 @@ def settings_delete(request, entity, pk):
             return redirect(f'/settings/?tab={entity}')   # can't delete last
         replacements = model.objects.exclude(pk=pk).order_by('order', 'name')
 
-    return render(request, 'issues/settings_delete_confirm.html', {
+    return render(request, 'settings/settings_delete_confirm.html', {
         'obj': obj,
         'entity': entity,
         'entity_label': ENTITY_LABELS.get(entity, entity),
@@ -761,7 +761,7 @@ def settings_save(request, entity, pk=None):
         form = FormClass(instance=instance)
 
     action = 'Edit' if instance else 'Add'
-    return render(request, 'issues/settings_form.html', {
+    return render(request, 'settings/settings_form.html', {
         'form': form,
         'entity': entity,
         'instance': instance,
