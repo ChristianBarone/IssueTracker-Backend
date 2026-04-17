@@ -327,7 +327,7 @@
             <div class="sidebar-item">
                 <span class="sidebar-label">Assigned</span>
                 <div style="flex:1; display:flex; justify-content:flex-end; align-items:flex-start;">
-                {% if is_creator and editing == 'assignee' %}
+                {% if request.user.is_authenticated and editing == 'assignee' %}
                 <form class="inline-edit-form" method="POST" action="{% url 'issue_update_assignee' issue.id %}">
                     {% csrf_token %}
                     <select name="assignee_id" style="width:100%; padding:8px; border:2px solid var(--taiga-green); border-radius:6px; font-size:13px; outline:none;">
@@ -353,7 +353,7 @@
                     {% else %}
                     <span style="color: var(--text-muted); font-weight: 400;">Unassigned</span>
                     {% endif %}
-                    {% if is_creator %}<a href="?editing=assignee" class="edit-trigger" title="Edit">✎</a>{% endif %}
+                    {% if request.user.is_authenticated %}<a href="?editing=assignee" class="edit-trigger" title="Edit">✎</a>{% endif %}
                 </span>
                 {% endif %}
                 </div>
