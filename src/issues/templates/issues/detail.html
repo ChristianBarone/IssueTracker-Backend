@@ -172,7 +172,7 @@
                     {% for comment in issue.comments.all|dictsortreversed:"created_at" %}
                     <div class="comment-item" id="comment-{{ comment.id }}">
                         <div class="comment-meta">
-                            <a class="comment-author" href={% url 'user_profile' comment.author.username %}>@{{ issue.assignee.username }}</a>
+                            <a class="comment-author" href={% url 'user_profile' comment.author.username %}>@{{ comment.author.username }}</a>
                             {{ comment.created_at|timesince }} ago
                         </div>
 

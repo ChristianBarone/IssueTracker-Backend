@@ -59,7 +59,9 @@
 		<section class="card activity-card">
 			<div class="tabs">
 				<a href="?tab=assigned" class="{% if tab == 'assigned' %}active{% endif %}">Open Assigned Issues</a>
-				<a href="?tab=watched" class="{% if tab == 'watched' %}active{% endif %}">Watched Issues</a>
+                {% if is_owner %}
+				    <a href="?tab=watched" class="{% if tab == 'watched' %}active{% endif %}">Watched Issues</a>
+                {% endif %}
 				<a href="?tab=comments" class="{% if tab == 'comments' %}active{% endif %}">Comments</a>
 			</div>
 

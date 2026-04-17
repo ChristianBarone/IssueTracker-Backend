@@ -34,7 +34,7 @@ def issue_list(request):
 
     if search_query:
         # Cerca: Subject i ID (o Description si vols afegir-ho)
-        issues = issues.filter(Q(subject__icontains=search_query) | Q(id__icontains=search_query))
+        issues = issues.filter(Q(subject__icontains=search_query) | Q(id__icontains=search_query) | Q(description__icontains=search_query))
 
     # Filtrado por TYPE (Acumulativo)
     if selected_types:
