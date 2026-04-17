@@ -607,7 +607,7 @@ def settings_move_down(request, entity, pk):
 def _update_fk_field(request, issue_id, field_name, model, activity_label):
     """Generic handler: update one FK field on an issue, log activity, redirect to detail."""
     issue = get_object_or_404(Issue, id=issue_id)
-    if issue.creator != request.user:
+    if not request.user.is_authenticated:
         return HttpResponseForbidden()
     if request.method == 'POST':
         pk = request.POST.get('value_pk')
