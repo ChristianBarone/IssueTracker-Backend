@@ -92,7 +92,7 @@
                 {% else %}
                     <h3>{{ issue.attachments.count }} Attachments</h3>
                 {% endif %}
-                <form id="FileUploadForm" method="POST" action="{% url 'add_attachment' issue.id %}" enctype="multipart/form-data">
+                <form id="FileUploadForm" method="POST" action="{% url 'attachment_add' issue.id %}" enctype="multipart/form-data">
                         {% csrf_token %}
                         <input type="file" id="files" name="files" onChange="let form=document.getElementById('FileUploadForm'); form.submit()" hidden/>
                         <label class="btn-add-file" for="files">+</label>
@@ -104,7 +104,7 @@
                         <a target="_blank" href={{ attachment.file.url }} >{{ attachment.name }} </a>
 
                         {% if request.user.is_authenticated and attachment.creator == request.user %}
-                        <form style="margin: 0" method="POST" action="{% url 'delete_attachment' attachment.id %}">
+                        <form style="margin: 0" method="POST" action="{% url 'attachment_delete' attachment.id %}">
                             {% csrf_token %}
                             <button type="submit" class="btn-delete-file">X</button>
                         </form>
@@ -134,7 +134,7 @@
                     <div>
                         <div class="activity-meta">
                             {% if activity.actor.username %}
-                                <a class="activity-actor-username" href={% url 'user_profile' activity.actor.username %}>{{ activity.actor.username }}</a>
+                                <a class="activity-actor-username" href={% url 'profile_view' activity.actor.username %}>{{ activity.actor.username }}</a>
                             {% else %}
                                 <strong>System</strong>
                             {% endif %}
@@ -172,7 +172,7 @@
                     {% for comment in issue.comments.all|dictsortreversed:"created_at" %}
                     <div class="comment-item" id="comment-{{ comment.id }}">
                         <div class="comment-meta">
-                            <a class="comment-author" href={% url 'user_profile' comment.author.username %}>@{{ comment.author.username }}</a>
+                            <a class="comment-author" href={% url 'profile_view' comment.author.username %}>@{{ comment.author.username }}</a>
                             {{ comment.created_at|timesince }} ago
                         </div>
 
@@ -320,7 +320,7 @@
             <!-- CREATOR -->
             <div class="sidebar-item">
                 <span class="sidebar-label">Creator</span>
-                <a class="user-name" href={% url 'user_profile' issue.creator.username %}>@{{ issue.creator.username }}</a>
+                <a class="user-name" href={% url 'profile_view' issue.creator.username %}>@{{ issue.creator.username }}</a>
             </div>
 
             <!-- ASSIGNED -->
@@ -349,7 +349,7 @@
                         {% else %}
                             <span class="user-avatar">{{ issue.assignee.username|slice:":2"|upper }}</span>
                         {% endif %}
-                            <a class="user-name" href={% url 'user_profile' issue.assignee.username %}>@{{ issue.assignee.username }}</a>
+                            <a class="user-name" href={% url 'profile_view' issue.assignee.username %}>@{{ issue.assignee.username }}</a>
                     {% else %}
                     <span style="color: var(--text-muted); font-weight: 400;">Unassigned</span>
                     {% endif %}
@@ -405,10 +405,10 @@
                         <span class="user-avatar">{{ w.username|slice:":2"|upper }}</span>
                     {% endif %}
 
-                    <a class="user-name" style="font-size: 14px; font-weight: normal" href={% url 'user_profile' w.username %}>@{{ w.username }}</a>
+                    <a class="user-name" style="font-size: 14px; font-weight: normal" href={% url 'profile_view' w.username %}>@{{ w.username }}</a>
 
 
-                    <form method="POST" action="{% url 'toggle_watcher' issue.id %}">
+                    <form method="POST" action="{% url 'remove_watcher' issue.id %}">
                         {% csrf_token %}
                         <input type="hidden" name="user_id" value="{{ w.id }}">
                         <button type="submit" style="background: none; border: none; color: #ff5f5f; cursor: pointer;">✕</button>
@@ -417,7 +417,7 @@
                 {% endfor %}
             </ul>
 
-            <form method="POST" action="{% url 'add_watcher' issue.id %}" style="display: flex; gap: 5px;">
+            <form method="POST" action="{% url 'watcher_add' issue.id %}" style="display: flex; gap: 5px;">
                 {% csrf_token %}
                 <select name="user_id" class="watchers-select">
                     <option value="">Add user...</option>

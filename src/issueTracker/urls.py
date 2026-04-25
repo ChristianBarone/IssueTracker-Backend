@@ -17,6 +17,8 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
+
+from issues.controllers import *
 from issues.views import *
 
 urlpatterns = [
@@ -39,20 +41,20 @@ urlpatterns = [
     path('issue/<int:issue_id>/add-tag/', issue_add_tag, name='issue_add_tag'),
     path('issue/<int:issue_id>/remove-tag/<int:tag_id>/', issue_remove_tag, name='issue_remove_tag'),
 
-    path('issue/<int:issue_id>/add_watcher/', add_watcher, name='add_watcher'),
-    path('issue/<int:issue_id>/toggle_watcher/', toggle_watcher, name='toggle_watcher'),
+    path('issue/<int:issue_id>/watcher_add/', watcher_add, name='watcher_add'),
+    path('issue/<int:issue_id>/remove_watcher/', remove_watcher, name='remove_watcher'),
 
     path('issue/<int:issue_id>/comment/', comment_add, name='comment_add'),
     path('comment/<int:comment_id>/edit/', comment_edit, name='comment_edit'),
     path('comment/<int:comment_id>/delete/', comment_delete, name='comment_delete'),
-    path('users/<str:username>/', user_comments_view, name='user_profile'),
-    path('users/<str:username>/edit/', edit_profile, name='edit_profile'),
+    path('users/<str:username>/', profile_view, name='profile_view'),
+    path('users/<str:username>/edit/', profile_edit, name='profile_edit'),
     path('accounts/', include('allauth.urls')),
 
-    path('issue/<int:issue_id>/attachments', add_attachment, name='add_attachment'),
-    path('attachments/<int:attachment_id>/delete', delete_attachment, name='delete_attachment'),
+    path('issue/<int:issue_id>/attachments', attachment_add, name='attachment_add'),
+    path('attachments/<int:attachment_id>/delete', attachment_delete, name='attachment_delete'),
 
-    path('settings/', settings_page, name='settings_page'),
+    path('settings/', settings_view, name='settings_view'),
     path('settings/<str:entity>/add/', settings_save, name='settings_add'),
     path('settings/<str:entity>/<int:pk>/edit/', settings_save, name='settings_edit'),
     path('settings/<str:entity>/<int:pk>/delete/', settings_delete, name='settings_delete'),

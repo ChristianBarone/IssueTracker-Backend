@@ -24,8 +24,8 @@
             <button type="submit" class="btn-action active">SEARCH</button>
             <a href="{% url 'issue_create' %}" class="btn-new">+ NEW ISSUE</a>
             <a href="{% url 'issue_bulk_create' %}" class="btn-bulk">BULK ADD</a>
-            <a href="{% url 'settings_page' %}" class="btn-settings">SETTINGS</a>
-            <a href="{% url 'user_profile' request.user.username %}" class="btn-profile">PROFILE</a>
+            <a href="{% url 'settings_view' %}" class="btn-settings">SETTINGS</a>
+            <a href="{% url 'profile_view' request.user.username %}" class="btn-profile">PROFILE</a>
         </div>
 
         <div class="main-layout">
@@ -226,7 +226,7 @@
                                 {% endif %}
 
                                 {% if issue.assignee.username %}
-                                    <a class="user-name" href={% url 'user_profile' issue.assignee.username %}>{{ issue.assignee.username }}</a>
+                                    <a class="user-name" href={% url 'profile_view' issue.assignee.username %}>{{ issue.assignee.username }}</a>
                                 {% else %}
                                     <span class="user-name" >Unassigned</span>
                                 {% endif %}

@@ -22,7 +22,7 @@ class IssueAssignmentAndWatcherTests(TestCase):
 		self.client.force_login(self.actor)
 
 		response = self.client.post(
-			reverse('add_watcher', args=[self.issue.id]),
+			reverse('watcher_add', args=[self.issue.id]),
 			{'user_id': self.target.id},
 		)
 
@@ -38,7 +38,7 @@ class IssueAssignmentAndWatcherTests(TestCase):
 		self.client.force_login(self.actor)
 
 		response = self.client.post(
-			reverse('toggle_watcher', args=[self.issue.id]),
+			reverse('remove_watcher', args=[self.issue.id]),
 			{'user_id': self.target.id},
 		)
 
@@ -129,7 +129,7 @@ class IssueAssignmentAndWatcherTests(TestCase):
 		other_issue.watchers.add(self.target)
 
 		response = self.client.get(
-			reverse('user_profile', args=[self.actor.username]),
+			reverse('profile_view', args=[self.actor.username]),
 			{'tab': 'watched'},
 		)
 
