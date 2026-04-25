@@ -44,7 +44,7 @@
 
 			<div class="profile-actions">
 				{% if is_owner %}
-				<a href="{% url 'edit_profile' profile_user.username %}" class="btn-edit">EDIT BIO</a>
+				<a href="{% url 'profile_edit' profile_user.username %}" class="btn-edit">EDIT BIO</a>
 				{% endif %}
 				<a href="{% url 'issue_list' %}" class="btn-home">BACK TO ISSUES</a>
 				{% if is_owner %}
