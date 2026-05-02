@@ -1,6 +1,6 @@
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.db.models import Q, Count
 
 from .views import *
@@ -9,6 +9,7 @@ from .helpers import *
 from .forms import *
 
 import os
+import json
 
 """""""""""""""""""""""""""""""""
              GLOBALS
@@ -67,6 +68,14 @@ def login_page(request):
 # ISSUES
 @login_required(login_url='/')
 def issue_list(request):
+    # Logica per l'api o per el profile sobre els tokens,, misstage generat del chat com a guia
+    #if request.content_type == "application/json":
+    #    api_key = request.headers.get('X-Api-Key') or request.headers.get('Authorization')
+    #    profile = Profile.objects.filter(api_key=api_key).first()
+    #    if not profile:
+    #        return error_response("You provided an invalid or missing token", 401)
+    #    request.user = profile.user
+
     # Ordenades de més noves a més velles (Requisit)
     order_param = request.GET.get('order_by', '-created_at')
     issues = Issue.objects.all().order_by(order_param)
@@ -146,14 +155,45 @@ def issue_list(request):
     }
 
     if request.content_type == "application/json":
-        # implementar
-        return None
+        issues_data = []
+        for issue in issues:
+            issues_data.append({
+                'id': issue.id,
+                'subject': issue.subject,
+                'description': issue.description,
+                'priority': issue.priority.name if issue.priority else None,
+                'status': issue.status.name if issue.status else None,
+                'type': issue.issue_type.name if issue.issue_type else None,
+                'assignee': issue.assignee.username if issue.assignee else "Unassigned",
+                'created_at': issue.created_at.isoformat(),
+            })
+        response_data = {
+            'issues': issues_data,
+            'selectors': {
+                'all_types': list(all_types.values('name', 'issue_count')),
+                'all_severities': list(all_severities.values('name', 'issue_count')),
+                'all_statuses': list(all_statuses.values('name', 'issue_count')),
+                'users': list(users.values('id', 'username', 'num_issues')),
+            },
+            'filters_applied': {
+                'selected_types': selected_types,
+                'selected_severities': selected_severities,
+                'selected_statuses': selected_statuses,
+                'search_query': search_query,
+                'f_assignee': f_assignee,
+            },
+            'unassigned_count': unassigned_issues_count,
+            'current_order': order_param
+        }
+        return JsonResponse(response_data, safe=False, status=200)
     else:
         return render_issue_list(request, context)
 
 @login_required
 def issue_create(request):
+    #Validacion de token
     if request.method == "POST":
+        # Logica del profile amb el login
         subject = request.POST.get('subject')
         description = request.POST.get('description')
         issue_type = request.POST.get('issue_type')
@@ -178,7 +218,19 @@ def issue_create(request):
             attachment_create_instance(issue.id, creator, request.FILES.get('files'))
 
         if request.content_type == "application/json":
-            # implementar
+            return JsonResponse({
+                'id': issue.id,
+                'subject': issue.subject,
+                'description': issue.description,
+                'type': issue.issue_type.name if issue.issue_type else None,
+                'severity': issue.issue_severity.name if issue.issue_severity else None,
+                'priority': issue.priority.name if issue.priority else None,
+                'status': issue.status.name if issue.status else None,
+                'deadline': issue.deadline.isoformat() if issue.deadline else None,
+                'creator': issue.creator.username,
+                'assignee': issue.assignee.username if issue.assignee else "Unassigned",
+                'created_at': issue.created_at.isoformat()
+            }, status=201)
             return None
         else:
             return redirect('issue_list')
@@ -192,8 +244,13 @@ def issue_create(request):
         }
         
         if request.content_type == "application/json":
-            # implementar
-            return None
+            return JsonResponse({
+                'statuses': list(context['statuses'].values('id', 'name', 'is_closed')),
+                'priorities': list(context['priorities'].values('id', 'name')),
+                'issue_types': list(context['issue_types'].values('id', 'name')),
+                'severities': list(context['severities'].values('id', 'name')),
+                'assignable_users': list(context['assignable_users'].values('id', 'username'))
+            }, status=200)
         else:
             return render_issue_create(request, context)
 
