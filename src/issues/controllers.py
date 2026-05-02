@@ -265,21 +265,70 @@ def issue_detail(request, issue_id):
     }
 
     if request.content_type == "application/json":
-        # implementar
-        return None
+        return JsonResponse({
+            'id': issue.id,
+            'subject': issue.subject,
+            'description': issue.description,
+            'status': issue.status.name if issue.status else None,
+            'priority': issue.priority.name if issue.priority else None,
+            'severity': issue.issue_severity.name if issue.issue_severity else None,
+            'type': issue.issue_type.name if issue.issue_type else None,
+            'creator': issue.creator.username,
+            'assignee': issue.assignee.username if issue.assignee else "Unassigned",
+            'created_at': issue.created_at.isoformat(),
+            'comments': [
+                {
+                    'id': c.id,
+                    'author': c.author.username,
+                    'body': c.body,
+                    'created_at': c.created_at.isoformat()
+                } for c in comments
+            ],
+            'attachments': [
+                {
+                    'id': a.id,
+                    'name': a.file.name,
+                    'url': a.file.url
+                } for a in attachments
+            ],
+            'tags': [t.name for t in issue.tags.all()],
+            'watchers': [w.username for w in issue.watchers.all()],
+            'activities': [
+                {
+                    'user': a.actor.username if a.actor else "System",
+                    'field': a.field_name,
+                    'old': a.old_value,
+                    'new': a.new_value,
+                    'date': a.created_at.isoformat()
+                } for a in issue.activities.all()
+            ]
+        }, status=200)
     else:
         return render_issue_detail(request, context)
 
 @login_required
 def issue_delete(request, issue_id):
+    #Error 404: Automatico
+    issue = get_object_or_404(Issue, id=issue_id)
+    #Logica profile 401
+
+    succes = False
     if request.method == 'POST':
-        issue = get_object_or_404(Issue, id=issue_id)
         if issue.creator == request.user:
             issue.delete()
+            succes = True
+        else:
+            #Error 403: No es creador
+            if request.content_type == "application/json":
+                return JsonResponse({'message': 'Forbidden: Only creator can delete'}, status=403)
+            else:
+                return HttpResponseForbidden()
 
     if request.content_type == "application/json":
-        # implementar
-        return None
+        if success:
+            return JsonResponse({'id': issue_id, 'message': 'Deleted'}, status=200)
+        else:
+            return JsonResponse({'message': 'Bad Request'}, status=405) # 405 Bad request
     else:
         return redirect('issue_list')
 
@@ -535,49 +584,87 @@ def remove_watcher(request, issue_id):
 # COMMENTS
 @login_required
 def comment_add(request, issue_id):
+    #Error 404
     issue = get_object_or_404(Issue, id=issue_id)
+    new_comment = None
     if request.method == "POST":
         text = request.POST.get('body', '').strip()
         if text:
-            Comment.objects.create(issue=issue, author=request.user, body=text)
+            #Error 409 duplicat
+            if Comment.objects.filter(issue=issue, author=request.user, body=text).exists():
+                return JsonResponse({'error': 'Comment is the same'}, status=409)
+            else:
+                new_comment = Comment.objects.create(issue=issue, author=request.user, body=text)
 
     if request.content_type == "application/json":
-        # implementar
-        return None
+        if new_comment:
+            return JsonResponse({
+                'id': new_comment.id,
+                'body': new_comment.body,
+                'author': new_comment.author.username,
+                'created_at': new_comment.created_at.isoformat(),
+                'issue_id': issue.id
+            }, status=201)
+        else:
+            return JsonResponse({'message': 'Body is required'}, status=400)
     else:
         # Importante: Usa issue_id=issue_id para coincidir con tu nombre en urls.py
         return redirect('issue_detail', issue_id=issue_id)
 
 @login_required
 def comment_edit(request, comment_id):
+    #Error 404
     comment = get_object_or_404(Comment, id=comment_id)
     issue_id = getattr(comment, 'issue_id')
 
     # Només el creador edita el comentari
-    if request.method == 'POST' and comment.author == request.user:
-        text = request.POST.get('body', '').strip()
-        if text:
-            comment.body = text
-            comment.save()
+    if request.method == 'POST':
+        if comment.author == request.user:
+            text = request.POST.get('body', '').strip()
+            if text:
+                comment.body = text
+                comment.save()
+            else:
+                if request.content_type == "application/json":
+                    return JsonResponse({'error': 'Body is required'}, status=400)
+                return redirect('issue_detail', issue_id=comment.issue.id)
+        else:
+            #Erro 403 no es el creador
+            if request.content_type == "application/json":
+                return JsonResponse({'error': 'This comment is not made by user'}, status=403)
+            return HttpResponseForbidden()
 
     if request.content_type == "application/json":
-        # implementar
-        return None
+        return JsonResponse({
+            'id': comment.id,
+            'body': comment.body,
+            'author': comment.author.username,
+            'message': 'Comment updated successfully'
+        }, status=200)
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
 @login_required
 def comment_delete(request, comment_id):
+    #Error 404
     comment = get_object_or_404(Comment, id=comment_id)
     issue_id = getattr(comment, 'issue_id')
+    success_delete = False
 
     # Només el creador esborra request.user
     if comment.author == request.user:
         comment.delete()
+        success_delete = True
 
     if request.content_type == "application/json":
-        # implementar
-        return None
+        if success_delete:
+            return JsonResponse({
+                'id': comment_id,
+                'message': 'Comment deleted successfully'
+            }, status=200)
+        else:
+            #Error 403 comentario ajeno
+            return JsonResponse({'error': 'This comment is not yours'}, status=403)
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
