@@ -78,6 +78,14 @@ def issue_list(request):
 
     # Ordenades de més noves a més velles (Requisit)
     order_param = request.GET.get('order_by', '-created_at')
+
+    #Error 400
+    if request.content_type == "application/json":
+        valid_fields = ['issue_type', 'issue_severity', 'priority', 'subject', 'status', 'assignee', 'modified_at', 'deadline', 'created_at']
+        clean_field = order_param.lstrip('-')
+        if clean_field not in valid_fields:
+            return JsonResponse({'error': f'Invalid order_by field: {order_param}'}, status=400)
+
     issues = Issue.objects.all().order_by(order_param)
 
     #Captura de parámetros
@@ -195,6 +203,10 @@ def issue_create(request):
     if request.method == "POST":
         # Logica del profile amb el login
         subject = request.POST.get('subject')
+        if not subject or subject.strip() == "":
+            if request.content_type == "application/json":
+                return JsonResponse({'error': 'Subject is required'}, status=400)
+
         description = request.POST.get('description')
         issue_type = request.POST.get('issue_type')
         issue_severity = request.POST.get('issue_severity')
@@ -231,7 +243,6 @@ def issue_create(request):
                 'assignee': issue.assignee.username if issue.assignee else "Unassigned",
                 'created_at': issue.created_at.isoformat()
             }, status=201)
-            return None
         else:
             return redirect('issue_list')
     else:
