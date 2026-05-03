@@ -89,7 +89,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.github',
     'issues.apps.IssuesConfig',
-    'storages'
+    'storages',
+    'corsheaders'
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -104,6 +105,8 @@ LOGOUT_REDIRECT_URL = '/'
 SITE_ID = 1
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -153,6 +156,15 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# En produccion pondremos los origenes de verdad
+#CORS_ALLOWED_ORIGINS = [
+#]
+#CSRF_TRUSTED_ORIGINS = [
+#]
+#CORS_ALLOW_CREDENTIALS = True
+
+# De momento aceptamos todo
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/

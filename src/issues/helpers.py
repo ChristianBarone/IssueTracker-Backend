@@ -98,6 +98,7 @@ def update_fk_field(request, issue_id, field_name, model, activity_label):
 def validate_api_key(api_key, user_id):
     user = Profile.objects.filter(api_key=api_key)
 
+    #user.count() ?
     if user.length() != 1:
         return HttpResponse(code=401)
 
