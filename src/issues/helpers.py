@@ -1,3 +1,5 @@
+from django.shortcuts import get_object_or_404
+
 from .controllers import *
 
 def issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
@@ -31,6 +33,7 @@ def attachment_create_instance(issue_id, creator, file):
     attachment = Attachment(issue=issue, creator=creator, file=file, name=os.path.basename(file.name))
     attachment.save()
 
+    return attachment
 
 def log_watcher_activity(issue, actor, action, watcher_user):
     IssueActivity.objects.create(

@@ -89,7 +89,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.github',
     'issues.apps.IssuesConfig',
-    'storages'
+    'storages',
+    'rest_framework'
 ]
 
 AUTHENTICATION_BACKENDS = [

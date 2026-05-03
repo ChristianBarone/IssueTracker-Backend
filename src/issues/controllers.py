@@ -1,6 +1,6 @@
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.db.models import Q, Count
 
 from .views import *
@@ -585,16 +585,25 @@ def comment_delete(request, comment_id):
 @login_required
 def attachment_add(request, issue_id):
     if request.method == 'POST':
+        attachment = attachment_create_instance(issue_id, request.user, request.FILES['files'])
 
-        form = UploadFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            attachment_create_instance(issue_id, request.user, request.FILES['files'])
+        if request.content_type == "application/json":
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
+            data = {
+                'id': attachment.id,
+                'issue_id': attachment.issue_id,
+                'creator_id': attachment.creator_id,
+                'url': attachment.file.url,
+                'name': attachment.name
+            }
+
+            return JsonResponse(data, code=201)
+        else:
+            return redirect('issue_detail', issue_id=issue_id)
     else:
-        return redirect('issue_detail', issue_id=issue_id)
+        response = HttpResponse(code=205)
+        response.headers["Allow"] = "POST"
+        return response
 
 @login_required
 def attachment_delete(request, attachment_id):
