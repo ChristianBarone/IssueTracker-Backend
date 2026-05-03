@@ -1,6 +1,6 @@
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, HttpResponseNotFound, Http404
 from django.db.models import Q, Count
 
 from .views import *
@@ -582,41 +582,70 @@ def comment_delete(request, comment_id):
         return redirect('issue_detail', issue_id=issue_id)
 
 # ATTACHMENTS
-@login_required
-def attachment_add(request, issue_id):
-    if request.method == 'POST':
-        attachment = attachment_create_instance(issue_id, request.user, request.FILES['files'])
+def attachment_get_api(attachment_id):
+    attachment = get_object_or_404(Attachment, id=attachment_id)
+    data = {
+        'attachment_id': attachment.id,
+        'issue_id': attachment.issue_id,
+        'creator_id': attachment.creator_id,
+        'url': attachment.file.url,
+        'name': attachment.name
+    }
 
-        if request.content_type == "application/json":
+    return JsonResponse(data, status=200)
 
-            data = {
-                'id': attachment.id,
-                'issue_id': attachment.issue_id,
-                'creator_id': attachment.creator_id,
-                'url': attachment.file.url,
-                'name': attachment.name
-            }
+def attachment_list_api(issue_id):
+    attachments = Attachment.objects.filter(issue_id=issue_id)
+    data = []
+    for attachment in attachments:
+        data.append({
+            'attachment_id': attachment.id,
+            'issue_id': attachment.issue_id,
+            'creator_id': attachment.creator_id,
+            'url': attachment.file.url,
+            'name': attachment.name
+        })
 
-            return JsonResponse(data, code=201)
-        else:
-            return redirect('issue_detail', issue_id=issue_id)
-    else:
-        response = HttpResponse(code=205)
-        response.headers["Allow"] = "POST"
-        return response
+    return JsonResponse(data, status=200, safe=False)
 
-@login_required
-def attachment_delete(request, attachment_id):
+def attachment_add_api(request, issue_id, user):
+    form = UploadFileForm(request.POST, request.FILES)
+    if not form.is_valid():
+        return JsonResponse({'message': 'Invalid request format'}, status=400)
+
+    attachment = attachment_create_instance(issue_id, user, request.FILES['files'])
+
+    data = {
+        'attachment_id': attachment.id,
+        'issue_id': attachment.issue_id,
+        'creator_id': attachment.creator_id,
+        'url': attachment.file.url,
+        'name': attachment.name
+    }
+
+    return JsonResponse(data, status=201)
+
+def attachment_add_web(request, issue_id):
+    form = UploadFileForm(request.POST, request.FILES)
+    if not form.is_valid():
+        return JsonResponse({'message': 'Invalid request format'}, status=400)
+
+    attachment_create_instance(issue_id, request.user, request.FILES['files'])
+    return redirect('issue_detail', issue_id=issue_id)
+
+def attachment_delete_api(attachment_id):
+    attachment = get_object_or_404(Attachment, id=attachment_id)
+    attachment.delete()
+
+    return JsonResponse({'message': 'Attachment deleted'}, status=204)
+
+def attachment_delete_web(request, attachment_id):
     attachment = get_object_or_404(Attachment, id=attachment_id)
     issue_id = getattr(attachment, 'issue_id')
 
     attachment.delete()
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
+    return redirect('issue_detail', issue_id=issue_id)
 
 # PROFILES
 def profile_view(request, username):
