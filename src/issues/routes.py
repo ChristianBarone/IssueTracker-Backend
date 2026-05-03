@@ -2,7 +2,7 @@ from .controllers import *
 
 # ATTACHMENTS
 def attachments(request, issue_id):
-    if request.content_type == "text/html":
+    if "text/html" in request.META["HTTP_ACCEPT"]:
         if request.method == 'POST':
             return attachment_add_web(request, issue_id)
         else:
