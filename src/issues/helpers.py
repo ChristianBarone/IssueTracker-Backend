@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404
 
 from .controllers import *
+from django.http import HttpResponse
 
 def issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
                           assignee):
@@ -96,3 +97,14 @@ def update_fk_field(request, issue_id, field_name, model, activity_label):
         return None
     else:
         return redirect('issue_detail', issue_id=issue_id)
+
+def validate_api_key(api_key, user_id):
+    user = Profile.objects.filter(api_key=api_key)
+
+    if user.length() != 1:
+        return HttpResponse(code=401)
+
+    if user[0].id != user_id:
+        return HttpResponseForbidden()
+
+    return None

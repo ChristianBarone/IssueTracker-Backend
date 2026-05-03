@@ -13,7 +13,7 @@ import os
 """""""""""""""""""""""""""""""""
              GLOBALS
 """""""""""""""""""""""""""""""""
-GITHUB_LOGIN_URL = '/accounts/github/login/?next=/issues/'
+GITHUB_LOGIN_URL = '/accounts/github/login/'
 
 SETTINGS_MODELS = {
     'statuses':   Status,
