@@ -38,6 +38,12 @@
 
 			<div class="bio">{{ profile_obj.bio|default:"This user has not added a biography yet." }}</div>
 
+            {% if is_owner %}
+                <div class="api-key">
+                    API Key: (click to copy) <p class="api-key-text" onClick=" navigator.clipboard.writeText(this.textContent);">{{ profile_obj.api_key|default:"N/A" }}</p>
+                </div>
+            {% endif %}
+
 			<div class="meta-line" style="margin-bottom: 16px;">
 				<strong>Registered:</strong> {{ profile_user.date_joined|date:"d M Y" }}
 			</div>

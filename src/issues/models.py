@@ -2,15 +2,23 @@ import os
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.crypto import get_random_string
+
+API_KEY_LENGTH=32
+
+def generate_api_key():
+    return get_random_string(length=API_KEY_LENGTH)
 
 class Profile(models.Model):
     objects = models.Manager()
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True)
+    api_key = models.CharField(max_length=API_KEY_LENGTH, editable=False, default=generate_api_key)
 
     def __str__(self):
         return str(self.user)
+
 
 class Issue(models.Model):
     objects = models.Manager()
