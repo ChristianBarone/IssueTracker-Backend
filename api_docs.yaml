@@ -7,7 +7,7 @@ servers:
   - url: 'https://issuetracker-ff8u.onrender.com/'
   - url: 'http://localhost:8000'
 paths:
-  /issue/{issueId}/attachments:
+  /issue/{issueId}/attachments/:
     get:
       tags:
         - attachments
@@ -104,7 +104,7 @@ paths:
       security:
         - ApiKeyAuth: []
 
-  /attachments/{attachmentId}:
+  /attachments/{attachmentId}/:
     get:
       tags:
         - attachments
@@ -191,7 +191,7 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
-  /issue/{issueId}/comment:
+  /issue/{issueId}/comment/:
     get:
       tags:
         - comments
@@ -297,7 +297,7 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
-  /comments/{commentId}:
+  /comments/{commentId}/:
     put:
       tags:
         - comments
