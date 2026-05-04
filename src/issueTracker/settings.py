@@ -70,10 +70,6 @@ else:
     if os.path.exists(credentials_path):
         GS_CREDENTIALS = service_account.Credentials.from_service_account_file(credentials_path)
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://8886e6181fdc44dfbb69832587320098.vfs.cloud9.us-east-1.amazonaws.com'
-]
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -89,7 +85,9 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.github',
     'issues.apps.IssuesConfig',
-    'storages'
+    'storages',
+    'rest_framework',
+    'corsheaders',
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -108,12 +106,20 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+    "https://issuetracker-ff8u.onrender.com",
+    'https://editor.swagger.io'
+]
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'issueTracker.urls'
 
@@ -171,9 +177,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 if not DEBUG:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
     STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 
 # Default primary key field type
