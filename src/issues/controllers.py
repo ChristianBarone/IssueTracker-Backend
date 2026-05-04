@@ -330,14 +330,27 @@ def issue_detail(request, issue_id):
 
 @login_required
 def issue_delete(request, issue_id):
+    #Error 404: Automatico
+    issue = get_object_or_404(Issue, id=issue_id)
+    #Logica profile 401
+
+    succes = False
     if request.method == 'POST':
-        issue = get_object_or_404(Issue, id=issue_id)
         if issue.creator == request.user:
             issue.delete()
+            succes = True
+        else:
+            #Error 403: No es creador
+            if request.content_type == "application/json":
+                return JsonResponse({'message': 'Forbidden: Only creator can delete'}, status=403)
+            else:
+                return HttpResponseForbidden()
 
     if request.content_type == "application/json":
-        # implementar
-        return None
+        if success:
+            return JsonResponse({'id': issue_id, 'message': 'Deleted'}, status=200)
+        else:
+            return JsonResponse({'message': 'Bad Request'}, status=405) # 405 Bad request
     else:
         return redirect('issue_list')
 
