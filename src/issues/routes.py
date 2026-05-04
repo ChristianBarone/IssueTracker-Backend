@@ -94,9 +94,9 @@ def comment_detail_route(request, comment_id):
             return JsonResponse({'message': 'Forbidden'}, status=403)
 
         if request.method == 'POST':
-            if 'delete' in request.path: # Si la URL termina en /delete
+            if 'delete' in request.path:
                 return comment_delete_web(request, comment_id)
-            return comment_edit_web(request, comment) # Si no, es editar
+            return comment_edit_web(request, comment)
 
     else:
         user = validate_api_key(request.headers.get("Authorization"))
@@ -113,3 +113,42 @@ def comment_detail_route(request, comment_id):
     response = JsonResponse({'message': 'Method not allowed'}, status=405)
     response.headers["Allow"] = "GET, POST, PUT, DELETE"
     return response
+
+def issue_detail_dispatcher(request, issue_id):
+    try:
+        issue = get_object_or_404(Issue, id=issue_id)
+    except Exception:
+        if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+            return render(request, '404.html', status=404)
+        return JsonResponse({'error': f'Issue {issue_id} not found'}, status=404)
+
+    # Web
+    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+        if request.method == 'GET':
+            return issue_detail_web(request, issue)
+
+        if request.method == 'POST':
+            # ERROR 403: No es el creador
+            if issue.creator != request.user:
+                return HttpResponseForbidden("You aren't the creator.")
+
+            if request.POST.get('_method') == 'DELETE':
+                return issue_delete_web(request, issue_id)
+        return HttpResponseNotAllowed(['GET', 'POST'])
+
+    # API
+    else:
+        user = validate_api_key(request.headers.get("Authorization"))
+        if isinstance(user, JsonResponse):
+            return user
+
+        if request.method == 'GET':
+            return issue_detail_api(issue)
+
+        elif request.method == 'DELETE':
+            auth_check = validate_api_user(request.headers.get("Authorization"), issue.creator.id)
+            if isinstance(auth_check, JsonResponse):
+                return auth_check
+            return issue_delete_api(issue_id)
+        else:
+            return JsonResponse({'error': 'Method not allowed'}, status=405)

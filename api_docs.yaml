@@ -6,7 +6,192 @@ info:
 servers:
   - url: 'https://issuetracker-ff8u.onrender.com/'
   - url: 'http://localhost:8000'
+
 paths:
+  /issues/:
+    get:
+      tags:
+        - issues
+      summary: List and filter issues
+      operationId: listIssues
+      parameters:
+        - name: search
+          in: query
+          description: Search text for subject or description
+          schema:
+            type: string
+        - name: order_by
+          in: query
+          description: Field to order by (e.g., priority, -created_at)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Issues retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  issues:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Issue'
+                  current_order:
+                    type: string
+                  unassigned_count:
+                    type: integer
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+      security:
+        - ApiKeyAuth: []
+    post:
+      tags:
+        - issues
+      summary: Create a new issue
+      operationId: createIssue
+      requestBody:
+        description: Provide the details for the new issue
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  example: "Bug in login"
+                description:
+                  type: string
+                  example: "The login button is not working"
+                issue_type:
+                  type: string
+                  example: "Bug"
+                priority:
+                  type: string
+                  example: "High"
+              required:
+                - subject
+        required: true
+      responses:
+        '201':
+          description: Issue created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          description: Bad Request (Subject is required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+      security:
+        - ApiKeyAuth: []
+
+  /issue/{issueId}/:
+    get:
+      tags:
+        - issues
+      summary: Get issue details
+      operationId: getIssue
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Issue details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueDetail'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+    delete:
+      tags:
+        - issues
+      summary: Delete an issue
+      operationId: deleteIssue
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Issue deleted
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '403':
+          description: Invalid user (Only creator can delete)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error403'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
   /issue/{issueId}/attachments:
     get:
       tags:
@@ -191,6 +376,7 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
+  # --- COMMENTS (Original) ---
   /issue/{issueId}/comment:
     get:
       tags:
@@ -417,6 +603,51 @@ paths:
 
 components:
   schemas:
+    Issue:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        subject:
+          type: string
+          example: "Bug in login"
+        status:
+          type: string
+          example: "Open"
+        priority:
+          type: string
+          example: "High"
+        assignee:
+          type: string
+          example: "john_doe"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-04T21:00:00Z"
+
+    IssueDetail:
+      allOf:
+        - $ref: '#/components/schemas/Issue'
+        - type: object
+          properties:
+            description:
+              type: string
+              example: "The login button is not working on Chrome"
+            comments:
+              type: array
+              items:
+                $ref: '#/components/schemas/Comment'
+            attachments:
+              type: array
+              items:
+                $ref: '#/components/schemas/Attachment'
+            tags:
+              type: array
+              items:
+                type: string
+                example: "frontend"
+
     Attachment:
       type: object
       properties:
@@ -483,7 +714,7 @@ components:
         message: "The provided API key does not authorize this action"
     error404:
       value:
-        message: "There is no resource with 'id'=8"
+        message: "There is no resource with the provided ID"
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
