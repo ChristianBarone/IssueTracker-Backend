@@ -45,9 +45,10 @@ urlpatterns = [
     path('issue/<int:issue_id>/watcher_add/', watcher_add, name='watcher_add'),
     path('issue/<int:issue_id>/remove_watcher/', remove_watcher, name='remove_watcher'),
 
-    path('issue/<int:issue_id>/comment/', comment_add, name='comment_add'),
-    path('comment/<int:comment_id>/edit/', comment_edit, name='comment_edit'),
-    path('comment/<int:comment_id>/delete/', comment_delete, name='comment_delete'),
+    path('issue/<int:issue_id>/comment/', issue_comments, name='comment_add'),
+    path('comment/<int:comment_id>/edit/', comment_detail_route, name='comment_edit'),
+    path('comment/<int:comment_id>/delete/', comment_delete_web, name='comment_delete'),
+
     path('users/<str:username>/', profile_view, name='profile_view'),
     path('users/<str:username>/edit/', profile_edit, name='profile_edit'),
     path('accounts/', include('allauth.urls')),
