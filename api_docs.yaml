@@ -451,7 +451,7 @@ components:
           example: "This is a comment body"
         author:
           type: string
-          example: "Andreu-Caro"
+          example: "john_doe"
         created_at:
           type: string
           format: date-time
