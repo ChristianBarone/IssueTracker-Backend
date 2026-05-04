@@ -265,8 +265,44 @@ def issue_detail(request, issue_id):
     }
 
     if request.content_type == "application/json":
-        # implementar
-        return None
+        return JsonResponse({
+            'id': issue.id,
+            'subject': issue.subject,
+            'description': issue.description,
+            'status': issue.status.name if issue.status else None,
+            'priority': issue.priority.name if issue.priority else None,
+            'severity': issue.issue_severity.name if issue.issue_severity else None,
+            'type': issue.issue_type.name if issue.issue_type else None,
+            'creator': issue.creator.username,
+            'assignee': issue.assignee.username if issue.assignee else "Unassigned",
+            'created_at': issue.created_at.isoformat(),
+            'comments': [
+                {
+                    'id': c.id,
+                    'author': c.author.username,
+                    'body': c.body,
+                    'created_at': c.created_at.isoformat()
+                } for c in comments
+            ],
+            'attachments': [
+                {
+                    'id': a.id,
+                    'name': a.file.name,
+                    'url': a.file.url
+                } for a in attachments
+            ],
+            'tags': [t.name for t in issue.tags.all()],
+            'watchers': [w.username for w in issue.watchers.all()],
+            'activities': [
+                {
+                    'user': a.actor.username if a.actor else "System",
+                    'field': a.field_name,
+                    'old': a.old_value,
+                    'new': a.new_value,
+                    'date': a.created_at.isoformat()
+                } for a in issue.activities.all()
+            ]
+        }, status=200)
     else:
         return render_issue_detail(request, context)
 
@@ -532,54 +568,71 @@ def remove_watcher(request, issue_id):
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
-# COMMENTS
-@login_required
-def comment_add(request, issue_id):
-    issue = get_object_or_404(Issue, id=issue_id)
-    if request.method == "POST":
-        text = request.POST.get('body', '').strip()
-        if text:
-            Comment.objects.create(issue=issue, author=request.user, body=text)
+# --- COMMENTS ---
+def comment_list_api(issue_id):
+    comments = Comment.objects.filter(issue_id=issue_id)
+    data = []
+    for c in comments:
+        data.append({
+            'id': c.id,
+            'body': c.body,
+            'author': c.author.username,
+            'created_at': c.created_at.isoformat(),
+            'issue_id': c.issue_id
+        })
+    return JsonResponse(data, status=200, safe=False)
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        # Importante: Usa issue_id=issue_id para coincidir con tu nombre en urls.py
-        return redirect('issue_detail', issue_id=issue_id)
+def comment_add_api(request, issue_id, user):
+    text = request.POST.get('body', '').strip()
+    if not text:
+        return JsonResponse({'message': 'Body is required'}, status=400)
 
-@login_required
-def comment_edit(request, comment_id):
+    if Comment.objects.filter(issue_id=issue_id, author=user, body=text).exists():
+        return JsonResponse({'error': 'Duplicate comment'}, status=409)
+
+    comment = Comment.objects.create(issue_id=issue_id, author=user, body=text)
+    return JsonResponse({
+        'id': comment.id,
+        'body': comment.body,
+        'author': comment.author.username,
+        'issue_id': issue_id
+    }, status=201)
+
+def comment_add_web(request, issue_id):
+    text = request.POST.get('body', '').strip()
+    if text:
+        Comment.objects.create(issue_id=issue_id, author=request.user, body=text)
+    return redirect('issue_detail', issue_id=issue_id)
+
+def comment_edit_api(request, comment):
+    text = request.POST.get('body', '').strip()
+    if not text:
+        return JsonResponse({'message': 'Body is required'}, status=400)
+
+    if Comment.objects.filter(issue_id=issue_id, author=user, body=text).exists():
+        return JsonResponse({'error': 'Duplicate comment'}, status=409)
+
+    comment.body = text
+    comment.save()
+    return JsonResponse({'id': comment.id, 'body': comment.body, 'message': 'Comment updated'}, status=200)
+
+def comment_edit_web(request, comment):
+    text = request.POST.get('body', '').strip()
+    if text:
+        comment.body = text
+        comment.save()
+    return redirect('issue_detail', issue_id=comment.issue_id)
+
+def comment_delete_api(comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    issue_id = getattr(comment, 'issue_id')
+    comment.delete()
+    return JsonResponse({'id': comment_id, 'message': 'Comment deleted successfully'}, status=200)
 
-    # Només el creador edita el comentari
-    if request.method == 'POST' and comment.author == request.user:
-        text = request.POST.get('body', '').strip()
-        if text:
-            comment.body = text
-            comment.save()
-
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
-
-@login_required
-def comment_delete(request, comment_id):
+def comment_delete_web(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    issue_id = getattr(comment, 'issue_id')
-
-    # Només el creador esborra request.user
-    if comment.author == request.user:
-        comment.delete()
-
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
+    issue_id = comment.issue.id
+    comment.delete()
+    return redirect('issue_detail', issue_id=issue_id)
 
 # ATTACHMENTS
 def attachment_get_api(attachment_id):
