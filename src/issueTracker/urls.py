@@ -20,6 +20,7 @@ from django.conf.urls.static import static
 
 from issues.controllers import *
 from issues.views import *
+from issues.routes import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -51,8 +52,9 @@ urlpatterns = [
     path('users/<str:username>/edit/', profile_edit, name='profile_edit'),
     path('accounts/', include('allauth.urls')),
 
-    path('issue/<int:issue_id>/attachments', attachment_add, name='attachment_add'),
-    path('attachments/<int:attachment_id>/delete', attachment_delete, name='attachment_delete'),
+    path('issue/<int:issue_id>/attachments', attachments, name='attachment_add'),
+    path('attachments/<int:attachment_id>', attachment, name='attachment'),
+    path('attachments/<int:attachment_id>/delete', attachment_delete_web, name='attachment_delete'),
 
     path('settings/', settings_view, name='settings_view'),
     path('settings/<str:entity>/add/', settings_save, name='settings_add'),
