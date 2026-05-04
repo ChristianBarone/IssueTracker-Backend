@@ -52,24 +52,24 @@ paths:
         - ApiKeyAuth: [ ]
     post:
       tags:
-      - attachments
+        - attachments
       summary: Upload an attachment
       operationId: uploadAttachment
       parameters:
-      - name: issueId
-        in: path
-        description: Issue to upload the attachment to
-        required: true
-        schema:
-          type: integer
-          format: int64
+        - name: issueId
+          in: path
+          description: Issue to upload the attachment to
+          required: true
+          schema:
+            type: integer
+            format: int64
       requestBody:
         description: Provide the file for the attachment
         content:
           multipart/form-data:
             schema:
               required:
-              - files
+                - files
               type: object
               properties:
                 files:
@@ -102,7 +102,8 @@ paths:
                 errorExample:
                   $ref: '#/components/examples/error404'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: []
+
   /attachments/{attachmentId}:
     get:
       tags:
@@ -189,6 +190,231 @@ paths:
                   $ref: '#/components/examples/error404'
       security:
         - ApiKeyAuth: [ ]
+
+  /issue/{issueId}/comment:
+    get:
+      tags:
+        - comments
+      summary: List an issue's comments
+      operationId: listComments
+      parameters:
+        - name: issueId
+          in: path
+          description: Issue to get the comments from
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Comments retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: [ ]
+    post:
+      tags:
+        - comments
+      summary: Create a comment
+      operationId: createComment
+      parameters:
+        - name: issueId
+          in: path
+          description: Issue to add the comment to
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Provide the body text for the comment
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                  example: "This is a new comment"
+              required:
+                - body
+        required: true
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Bad Request (Body is required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: [ ]
+
+  /comments/{commentId}:
+    put:
+      tags:
+        - comments
+      summary: Update a comment
+      operationId: updateComment
+      parameters:
+        - name: commentId
+          in: path
+          description: Comment to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Provide the updated text for the comment
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                  example: "Updated comment text"
+              required:
+                - body
+        required: true
+      responses:
+        '200':
+          description: Comment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Bad Request (Body is required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '403':
+          description: Invalid user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error403'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: [ ]
+    delete:
+      tags:
+        - comments
+      summary: Delete a comment
+      operationId: deleteComment
+      parameters:
+        - name: commentId
+          in: path
+          description: Comment to delete
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Comment deleted
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '403':
+          description: Invalid user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error403'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: [ ]
+
 components:
   schemas:
     Attachment:
@@ -213,6 +439,27 @@ components:
         name:
           type: string
           example: 'Barcelona'
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+        body:
+          type: string
+          example: "This is a comment body"
+        author:
+          type: string
+          example: "Andreu-Caro"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-04T21:00:00Z"
+        issue_id:
+          type: integer
+          format: int64
+          example: 6
     ErrorResult:
       type: object
       properties:
@@ -227,7 +474,7 @@ components:
         message: "Successfully deleted resource"
     error400:
       value:
-        message: "Content is too long (maximum is 280 characters)"
+        message: "Body is required"
     error401:
       value:
         message: "The API key you provided does not belong to any users"

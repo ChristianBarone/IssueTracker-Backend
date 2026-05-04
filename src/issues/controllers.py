@@ -308,27 +308,14 @@ def issue_detail(request, issue_id):
 
 @login_required
 def issue_delete(request, issue_id):
-    #Error 404: Automatico
-    issue = get_object_or_404(Issue, id=issue_id)
-    #Logica profile 401
-
-    succes = False
     if request.method == 'POST':
+        issue = get_object_or_404(Issue, id=issue_id)
         if issue.creator == request.user:
             issue.delete()
-            succes = True
-        else:
-            #Error 403: No es creador
-            if request.content_type == "application/json":
-                return JsonResponse({'message': 'Forbidden: Only creator can delete'}, status=403)
-            else:
-                return HttpResponseForbidden()
 
     if request.content_type == "application/json":
-        if success:
-            return JsonResponse({'id': issue_id, 'message': 'Deleted'}, status=200)
-        else:
-            return JsonResponse({'message': 'Bad Request'}, status=405) # 405 Bad request
+        # implementar
+        return None
     else:
         return redirect('issue_list')
 
@@ -581,92 +568,71 @@ def remove_watcher(request, issue_id):
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
-# COMMENTS
-@login_required
-def comment_add(request, issue_id):
-    #Error 404
-    issue = get_object_or_404(Issue, id=issue_id)
-    new_comment = None
-    if request.method == "POST":
-        text = request.POST.get('body', '').strip()
-        if text:
-            #Error 409 duplicat
-            if Comment.objects.filter(issue=issue, author=request.user, body=text).exists():
-                return JsonResponse({'error': 'Comment is the same'}, status=409)
-            else:
-                new_comment = Comment.objects.create(issue=issue, author=request.user, body=text)
+# --- COMMENTS ---
+def comment_list_api(issue_id):
+    comments = Comment.objects.filter(issue_id=issue_id)
+    data = []
+    for c in comments:
+        data.append({
+            'id': c.id,
+            'body': c.body,
+            'author': c.author.username,
+            'created_at': c.created_at.isoformat(),
+            'issue_id': c.issue_id
+        })
+    return JsonResponse(data, status=200, safe=False)
 
-    if request.content_type == "application/json":
-        if new_comment:
-            return JsonResponse({
-                'id': new_comment.id,
-                'body': new_comment.body,
-                'author': new_comment.author.username,
-                'created_at': new_comment.created_at.isoformat(),
-                'issue_id': issue.id
-            }, status=201)
-        else:
-            return JsonResponse({'message': 'Body is required'}, status=400)
-    else:
-        # Importante: Usa issue_id=issue_id para coincidir con tu nombre en urls.py
-        return redirect('issue_detail', issue_id=issue_id)
+def comment_add_api(request, issue_id, user):
+    text = request.POST.get('body', '').strip()
+    if not text:
+        return JsonResponse({'message': 'Body is required'}, status=400)
 
-@login_required
-def comment_edit(request, comment_id):
-    #Error 404
+    if Comment.objects.filter(issue_id=issue_id, author=user, body=text).exists():
+        return JsonResponse({'error': 'Duplicate comment'}, status=409)
+
+    comment = Comment.objects.create(issue_id=issue_id, author=user, body=text)
+    return JsonResponse({
+        'id': comment.id,
+        'body': comment.body,
+        'author': comment.author.username,
+        'issue_id': issue_id
+    }, status=201)
+
+def comment_add_web(request, issue_id):
+    text = request.POST.get('body', '').strip()
+    if text:
+        Comment.objects.create(issue_id=issue_id, author=request.user, body=text)
+    return redirect('issue_detail', issue_id=issue_id)
+
+def comment_edit_api(request, comment):
+    text = request.POST.get('body', '').strip()
+    if not text:
+        return JsonResponse({'message': 'Body is required'}, status=400)
+
+    if Comment.objects.filter(issue_id=issue_id, author=user, body=text).exists():
+        return JsonResponse({'error': 'Duplicate comment'}, status=409)
+
+    comment.body = text
+    comment.save()
+    return JsonResponse({'id': comment.id, 'body': comment.body, 'message': 'Comment updated'}, status=200)
+
+def comment_edit_web(request, comment):
+    text = request.POST.get('body', '').strip()
+    if text:
+        comment.body = text
+        comment.save()
+    return redirect('issue_detail', issue_id=comment.issue_id)
+
+def comment_delete_api(comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    issue_id = getattr(comment, 'issue_id')
+    comment.delete()
+    return JsonResponse({'id': comment_id, 'message': 'Comment deleted successfully'}, status=200)
 
-    # Només el creador edita el comentari
-    if request.method == 'POST':
-        if comment.author == request.user:
-            text = request.POST.get('body', '').strip()
-            if text:
-                comment.body = text
-                comment.save()
-            else:
-                if request.content_type == "application/json":
-                    return JsonResponse({'error': 'Body is required'}, status=400)
-                return redirect('issue_detail', issue_id=comment.issue.id)
-        else:
-            #Erro 403 no es el creador
-            if request.content_type == "application/json":
-                return JsonResponse({'error': 'This comment is not made by user'}, status=403)
-            return HttpResponseForbidden()
-
-    if request.content_type == "application/json":
-        return JsonResponse({
-            'id': comment.id,
-            'body': comment.body,
-            'author': comment.author.username,
-            'message': 'Comment updated successfully'
-        }, status=200)
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
-
-@login_required
-def comment_delete(request, comment_id):
-    #Error 404
+def comment_delete_web(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    issue_id = getattr(comment, 'issue_id')
-    success_delete = False
-
-    # Només el creador esborra request.user
-    if comment.author == request.user:
-        comment.delete()
-        success_delete = True
-
-    if request.content_type == "application/json":
-        if success_delete:
-            return JsonResponse({
-                'id': comment_id,
-                'message': 'Comment deleted successfully'
-            }, status=200)
-        else:
-            #Error 403 comentario ajeno
-            return JsonResponse({'error': 'This comment is not yours'}, status=403)
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
+    issue_id = comment.issue.id
+    comment.delete()
+    return redirect('issue_detail', issue_id=issue_id)
 
 # ATTACHMENTS
 def attachment_get_api(attachment_id):

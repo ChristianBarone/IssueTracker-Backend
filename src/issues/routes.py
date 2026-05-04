@@ -51,3 +51,65 @@ def attachment(request, attachment_id):
         response = JsonResponse({'message': 'The requested method for this resource is not allowed'}, status=205)
         response.headers["Allow"] = "GET, DELETE"
         return response
+
+# COMMENTS
+
+def issue_comments(request, issue_id):
+    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+        if request.method == 'POST':
+            return comment_add_web(request, issue_id)
+        else:
+            response = JsonResponse({'message': 'Method not allowed'}, status=405)
+            response.headers["Allow"] = "POST"
+            return response
+
+    else:
+        try:
+            get_object_or_404(Issue, id=issue_id)
+        except:
+            return JsonResponse({'message': f"There is no issue with 'id'={issue_id}"}, status=404)
+
+        user = validate_api_key(request.headers.get("Authorization"))
+        if type(user) is JsonResponse: return user
+
+        if request.method == 'POST':
+            return comment_add_api(request, issue_id, user)
+        elif request.method == 'GET':
+            return comment_list_api(issue_id)
+        else:
+            response = JsonResponse({'message': 'The requested method for this resource is not allowed'}, status=405)
+            response.headers["Allow"] = "GET, POST"
+            return response
+
+
+def comment_detail_route(request, comment_id):
+    # Only api
+    try:
+        comment = get_object_or_404(Comment, id=comment_id)
+    except Http404:
+        return JsonResponse({'message': 'There is no comment with \'id\'=' + str(comment_id)}, status=404)
+
+    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+        if comment.author != request.user:
+            return JsonResponse({'message': 'Forbidden'}, status=403)
+
+        if request.method == 'POST':
+            if 'delete' in request.path: # Si la URL termina en /delete
+                return comment_delete_web(request, comment_id)
+            return comment_edit_web(request, comment) # Si no, es editar
+
+    else:
+        user = validate_api_key(request.headers.get("Authorization"))
+        if type(user) is JsonResponse: return user
+
+        perm = validate_api_user(request.headers.get("Authorization"), comment.author.id)
+        if type(perm) is JsonResponse: return perm
+
+        if request.method == 'DELETE':
+            return comment_delete_api(comment_id)
+        elif request.method == 'PUT' or request.method == 'POST':
+            return comment_edit_api(request, comment)
+
+    response = JsonResponse({'message': 'Method not allowed'}, status=405)
+    response.headers["Allow"] = "GET, POST, PUT, DELETE"
+    return response
