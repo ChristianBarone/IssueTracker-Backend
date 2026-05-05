@@ -25,11 +25,12 @@ from issues.routes import *
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', login_page, name='login_page'),
-    path('issues/', issue_list, name='issue_list'),
-    path('new/', issue_create, name='issue_create'),
+    path('issues/', issues_dispatcher, name='issue_list'),
+    path('new/', issues_dispatcher, name='issue_create'),
     path('new_bulk/', issue_bulk_create, name='issue_bulk_create'),
-    path('issue/<int:issue_id>/', issue_detail, name='issue_detail'),
-    path('issue/<int:issue_id>/delete/', issue_delete, name='issue_delete'),
+    path('issue/<int:issue_id>/', issue_detail_dispatcher, name='issue_detail'),
+    path('issue/<int:issue_id>/delete/', issue_detail_dispatcher, name='issue_delete'),
+
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
     path('issue/<int:issue_id>/update-assignee/', issue_update_assignee, name='issue_update_assignee'),
     path('issue/<int:issue_id>/update-type/', issue_update_type, name='issue_update_type'),

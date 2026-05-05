@@ -9,6 +9,7 @@ from .helpers import *
 from .forms import *
 
 import os
+import json
 
 """""""""""""""""""""""""""""""""
              GLOBALS
@@ -65,137 +66,195 @@ def login_page(request):
     return render_login_page(request, context)
 
 # ISSUES
-@login_required(login_url='/')
-def issue_list(request):
-    # Ordenades de més noves a més velles (Requisit)
+def _apply_issue_queries(request):
     order_param = request.GET.get('order_by', '-created_at')
     issues = Issue.objects.all().order_by(order_param)
 
-    #Captura de parámetros
-    selected_types = request.GET.getlist('issue_type')
-    selected_statuses = request.GET.getlist('filter_status')
-    selected_severities = request.GET.getlist('issue_severity')
-    selected_priorities = request.GET.getlist('priority')
-    f_assignee = request.GET.get('assigned_to')
-
     search_query = request.GET.get('search', '').strip()
-
     if search_query:
-        # Cerca: Subject i ID (o Description si vols afegir-ho)
         issues = issues.filter(Q(subject__icontains=search_query) | Q(id__icontains=search_query) | Q(description__icontains=search_query))
 
-    # Filtrado por TYPE (Acumulativo)
-    if selected_types:
-        issues = issues.filter(issue_type__name__in=selected_types)
+    if request.GET.getlist('issue_type'):
+        issues = issues.filter(issue_type__name__in=request.GET.getlist('issue_type'))
 
-    # Filtrado por SEVERITY (Acumulativo)
-    if selected_severities:
-        issues = issues.filter(issue_severity__name__in=selected_severities)
+    if request.GET.getlist('filter_status'):
+        issues = issues.filter(status__name__in=request.GET.getlist('filter_status'))
 
-    # Filtrado por STATUS (Acumulativo)
-    if selected_statuses:
-        issues = issues.filter(status__name__in=selected_statuses)
+    if request.GET.getlist('issue_severity'):
+        issues = issues.filter(issue_severity__name__in=request.GET.getlist('issue_severity'))
 
-    if selected_priorities:
-        issues = issues.filter(priority__name__in=selected_priorities)
+    if request.GET.getlist('priority'):
+        issues = issues.filter(priority__name__in=request.GET.getlist('priority'))
 
-    # Filtrado por ASIGNADO (Uno solo)
+    f_assignee = request.GET.get('assigned_to')
     if f_assignee == 'unassigned':
         issues = issues.filter(assignee__isnull=True)
     elif f_assignee:
         issues = issues.filter(assignee_id=f_assignee)
 
+    return issues, order_param
 
-    def toggle_order(field):
-        if order_param == field:
-            return f"-{field}" # Si ya es asc, pasamos a desc
-        return field # Si es cualquier otra cosa, ponemos asc
+def issue_list_api(request):
+    issues, order_param = _apply_issue_queries(request)
 
-    users = User.objects.annotate(num_issues=Count('assigned_issues'))
-    unassigned_issues_count = Issue.objects.filter(assignee__isnull=True).count()
+    valid_fields = ['issue_type', 'issue_severity', 'priority', 'subject', 'status', 'assignee', 'modified_at', 'deadline', 'created_at']
+    if order_param.lstrip('-') not in valid_fields:
+        return JsonResponse({'error': f'Invalid order_by field: {order_param}'}, status=400)
 
-    # Listas desde BD (dinámicas) — queryset con color e issue_count por anotación
-    all_types = IssueType.objects.annotate(issue_count=Count('issue')).order_by('order', 'name')
-    all_severities = Severity.objects.annotate(issue_count=Count('issue')).order_by('order', 'name')
-    all_statuses = Status.objects.annotate(issue_count=Count('issue')).order_by('order', 'name')
+    issues_data = []
+    for issue in issues:
+        issues_data.append({
+            'id': issue.id,
+            'subject': issue.subject,
+            'description': issue.description,
+            'priority': issue.priority.name if issue.priority else None,
+            'status': issue.status.name if issue.status else None,
+            'type': issue.issue_type.name if issue.issue_type else None,
+            'assignee': issue.assignee.username if issue.assignee else "Unassigned",
+            'created_at': issue.created_at.isoformat(),
+        })
+
+    return JsonResponse({
+        'issues': issues_data,
+        'current_order': order_param,
+        'unassigned_count': Issue.objects.filter(assignee__isnull=True).count()
+    }, status=200)
+
+def issue_list_web(request):
+    issues, order_param = _apply_issue_queries(request)
 
     context = {
         'issues': issues,
-        'users': users,
-        'show_filters': request.GET.get('show_filters') == '1',
-        'all_types': all_types,
-        'all_severities': all_severities,
-        'all_statuses': all_statuses,
-        'selected_types': selected_types,
-        'selected_severities': selected_severities,
-        'selected_statuses': selected_statuses,
-        'search_query': search_query,
-        'f_assignee': f_assignee,
-        'unassigned_issues_count': unassigned_issues_count,
-        'current_order':order_param,
-        'order_links': {
-            'type': toggle_order('issue_type'),
-            'sev': toggle_order('issue_severity'),
-            'prio': toggle_order('priority'),
-            'subj': toggle_order('subject'),
-            'stat': toggle_order('status'),
-            'assign': toggle_order('assignee'),
-            'mod': toggle_order('modified_at'),
-            'deadline': toggle_order('deadline'),
-        },
+        'all_types': IssueType.objects.annotate(issue_count=Count('issue')).order_by('order'),
+        'all_statuses': Status.objects.annotate(issue_count=Count('issue')).order_by('order'),
+        'all_severities': Severity.objects.annotate(issue_count=Count('issue')).order_by('order'),
+        'users': User.objects.annotate(num_issues=Count('assigned_issues')),
+        'current_order': order_param,
+        'search_query': request.GET.get('search', ''),
     }
+    return render_issue_list(request, context)
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
+def issue_create_api(request, user):
+    subject = request.POST.get('subject')
+    if not subject or subject.strip() == "":
+        return JsonResponse({'error': 'Subject is required'}, status=400)
+
+    issue = issue_create_instance(
+        subject=subject,
+        description=request.POST.get('description'),
+        issue_type=request.POST.get('issue_type'),
+        issue_severity=request.POST.get('issue_severity'),
+        priority=request.POST.get('priority'),
+        status=request.POST.get('status') or 'New',
+        deadline=request.POST.get('deadline'),
+        creator=user
+    )
+    return JsonResponse({'id': issue.id, 'subject': issue.subject}, status=201)
+
+def issue_create_web(request):
+    subject = request.POST.get('subject')
+    if not subject or subject.strip() == "":
+        return redirect('issue_list')
+
+    issue_create_instance(
+        subject=subject,
+        description=request.POST.get('description'),
+        issue_type=request.POST.get('issue_type'),
+        issue_severity=request.POST.get('issue_severity'),
+        priority=request.POST.get('priority'),
+        status=request.POST.get('status') or 'New',
+        deadline=request.POST.get('deadline'),
+        creator=request.user
+    )
+    return redirect('issue_list')
+
+
+def issue_detail_api(issue):
+    attachments = issue.attachments.all()
+    return JsonResponse({
+        'id': issue.id,
+        'subject': issue.subject,
+        'description': issue.description,
+        'status': issue.status.name if issue.status else None,
+        'priority': issue.priority.name if issue.priority else None,
+        'severity': issue.issue_severity.name if issue.issue_severity else None,
+        'type': issue.issue_type.name if issue.issue_type else None,
+        'creator': issue.creator.username,
+        'assignee': issue.assignee.username if issue.assignee else "Unassigned",
+        'created_at': issue.created_at.isoformat(),
+        'comments': [
+            {
+                'id': c.id,
+                'author': c.author.username,
+                'body': c.body,
+                'created_at': c.created_at.isoformat()
+            } for c in issue.comments.all()
+        ],
+        'attachments': [
+            {
+                'id': a.id,
+                'name': a.file.name,
+                'url': a.file.url
+            } for a in attachments
+        ],
+        'tags': [t.name for t in issue.tags.all()],
+        'watchers': [w.username for w in issue.watchers.all()],
+        'activities': [
+            {
+                'user': a.actor.username if a.actor else "System",
+                'field': a.field_name,
+                'old': a.old_value,
+                'new': a.new_value,
+                'date': a.created_at.isoformat()
+            } for a in issue.activities.all()
+        ]
+    }, status=200)
+
+def issue_detail_web(request, issue):
+    available_users = User.objects.exclude(id__in=issue.watchers.all())
+    assignable_users = User.objects.all().order_by('username')
+
+    edit_comment_id = request.GET.get('edit_comment')
+    edit_comment_obj = None
+    if edit_comment_id:
+        edit_comment_obj = get_object_or_404(Comment, id=edit_comment_id, issue=issue)
+
+    issue_tags = issue.tags.all()
+    available_tags = Tag.objects.exclude(pk__in=issue_tags.values_list('pk', flat=True)).order_by('name')
+
+    context = {
+        'issue': issue,
+        'attachments': issue.attachments.all(),
+        'edit_comment_obj': edit_comment_obj,
+        'active_tab': request.GET.get('tab', 'comments'),
+        'activities': issue.activities.select_related('actor').all(),
+        'available_users': available_users,
+        'assignable_users': assignable_users,
+        'editing': request.GET.get('editing', ''),
+        'subject_error': request.GET.get('subject_error', ''),
+        'is_creator': request.user.is_authenticated and request.user == issue.creator,
+        'all_types': IssueType.objects.order_by('order', 'name'),
+        'all_severities': Severity.objects.order_by('order', 'name'),
+        'all_statuses': Status.objects.order_by('order', 'name'),
+        'all_priorities': Priority.objects.order_by('order', 'name'),
+        'issue_tags': issue_tags,
+        'available_tags': available_tags,
+    }
+    return render_issue_detail(request, context)
+
+
+def issue_delete_api(issue_id):
+    Issue.objects.filter(id=issue_id).delete()
+    return JsonResponse({'id': issue_id, 'message': 'Deleted'}, status=200)
+
+def issue_delete_web(request, issue_id):
+    issue = get_object_or_404(Issue, id=issue_id)
+    if issue.creator == request.user:
+        issue.delete()
+        return redirect('issue_list')
     else:
-        return render_issue_list(request, context)
+        return HttpResponseForbidden()
 
-@login_required
-def issue_create(request):
-    if request.method == "POST":
-        subject = request.POST.get('subject')
-        description = request.POST.get('description')
-        issue_type = request.POST.get('issue_type')
-        issue_severity = request.POST.get('issue_severity')
-        priority = request.POST.get('priority')
-        status = request.POST.get('status') or 'New'
-        d_line = request.POST.get('deadline')
-        deadline_value = d_line if d_line and d_line.strip() != "" else None
-        creator = request.user
-        assignee_id = request.POST.get('assignee_id', '').strip()
-        assignee = None
-
-        if assignee_id:
-            assignee = get_object_or_404(User, id=assignee_id)
-
-        # Creem l'issue amb assignació per defecte: unassigned
-        issue = issue_create_instance(subject, description, issue_type, issue_severity, priority, status,
-                                      deadline_value, creator,
-                                      assignee)
-
-        if request.FILES.get('files') is not None:
-            attachment_create_instance(issue.id, creator, request.FILES.get('files'))
-
-        if request.content_type == "application/json":
-            # implementar
-            return None
-        else:
-            return redirect('issue_list')
-    else:
-        context = {
-            'statuses': Status.objects.all(),
-            'priorities': Priority.objects.all(),
-            'issue_types': IssueType.objects.all(),
-            'severities': Severity.objects.all(),
-            'assignable_users': User.objects.all().order_by('username'),
-        }
-        
-        if request.content_type == "application/json":
-            # implementar
-            return None
-        else:
-            return render_issue_create(request, context)
 
 @login_required
 def issue_bulk_create(request):
@@ -223,101 +282,6 @@ def issue_bulk_create(request):
         else:
             return render_issue_bulk_create(request)
 
-
-@login_required
-def issue_detail(request, issue_id):
-    issue = get_object_or_404(Issue, id=issue_id)
-
-    available_users = User.objects.exclude(id__in=issue.watchers.all())
-    assignable_users = User.objects.all().order_by('username')
-
-    edit_comment_id = request.GET.get('edit_comment')
-    edit_comment_obj = None
-    active_tab = request.GET.get('tab', 'comments')
-    editing = request.GET.get('editing', '')
-    subject_error = request.GET.get('subject_error', '')
-    is_creator = request.user.is_authenticated and request.user == issue.creator
-
-    if edit_comment_id:
-        edit_comment_obj = get_object_or_404(Comment, id=edit_comment_id, issue=issue)
-
-    attachments = issue.attachments.all()
-    issue_tags = issue.tags.all()
-    available_tags = Tag.objects.exclude(pk__in=issue_tags.values_list('pk', flat=True)).order_by('name')
-
-    context = {
-        'issue': issue,
-        'attachments': attachments,
-        'edit_comment_obj': edit_comment_obj,
-        'active_tab': active_tab,
-        'activities': issue.activities.select_related('actor').all(),
-        'available_users': available_users,
-        'assignable_users': assignable_users,
-        'editing': editing,
-        'subject_error': subject_error,
-        'is_creator': is_creator,
-        'all_types': IssueType.objects.order_by('order', 'name'),
-        'all_severities': Severity.objects.order_by('order', 'name'),
-        'all_statuses': Status.objects.order_by('order', 'name'),
-        'all_priorities': Priority.objects.order_by('order', 'name'),
-        'issue_tags': issue_tags,
-        'available_tags': available_tags,
-    }
-
-    if request.content_type == "application/json":
-        return JsonResponse({
-            'id': issue.id,
-            'subject': issue.subject,
-            'description': issue.description,
-            'status': issue.status.name if issue.status else None,
-            'priority': issue.priority.name if issue.priority else None,
-            'severity': issue.issue_severity.name if issue.issue_severity else None,
-            'type': issue.issue_type.name if issue.issue_type else None,
-            'creator': issue.creator.username,
-            'assignee': issue.assignee.username if issue.assignee else "Unassigned",
-            'created_at': issue.created_at.isoformat(),
-            'comments': [
-                {
-                    'id': c.id,
-                    'author': c.author.username,
-                    'body': c.body,
-                    'created_at': c.created_at.isoformat()
-                } for c in comments
-            ],
-            'attachments': [
-                {
-                    'id': a.id,
-                    'name': a.file.name,
-                    'url': a.file.url
-                } for a in attachments
-            ],
-            'tags': [t.name for t in issue.tags.all()],
-            'watchers': [w.username for w in issue.watchers.all()],
-            'activities': [
-                {
-                    'user': a.actor.username if a.actor else "System",
-                    'field': a.field_name,
-                    'old': a.old_value,
-                    'new': a.new_value,
-                    'date': a.created_at.isoformat()
-                } for a in issue.activities.all()
-            ]
-        }, status=200)
-    else:
-        return render_issue_detail(request, context)
-
-@login_required
-def issue_delete(request, issue_id):
-    if request.method == 'POST':
-        issue = get_object_or_404(Issue, id=issue_id)
-        if issue.creator == request.user:
-            issue.delete()
-
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect('issue_list')
 
 @login_required
 def issue_update_status(request, issue_id):
