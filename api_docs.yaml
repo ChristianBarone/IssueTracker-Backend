@@ -376,7 +376,6 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
-  # --- COMMENTS (Original) ---
   /issue/{issueId}/comment:
     get:
       tags:
