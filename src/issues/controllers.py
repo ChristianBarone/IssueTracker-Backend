@@ -123,12 +123,31 @@ def issue_list_api(request):
 def issue_list_web(request):
     issues, order_param = _apply_issue_queries(request)
 
+    def toggle_order(field):
+        if order_param == field:
+            return f"-{field}"
+        return field
+
     context = {
         'issues': issues,
         'all_types': IssueType.objects.annotate(issue_count=Count('issue')).order_by('order'),
         'all_statuses': Status.objects.annotate(issue_count=Count('issue')).order_by('order'),
         'all_severities': Severity.objects.annotate(issue_count=Count('issue')).order_by('order'),
         'users': User.objects.annotate(num_issues=Count('assigned_issues')),
+
+        'show_filters': request.GET.get('show_filters') == '1',
+        'unassigned_issues_count': Issue.objects.filter(assignee__isnull=True).count(),
+        'order_links': {
+            'type': toggle_order('issue_type'),
+            'sev': toggle_order('issue_severity'),
+            'prio': toggle_order('priority'),
+            'subj': toggle_order('subject'),
+            'stat': toggle_order('status'),
+            'assign': toggle_order('assignee'),
+            'mod': toggle_order('modified_at'),
+            'deadline': toggle_order('deadline'),
+        },
+
         'current_order': order_param,
         'search_query': request.GET.get('search', ''),
         'selected_types': request.GET.getlist('issue_type'),
