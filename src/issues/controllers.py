@@ -152,9 +152,9 @@ def issue_create_api(request, user):
         issue_severity=request.POST.get('issue_severity'),
         priority=request.POST.get('priority'),
         status=request.POST.get('status') or 'New',
-        deadline_value,
+        d_line= deadline_value,
         creator=user,
-        assignee
+        assignee = assignee
     )
     return JsonResponse({'id': issue.id, 'subject': issue.subject}, status=201)
 
@@ -176,9 +176,9 @@ def issue_create_web(request):
         issue_severity=request.POST.get('issue_severity'),
         priority=request.POST.get('priority'),
         status=request.POST.get('status') or 'New',
-        deadline_value,
-        creator=request.user.
-        assignee
+        d_line = deadline_value,
+        creator=request.user,
+        assignee = assignee
     )
     return redirect('issue_list')
 
