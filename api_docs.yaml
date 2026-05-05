@@ -75,6 +75,9 @@ paths:
                 priority:
                   type: string
                   example: "High"
+                issue_severity:
+                  type: string
+                  example: "Normal"
               required:
                 - subject
         required: true
@@ -616,9 +619,12 @@ components:
         priority:
           type: string
           example: "High"
+        severity:
+          type: string
+          example: "Normal"
         assignee:
           type: string
-          example: "john_doe"
+          example: "Andreu-Caro"
         created_at:
           type: string
           format: date-time
