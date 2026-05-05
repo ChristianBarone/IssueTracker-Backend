@@ -6,7 +6,6 @@ info:
 servers:
   - url: 'https://issuetracker-ff8u.onrender.com/'
   - url: 'http://localhost:8000'
-
 paths:
   /issues:
     get:
@@ -192,7 +191,7 @@ paths:
       security:
         - ApiKeyAuth: []
 
-  /issue/{issueId}/attachments:
+  /issue/{issueId}/attachments/:
     get:
       tags:
         - attachments
@@ -289,7 +288,7 @@ paths:
       security:
         - ApiKeyAuth: []
 
-  /attachments/{attachmentId}:
+  /attachments/{attachmentId}/:
     get:
       tags:
         - attachments
@@ -376,7 +375,7 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
-  /issue/{issueId}/comment:
+  /issue/{issueId}/comment/:
     get:
       tags:
         - comments
@@ -482,7 +481,7 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
-  /comments/{commentId}:
+  /comments/{commentId}/:
     put:
       tags:
         - comments
@@ -713,7 +712,7 @@ components:
         message: "The provided API key does not authorize this action"
     error404:
       value:
-        message: "There is no resource with the provided ID"
+        message: "There is no resource with 'id'=8"
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
