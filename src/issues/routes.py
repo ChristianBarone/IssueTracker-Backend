@@ -94,7 +94,7 @@ def comment_detail_route(request, comment_id):
             return JsonResponse({'message': 'Forbidden'}, status=403)
 
         if request.method == 'POST':
-            if 'delete' in request.path:
+            if 'delete' in request.path or request.POST.get('_method') == 'DELETE':
                 return comment_delete_web(request, comment_id)
             return comment_edit_web(request, comment)
 
@@ -179,6 +179,8 @@ def issue_detail_dispatcher(request, issue_id):
             if request.POST.get('_method') == 'DELETE' or 'delete' in request.path:
                 if issue.creator == request.user:
                     return issue_delete_web(request, issue_id)
+                else:
+                    return HttpResponseForbidden("You don't have permissions to delete")
             return issue_detail_web(request,issue)
 
     # API

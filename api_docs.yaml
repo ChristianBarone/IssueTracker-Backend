@@ -21,9 +21,10 @@ paths:
             type: string
         - name: order_by
           in: query
-          description: Field to order by (e.g., priority, -created_at)
+          description: Field to order by (e.g., priority is asc, -priority is desc)
           schema:
             type: string
+            enum: [issue_type, -issue_type, priority, -priority, created_at, -created_at, deadline, -deadline]
       responses:
         '200':
           description: Issues retrieved
