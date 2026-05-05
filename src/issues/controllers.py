@@ -139,6 +139,12 @@ def issue_create_api(request, user):
     if not subject or subject.strip() == "":
         return JsonResponse({'error': 'Subject is required'}, status=400)
 
+    assignee_id = request.POST.get('assignee_id', '').strip()
+    assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
+
+    d_line = request.POST.get('deadline')
+    deadline_value = d_line if d_line and d_line.strip() != "" else None
+
     issue = issue_create_instance(
         subject=subject,
         description=request.POST.get('description'),
@@ -146,8 +152,9 @@ def issue_create_api(request, user):
         issue_severity=request.POST.get('issue_severity'),
         priority=request.POST.get('priority'),
         status=request.POST.get('status') or 'New',
-        deadline=request.POST.get('deadline'),
-        creator=user
+        deadline_value,
+        creator=user,
+        assignee
     )
     return JsonResponse({'id': issue.id, 'subject': issue.subject}, status=201)
 
@@ -156,6 +163,12 @@ def issue_create_web(request):
     if not subject or subject.strip() == "":
         return redirect('issue_list')
 
+    assignee_id = request.POST.get('assignee_id', '').strip()
+    assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
+
+    d_line = request.POST.get('deadline')
+    deadline_value = d_line if d_line and d_line.strip() != "" else None
+
     issue_create_instance(
         subject=subject,
         description=request.POST.get('description'),
@@ -163,8 +176,9 @@ def issue_create_web(request):
         issue_severity=request.POST.get('issue_severity'),
         priority=request.POST.get('priority'),
         status=request.POST.get('status') or 'New',
-        deadline=request.POST.get('deadline'),
-        creator=request.user
+        deadline_value,
+        creator=request.user.
+        assignee
     )
     return redirect('issue_list')
 
