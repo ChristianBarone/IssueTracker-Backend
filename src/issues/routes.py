@@ -118,8 +118,13 @@ def issues_dispatcher(request):
     if "text/html" in request.META.get("HTTP_ACCEPT", ""):
         if not request.user.is_authenticated:
             return redirect('/')
+        #Lista filtron i new
         if request.method == 'GET':
-            return issue_list_web(request)
+            if 'new' in request.path:
+                return issue_create_web(request)
+            else:
+                return issue_list_web(request)
+        #Creacion
         if request.method == 'POST':
             return issue_create_web(request)
         return JsonResponse({'message': 'Method not allowed'}, status=405)
@@ -149,12 +154,11 @@ def issue_detail_dispatcher(request, issue_id):
 
         if request.method == 'POST':
             # ERROR 403: No es el creador
-            if issue.creator != request.user:
-                return HttpResponseForbidden("You aren't the creator.")
-
             if request.POST.get('_method') == 'DELETE':
+                if issue.creator != request.user:
+                    return HttpResponseForbidden("You aren't the creator.")
                 return issue_delete_web(request, issue_id)
-        return HttpResponseNotAllowed(['GET', 'POST'])
+            return issue_detail_web(request,issue)
 
     # API
     else:
