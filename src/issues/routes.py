@@ -139,6 +139,28 @@ def issues_dispatcher(request):
             return issue_create_api(request, user)
         return JsonResponse({'message': 'Method not allowed'}, status=405)
 
+def issues_bulk_dispatcher(request):
+    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+        if not request.user.is_authenticated:
+            return redirect('/')
+
+        if request.method == 'GET':
+            return render_issue_bulk_create(request)
+        elif request.method == 'POST':
+            return issue_bulk_web(request)
+    else:
+        user = validate_api_key(request.headers.get("Authorization"))
+        if isinstance(user, JsonResponse):
+            return user
+
+        if request.method == 'POST':
+            if request.POST.get('list') is None:
+                return JsonResponse({'message': "Subject list is required."}, status=400)
+
+            return issue_bulk_api(request.POST.get('list').split(','), user)
+
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
+
 def issue_detail_dispatcher(request, issue_id):
     try:
         issue = get_object_or_404(Issue, id=issue_id)

@@ -27,7 +27,7 @@ urlpatterns = [
     path('', login_page, name='login_page'),
     path('issues/', issues_dispatcher, name='issue_list'),
     path('new/', issues_dispatcher, name='issue_create'),
-    path('new_bulk/', issue_bulk_create, name='issue_bulk_create'),
+    path('issues/bulk/', issues_bulk_dispatcher, name='issue_bulk_create'),
     path('issue/<int:issue_id>/', issue_detail_dispatcher, name='issue_detail'),
     path('issue/<int:issue_id>/delete/', issue_detail_dispatcher, name='issue_delete'),
 

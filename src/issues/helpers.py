@@ -1,7 +1,8 @@
 from django.shortcuts import get_object_or_404
 
 from .controllers import *
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+
 
 def issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
                           assignee):
@@ -116,3 +117,21 @@ def validate_api_key(api_key):
         return JsonResponse({'message': "The API key you provided does not belong to any users"}, status=401)
     else:
         return user[0].user
+
+def issue_bulk_create(subjects, creator):
+    # Valors per defecte en fer bulk add
+    description = ''
+    issue_type = 'Bug'
+    issue_severity = 'Normal'
+    priority = 'Normal'
+    status = 'New'
+    d_line = None
+    assignee = None
+
+    issues = []
+
+    for subject in subjects:
+        issues.append(issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
+                          assignee))
+
+    return issues

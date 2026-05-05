@@ -109,6 +109,54 @@ paths:
                   $ref: '#/components/examples/error401'
       security:
         - ApiKeyAuth: []
+  /issues/bulk/:
+    post:
+      tags:
+        - issues
+      summary: Bulk create a list of issues
+      operationId: bulkCreateIssues
+      requestBody:
+        description: Provide a list of issue subjects
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                list:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Issue 1", "Issue 2"]
+              required:
+                - list
+        required: true
+      responses:
+        '201':
+          description: Issues created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkIssues'
+        '400':
+          description: Bad Request (List is required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+      security:
+        - ApiKeyAuth: [ ]
 
   /issue/{issueId}/:
     get:
@@ -752,6 +800,18 @@ components:
               items:
                 type: string
                 example: "frontend"
+
+    BulkIssues:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: integer
+            example: 1
+          subject:
+            type: string
+            example: "Bug in login"
 
     Attachment:
       type: object
