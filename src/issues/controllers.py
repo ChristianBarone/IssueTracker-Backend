@@ -131,6 +131,11 @@ def issue_list_web(request):
         'users': User.objects.annotate(num_issues=Count('assigned_issues')),
         'current_order': order_param,
         'search_query': request.GET.get('search', ''),
+        'selected_types': request.GET.getlist('issue_type'),
+        'selected_statuses': request.GET.getlist('filter_status'),
+        'selected_severities': request.GET.getlist('issue_severity'),
+        'selected_priorities': request.GET.getlist('priority'),
+        'selected_assignee': request.GET.get('assigned_to'),
     }
     return render_issue_list(request, context)
 
@@ -159,28 +164,41 @@ def issue_create_api(request, user):
     return JsonResponse({'id': issue.id, 'subject': issue.subject}, status=201)
 
 def issue_create_web(request):
-    subject = request.POST.get('subject')
-    if not subject or subject.strip() == "":
+    if request.method == "POST":
+        subject = request.POST.get('subject')
+        if not subject or subject.strip() == "":
+            return redirect('issue_list')
+
+        assignee_id = request.POST.get('assignee_id', '').strip()
+        assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
+
+        d_line = request.POST.get('deadline')
+        deadline_value = d_line if d_line and d_line.strip() != "" else None
+
+        issue = issue_create_instance(
+            subject=subject,
+            description=request.POST.get('description'),
+            issue_type=request.POST.get('issue_type'),
+            issue_severity=request.POST.get('issue_severity'),
+            priority=request.POST.get('priority'),
+            status=request.POST.get('status') or 'New',
+            d_line=deadline_value,
+            creator=request.user,
+            assignee=assignee
+        )
+        if request.FILES.get('files'):
+            attachment_create_instance(issue.id, request.user, request.FILES.get('files'))
+
         return redirect('issue_list')
-
-    assignee_id = request.POST.get('assignee_id', '').strip()
-    assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
-
-    d_line = request.POST.get('deadline')
-    deadline_value = d_line if d_line and d_line.strip() != "" else None
-
-    issue_create_instance(
-        subject=subject,
-        description=request.POST.get('description'),
-        issue_type=request.POST.get('issue_type'),
-        issue_severity=request.POST.get('issue_severity'),
-        priority=request.POST.get('priority'),
-        status=request.POST.get('status') or 'New',
-        d_line = deadline_value,
-        creator=request.user,
-        assignee = assignee
-    )
-    return redirect('issue_list')
+    else:
+        context = {
+            'statuses': Status.objects.all(),
+            'priorities': Priority.objects.all(),
+            'issue_types': IssueType.objects.all(),
+            'severities': Severity.objects.all(),
+            'assignable_users': User.objects.all().order_by('username'),
+        }
+        return render_issue_create(request, context)
 
 
 def issue_detail_api(issue):
