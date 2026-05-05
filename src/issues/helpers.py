@@ -104,7 +104,7 @@ def validate_api_user(api_key, user_id):
     if user.count() != 1:
         return JsonResponse({'message': "The API key you provided does not belong to any users"}, status=401)
 
-    if user[0].id != user_id:
+    if user[0].user.id != user_id:
         return JsonResponse({'message': "The provided API key does not authorize this action"}, status= 403)
 
     return user[0].user
