@@ -498,32 +498,21 @@ def issue_delete_web(request, issue_id):
     else:
         return HttpResponseForbidden()
 
+def issue_bulk_web(request):
+    issue_bulk_create(request.POST.get('list').splitlines(), request.user)
+    return redirect('issue_list')
 
-@login_required
-def issue_bulk_create(request):
-    if request.method == "POST":
-        # Valors per defecte en fer bulk add
-        subjects = request.POST.get('list').splitlines()
-        description = ''
-        issue_type = 'Bug'
-        issue_severity = 'Normal'
-        priority = 'Normal'
-        status = 'New'
-        d_line = None
-        creator = request.user
-        assignee = None
+def issue_bulk_api(request, user):
+    issues = issue_bulk_create(request.POST.get('list'), user)
 
-        for subject in subjects:
-            issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
-                              assignee)
+    data = []
+    for issue in issues:
+        data.append({
+            'id': issue.id,
+            'subject': issue.subject,
+        })
 
-        return redirect('issue_list')
-    else:
-        if request.content_type == "application/json":
-            # implementar
-            return None
-        else:
-            return render_issue_bulk_create(request)
+    return data
 
 
 @login_required
