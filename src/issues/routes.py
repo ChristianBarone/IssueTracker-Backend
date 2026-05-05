@@ -168,10 +168,19 @@ def issue_detail_dispatcher(request, issue_id):
         if request.method == 'GET':
             return issue_detail_api(issue)
 
+        elif request.method == 'PUT':
+            auth_check = validate_api_user(request.headers.get("Authorization"), issue.creator.id)
+            if isinstance(auth_check, JsonResponse):
+                return auth_check
+            return issue_edit_api(request, issue, auth_check)
+
         elif request.method == 'DELETE':
             auth_check = validate_api_user(request.headers.get("Authorization"), issue.creator.id)
             if isinstance(auth_check, JsonResponse):
                 return auth_check
             return issue_delete_api(issue_id)
+
         else:
-            return JsonResponse({'error': 'Method not allowed'}, status=405)
+            response = JsonResponse({'message': 'Method not allowed'}, status=405)
+            response.headers["Allow"] = "GET, PUT, DELETE"
+            return response

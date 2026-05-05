@@ -149,6 +149,106 @@ paths:
                   $ref: '#/components/examples/error404'
       security:
         - ApiKeyAuth: []
+    put:
+      tags:
+        - issues
+      summary: Update an issue (only the creator can edit)
+      operationId: updateIssue
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Fields to update (all optional; only provided fields are modified)
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  example: "Updated bug title"
+                description:
+                  type: string
+                  example: "More details about the bug"
+                status:
+                  type: integer
+                  description: ID of the status
+                  example: 2
+                issue_type:
+                  type: integer
+                  description: ID of the type
+                  example: 1
+                issue_severity:
+                  type: integer
+                  description: ID of the severity
+                  example: 3
+                priority:
+                  type: integer
+                  description: ID of the priority
+                  example: 2
+                tags:
+                  type: array
+                  description: List of tag IDs (replaces current tags)
+                  items:
+                    type: integer
+                  example: [1, 3]
+                deadline:
+                  type: string
+                  format: date
+                  nullable: true
+                  description: Deadline date, or null to remove it
+                  example: "2026-06-01"
+      responses:
+        '200':
+          description: Issue updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueDetail'
+        '400':
+          description: Bad request (e.g. empty subject or unknown ID)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '403':
+          description: Forbidden (only the issue creator can edit it)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error403'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
     delete:
       tags:
         - issues
