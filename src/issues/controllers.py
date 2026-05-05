@@ -502,8 +502,8 @@ def issue_bulk_web(request):
     issue_bulk_create(request.POST.get('list').splitlines(), request.user)
     return redirect('issue_list')
 
-def issue_bulk_api(request, user):
-    issues = issue_bulk_create(request.POST.get('list'), user)
+def issue_bulk_api(list, user):
+    issues = issue_bulk_create(list, user)
 
     data = []
     for issue in issues:
@@ -512,7 +512,7 @@ def issue_bulk_api(request, user):
             'subject': issue.subject,
         })
 
-    return data
+    return JsonResponse(data, status=201, safe=False)
 
 
 @login_required
