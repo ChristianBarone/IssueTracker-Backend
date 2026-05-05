@@ -316,6 +316,195 @@ def issue_detail_web(request, issue):
     return render_issue_detail(request, context)
 
 
+def issue_edit_api(request, issue, user):
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+    update_fields = ['modified_at']
+
+    if 'subject' in data:
+        subject = str(data['subject']).strip() if data['subject'] else ''
+        if not subject:
+            return JsonResponse({'message': 'Subject cannot be empty'}, status=400)
+        if subject != issue.subject:
+            IssueActivity.objects.create(
+                issue=issue, actor=user,
+                field_name='subject',
+                old_value=issue.subject,
+                new_value=subject,
+            )
+            issue.subject = subject
+            update_fields.append('subject')
+
+    if 'description' in data:
+        description = data['description'] or ''
+        old = issue.description or ''
+        if description != old:
+            IssueActivity.objects.create(
+                issue=issue, actor=user,
+                field_name='description',
+                old_value=old[:120],
+                new_value=description[:120],
+            )
+            issue.description = description
+            update_fields.append('description')
+
+    if 'status' in data:
+        status_id = data['status']
+        if status_id is None:
+            if issue.status is not None:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='status',
+                    old_value=issue.status.name,
+                    new_value='—',
+                )
+                issue.status = None
+                update_fields.append('status')
+        else:
+            new_status = Status.objects.filter(pk=status_id).first()
+            if not new_status:
+                return JsonResponse({'message': f"There is no status with 'id'={status_id}"}, status=400)
+            if new_status != issue.status:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='status',
+                    old_value=issue.status.name if issue.status else '—',
+                    new_value=new_status.name,
+                )
+                issue.status = new_status
+                update_fields.append('status')
+
+    if 'issue_type' in data:
+        type_id = data['issue_type']
+        if type_id is None:
+            if issue.issue_type is not None:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='type',
+                    old_value=issue.issue_type.name,
+                    new_value='—',
+                )
+                issue.issue_type = None
+                update_fields.append('issue_type')
+        else:
+            new_type = IssueType.objects.filter(pk=type_id).first()
+            if not new_type:
+                return JsonResponse({'message': f"There is no type with 'id'={type_id}"}, status=400)
+            if new_type != issue.issue_type:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='type',
+                    old_value=issue.issue_type.name if issue.issue_type else '—',
+                    new_value=new_type.name,
+                )
+                issue.issue_type = new_type
+                update_fields.append('issue_type')
+
+    if 'issue_severity' in data:
+        sev_id = data['issue_severity']
+        if sev_id is None:
+            if issue.issue_severity is not None:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='severity',
+                    old_value=issue.issue_severity.name,
+                    new_value='—',
+                )
+                issue.issue_severity = None
+                update_fields.append('issue_severity')
+        else:
+            new_sev = Severity.objects.filter(pk=sev_id).first()
+            if not new_sev:
+                return JsonResponse({'message': f"There is no severity with 'id'={sev_id}"}, status=400)
+            if new_sev != issue.issue_severity:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='severity',
+                    old_value=issue.issue_severity.name if issue.issue_severity else '—',
+                    new_value=new_sev.name,
+                )
+                issue.issue_severity = new_sev
+                update_fields.append('issue_severity')
+
+    if 'priority' in data:
+        prio_id = data['priority']
+        if prio_id is None:
+            if issue.priority is not None:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='priority',
+                    old_value=issue.priority.name,
+                    new_value='—',
+                )
+                issue.priority = None
+                update_fields.append('priority')
+        else:
+            new_prio = Priority.objects.filter(pk=prio_id).first()
+            if not new_prio:
+                return JsonResponse({'message': f"There is no priority with 'id'={prio_id}"}, status=400)
+            if new_prio != issue.priority:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='priority',
+                    old_value=issue.priority.name if issue.priority else '—',
+                    new_value=new_prio.name,
+                )
+                issue.priority = new_prio
+                update_fields.append('priority')
+
+    if 'deadline' in data:
+        deadline_val = data['deadline']
+        old_deadline = str(issue.deadline) if issue.deadline else '—'
+        new_deadline = deadline_val if deadline_val else None
+        if new_deadline != issue.deadline:
+            IssueActivity.objects.create(
+                issue=issue, actor=user,
+                field_name='deadline',
+                old_value=old_deadline,
+                new_value=str(new_deadline) if new_deadline else '—',
+            )
+            issue.deadline = new_deadline
+            update_fields.append('deadline')
+
+    if 'tags' in data:
+        tag_ids = data['tags']
+        if not isinstance(tag_ids, list):
+            return JsonResponse({'message': "'tags' must be a list of IDs"}, status=400)
+        new_tags = []
+        for tid in tag_ids:
+            tag = Tag.objects.filter(pk=tid).first()
+            if not tag:
+                return JsonResponse({'message': f"There is no tag with 'id'={tid}"}, status=400)
+            new_tags.append(tag)
+        old_tag_names = set(issue.tags.values_list('name', flat=True))
+        new_tag_names = {t.name for t in new_tags}
+        added = new_tag_names - old_tag_names
+        removed = old_tag_names - new_tag_names
+        if added:
+            IssueActivity.objects.create(
+                issue=issue, actor=user,
+                field_name='tags',
+                old_value='',
+                new_value=f"added {', '.join(sorted(added))}",
+            )
+        if removed:
+            IssueActivity.objects.create(
+                issue=issue, actor=user,
+                field_name='tags',
+                old_value=f"removed {', '.join(sorted(removed))}",
+                new_value='',
+            )
+        if added or removed:
+            issue.tags.set(new_tags)
+
+    issue.save(update_fields=update_fields)
+    issue.refresh_from_db()
+    return issue_detail_api(issue)
+
+
 def issue_delete_api(issue_id):
     Issue.objects.filter(id=issue_id).delete()
     return JsonResponse({'message': 'Issue deleted'}, status=204)
