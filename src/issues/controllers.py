@@ -122,7 +122,6 @@ def issue_list_api(request):
 
 def issue_list_web(request):
     issues, order_param = _apply_issue_queries(request)
-
     def toggle_order(field):
         if order_param == field:
             return f"-{field}"
@@ -130,13 +129,17 @@ def issue_list_web(request):
 
     context = {
         'issues': issues,
-        'all_types': IssueType.objects.annotate(issue_count=Count('issue')).order_by('order'),
-        'all_statuses': Status.objects.annotate(issue_count=Count('issue')).order_by('order'),
-        'all_severities': Severity.objects.annotate(issue_count=Count('issue')).order_by('order'),
         'users': User.objects.annotate(num_issues=Count('assigned_issues')),
-
         'show_filters': request.GET.get('show_filters') == '1',
+
+        'all_types': IssueType.objects.annotate(issue_count=Count('issue')).order_by('order'),
+        'all_severities': Severity.objects.annotate(issue_count=Count('issue')).order_by('order'),
+        'all_statuses': Status.objects.annotate(issue_count=Count('issue')).order_by('order'),
+
+        'search_query': request.GET.get('search', ''),
         'unassigned_issues_count': Issue.objects.filter(assignee__isnull=True).count(),
+        'current_order': order_param,
+        'f_assignee': request.GET.get('assigned_to'),
         'order_links': {
             'type': toggle_order('issue_type'),
             'sev': toggle_order('issue_severity'),
@@ -148,13 +151,10 @@ def issue_list_web(request):
             'deadline': toggle_order('deadline'),
         },
 
-        'current_order': order_param,
-        'search_query': request.GET.get('search', ''),
         'selected_types': request.GET.getlist('issue_type'),
         'selected_statuses': request.GET.getlist('filter_status'),
         'selected_severities': request.GET.getlist('issue_severity'),
         'selected_priorities': request.GET.getlist('priority'),
-        'selected_assignee': request.GET.get('assigned_to'),
     }
     return render_issue_list(request, context)
 

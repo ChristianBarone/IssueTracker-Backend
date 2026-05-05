@@ -154,10 +154,9 @@ def issue_detail_dispatcher(request, issue_id):
 
         if request.method == 'POST':
             # ERROR 403: No es el creador
-            if request.POST.get('_method') == 'DELETE':
-                if issue.creator != request.user:
-                    return HttpResponseForbidden("You aren't the creator.")
-                return issue_delete_web(request, issue_id)
+            if request.POST.get('_method') == 'DELETE' or 'delete' in request.path:
+                if issue.creator == request.user:
+                    return issue_delete_web(request, issue_id)
             return issue_detail_web(request,issue)
 
     # API
