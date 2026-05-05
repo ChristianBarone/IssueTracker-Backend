@@ -161,7 +161,10 @@ def issue_create_api(request, user):
         creator=user,
         assignee = assignee
     )
-    return JsonResponse({'id': issue.id, 'subject': issue.subject}, status=201)
+    return JsonResponse({'id': issue.id, 'subject': issue.subject, 'description': issue.description,
+                         'issue_type': issue.issue_type, 'issue_severity': issue.issue_severity,
+                         'priority': issue.priority, 'status': issue.status,
+                         'd_line': issue.deadline, 'creator': issue.creator, 'assignee': issue.assignee}, status=201)
 
 def issue_create_web(request):
     if request.method == "POST":
@@ -277,7 +280,7 @@ def issue_detail_web(request, issue):
 
 def issue_delete_api(issue_id):
     Issue.objects.filter(id=issue_id).delete()
-    return JsonResponse({'id': issue_id, 'message': 'Deleted'}, status=200)
+    return JsonResponse({'message': 'Issue deleted'}, status=204)
 
 def issue_delete_web(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
@@ -622,7 +625,7 @@ def comment_edit_web(request, comment):
 def comment_delete_api(comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     comment.delete()
-    return JsonResponse({'id': comment_id, 'message': 'Comment deleted successfully'}, status=200)
+    return JsonResponse({'message': 'Comment deleted'}, status=204)
 
 def comment_delete_web(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)

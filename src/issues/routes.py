@@ -119,8 +119,6 @@ def issues_dispatcher(request):
         if not request.user.is_authenticated:
             return redirect('/')
         if request.method == 'GET':
-            if 'new' in request.path:
-                return issue_create_web(request)
             return issue_list_web(request)
         if request.method == 'POST':
             return issue_create_web(request)
