@@ -67,7 +67,18 @@ def login_page(request):
 
 # ISSUES
 def _apply_issue_queries(request):
+    #priority es asc pero -priority es desc
     order_param = request.GET.get('order_by', '-created_at')
+
+    allowed_order_fields = [
+        'issue_type', 'issue_severity', 'priority', 'subject',
+        'status', 'assignee', 'modified_at', 'deadline', 'created_at'
+    ]
+
+    clean_order = order_param.lstrip('-')
+    if clean_order not in allowed_order_fields:
+        order_param = '-created_at'
+
     issues = Issue.objects.all().order_by(order_param)
 
     search_query = request.GET.get('search', '').strip()
@@ -180,10 +191,18 @@ def issue_create_api(request, user):
         creator=user,
         assignee = assignee
     )
-    return JsonResponse({'id': issue.id, 'subject': issue.subject, 'description': issue.description,
-                         'issue_type': issue.issue_type, 'issue_severity': issue.issue_severity,
-                         'priority': issue.priority, 'status': issue.status,
-                         'd_line': issue.deadline, 'creator': issue.creator, 'assignee': issue.assignee}, status=201)
+    return JsonResponse({
+        'id': issue.id,
+        'subject': issue.subject,
+        'description': issue.description,
+        'issue_type': issue.issue_type.name if issue.issue_type else None,
+        'issue_severity': issue.issue_severity.name if issue.issue_severity else None,
+        'priority': issue.priority.name if issue.priority else None,
+        'status': issue.status.name if issue.status else None,
+        'deadline': issue.deadline.isoformat() if issue.deadline else None,
+        'creator': issue.creator.username if issue.creator else None,
+        'assignee': issue.assignee.username if issue.assignee else None
+    }, status=201)
 
 def issue_create_web(request):
     if request.method == "POST":
@@ -816,7 +835,7 @@ def comment_edit_api(request, comment):
     if not text:
         return JsonResponse({'message': 'Body is required'}, status=400)
 
-    if Comment.objects.filter(issue_id=issue_id, author=user, body=text).exists():
+    if Comment.objects.filter(issue=comment.issue, author=comment.author, body=text).exclude(id=comment.id).exists():
         return JsonResponse({'error': 'Duplicate comment'}, status=409)
 
     comment.body = text
