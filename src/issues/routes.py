@@ -114,6 +114,26 @@ def comment_detail_route(request, comment_id):
     response.headers["Allow"] = "GET, POST, PUT, DELETE"
     return response
 
+def issues_dispatcher(request):
+    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+        if not request.user.is_authenticated:
+            return redirect('/')
+        if request.method == 'GET':
+            return issue_list_web(request)
+        if request.method == 'POST':
+            return issue_create_web(request)
+        return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+    else:
+        user = validate_api_key(request.headers.get("Authorization"))
+        if isinstance(user, JsonResponse):
+            return user
+        if request.method == 'GET':
+            return issue_list_api(request)
+        elif request.method == 'POST':
+            return issue_create_api(request, user)
+        return JsonResponse({'message': 'Method not allowed'}, status=405)
+
 def issue_detail_dispatcher(request, issue_id):
     try:
         issue = get_object_or_404(Issue, id=issue_id)

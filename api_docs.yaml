@@ -8,7 +8,7 @@ servers:
   - url: 'http://localhost:8000'
 
 paths:
-  /issues/:
+  /issues:
     get:
       tags:
         - issues
@@ -107,7 +107,7 @@ paths:
       security:
         - ApiKeyAuth: []
 
-  /issue/{issueId}/:
+  /issue/{issueId}:
     get:
       tags:
         - issues
