@@ -326,6 +326,10 @@ def issue_edit_api(request, issue, user):
     except (json.JSONDecodeError, ValueError):
         return JsonResponse({'message': 'Invalid JSON body'}, status=400)
 
+    CREATOR_ONLY_FIELDS = {'subject', 'description', 'status', 'issue_type', 'issue_severity', 'priority', 'tags', 'deadline'}
+    if any(f in data for f in CREATOR_ONLY_FIELDS) and user != issue.creator:
+        return JsonResponse({'message': 'Only the issue creator can edit this field'}, status=403)
+
     update_fields = ['modified_at']
 
     if 'subject' in data:
@@ -503,6 +507,43 @@ def issue_edit_api(request, issue, user):
             )
         if added or removed:
             issue.tags.set(new_tags)
+
+    if 'assignee' in data:
+        assignee_id = data['assignee']
+        if assignee_id is None:
+            new_assignee = None
+        else:
+            new_assignee = User.objects.filter(pk=assignee_id).first()
+            if not new_assignee:
+                return JsonResponse({'message': f"There is no user with 'id'={assignee_id}"}, status=400)
+        if new_assignee != issue.assignee:
+            IssueActivity.objects.create(
+                issue=issue, actor=user,
+                field_name='assignee',
+                old_value=f"@{issue.assignee.username}" if issue.assignee else 'Unassigned',
+                new_value=f"@{new_assignee.username}" if new_assignee else 'Unassigned',
+            )
+            issue.assignee = new_assignee
+            update_fields.append('assignee')
+
+    if 'watchers' in data:
+        watcher_ids = data['watchers']
+        if not isinstance(watcher_ids, list):
+            return JsonResponse({'message': "'watchers' must be a list of user IDs"}, status=400)
+        new_watchers = []
+        for wid in watcher_ids:
+            w = User.objects.filter(pk=wid).first()
+            if not w:
+                return JsonResponse({'message': f"There is no user with 'id'={wid}"}, status=400)
+            new_watchers.append(w)
+        old_watcher_names = set(issue.watchers.values_list('username', flat=True))
+        new_watcher_names = {w.username for w in new_watchers}
+        for username in new_watcher_names - old_watcher_names:
+            log_watcher_activity(issue, user, 'added', next(w for w in new_watchers if w.username == username))
+        for username in old_watcher_names - new_watcher_names:
+            log_watcher_activity(issue, user, 'removed', User.objects.get(username=username))
+        if new_watcher_names != old_watcher_names:
+            issue.watchers.set(new_watchers)
 
     issue.save(update_fields=update_fields)
     issue.refresh_from_db()

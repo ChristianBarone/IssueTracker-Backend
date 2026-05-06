@@ -193,10 +193,7 @@ def issue_detail_dispatcher(request, issue_id):
             return issue_detail_api(issue)
 
         elif request.method == 'PUT':
-            auth_check = validate_api_user(request.headers.get("Authorization"), issue.creator.id)
-            if isinstance(auth_check, JsonResponse):
-                return auth_check
-            return issue_edit_api(request, issue, auth_check)
+            return issue_edit_api(request, issue, user)
 
         elif request.method == 'DELETE':
             auth_check = validate_api_user(request.headers.get("Authorization"), issue.creator.id)
