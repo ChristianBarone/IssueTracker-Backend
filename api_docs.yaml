@@ -25,6 +25,40 @@ paths:
           schema:
             type: string
             enum: ['issue_type', '-issue_type', 'issue_severity', '-issue_severity', 'priority', '-priority', 'subject', '-subject', 'status', '-status', 'assignee', '-assignee', 'modified_at', '-modified_at', 'deadline', '-deadline', 'created_at', '-created_at']
+        - name: issue_type
+          in: query
+          description: "Filter by issue type"
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [Bug, Question, Enhancement]
+        - name: issue_severity
+          in: query
+          description: "Filter by issue severity"
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [Wishlist, Minor, Normal, Important, Critical]
+        - name: filter_status
+          in: query
+          description: "Filter by status"
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [New, In Progress, Ready for test, Needs Info, Rejected, Postponed, Closed]
+
+        - name: assigned_to
+          in: query
+          description: "User ID or 'unassigned'"
+          schema:
+            type: string
+
       responses:
         '200':
           description: Issues retrieved
