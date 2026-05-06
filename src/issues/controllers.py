@@ -120,14 +120,18 @@ def issue_list_api(request):
             'description': issue.description,
             'priority': issue.priority.name if issue.priority else None,
             'status': issue.status.name if issue.status else None,
-            'type': issue.issue_type.name if issue.issue_type else None,
+            'issue_type': issue.issue_type.name if issue.issue_type else None,
+            'severity': issue.issue_severity.name if issue.issue_severity else None,
             'assignee': issue.assignee.username if issue.assignee else "Unassigned",
             'created_at': issue.created_at.isoformat(),
+            'modified_at': issue.modified_at.isoformat() if hasattr(issue, 'modified_at') else None,
+            'deadline': issue.deadline.isoformat() if issue.deadline else None,
         })
 
     return JsonResponse({
         'issues': issues_data,
         'current_order': order_param,
+        'total_count': issues.count(),
         'unassigned_count': Issue.objects.filter(assignee__isnull=True).count()
     }, status=200)
 

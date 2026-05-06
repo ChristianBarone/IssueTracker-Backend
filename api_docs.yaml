@@ -24,7 +24,7 @@ paths:
           description: Field to order by (e.g., priority is asc, -priority is desc)
           schema:
             type: string
-            enum: [issue_type, -issue_type, priority, -priority, created_at, -created_at, deadline, -deadline]
+            enum: ['issue_type', '-issue_type', 'issue_severity', '-issue_severity', 'priority', '-priority', 'subject', '-subject', 'status', '-status', 'assignee', '-assignee', 'modified_at', '-modified_at', 'deadline', '-deadline', 'created_at', '-created_at']
       responses:
         '200':
           description: Issues retrieved
@@ -633,7 +633,7 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
-  /comments/{commentId}:
+  /comments/{commentId}/:
     put:
       tags:
         - comments
@@ -703,6 +703,15 @@ paths:
               examples:
                 errorExample:
                   $ref: '#/components/examples/error404'
+        '409':
+          description: Duplicate comment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error409'
       security:
         - ApiKeyAuth: [ ]
     delete:
@@ -880,6 +889,9 @@ components:
     error404:
       value:
         message: "There is no resource with 'id'=8"
+    error409:
+      value:
+        message: "Duplicate comment"
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
