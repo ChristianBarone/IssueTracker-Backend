@@ -49,6 +49,7 @@ urlpatterns = [
     path('issue/<int:issue_id>/comment/', issue_comments, name='comment_add'),
     path('comment/<int:comment_id>/edit/', comment_detail_route, name='comment_edit'),
     path('comment/<int:comment_id>/delete/', comment_delete_web, name='comment_delete'),
+    path('comments/<int:comment_id>/', comment_detail_route, name='comment_api_detail'),
 
     path('users/<str:username>/', profile_view, name='profile_view'),
     path('users/<str:username>/edit/', profile_edit, name='profile_edit'),
