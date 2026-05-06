@@ -97,6 +97,15 @@ class Status(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields')
+        if update_fields is None or 'is_default' in update_fields:
+            if self.is_default:
+                Status.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
+            elif self.pk and not Status.objects.filter(is_default=True).exclude(pk=self.pk).exists():
+                self.is_default = True
+        super().save(*args, **kwargs)
+
 
 class Priority(models.Model):
     objects = models.Manager()
@@ -110,6 +119,15 @@ class Priority(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields')
+        if update_fields is None or 'is_default' in update_fields:
+            if self.is_default:
+                Priority.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
+            elif self.pk and not Priority.objects.filter(is_default=True).exclude(pk=self.pk).exists():
+                self.is_default = True
+        super().save(*args, **kwargs)
 
 
 class IssueType(models.Model):
@@ -125,6 +143,15 @@ class IssueType(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields')
+        if update_fields is None or 'is_default' in update_fields:
+            if self.is_default:
+                IssueType.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
+            elif self.pk and not IssueType.objects.filter(is_default=True).exclude(pk=self.pk).exists():
+                self.is_default = True
+        super().save(*args, **kwargs)
+
 
 class Severity(models.Model):
     objects = models.Manager()
@@ -138,6 +165,15 @@ class Severity(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields')
+        if update_fields is None or 'is_default' in update_fields:
+            if self.is_default:
+                Severity.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
+            elif self.pk and not Severity.objects.filter(is_default=True).exclude(pk=self.pk).exists():
+                self.is_default = True
+        super().save(*args, **kwargs)
 
 
 class Tag(models.Model):

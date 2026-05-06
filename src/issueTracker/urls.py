@@ -58,13 +58,15 @@ path('issue/<int:issue_id>/update-assignee/', issue_update_assignee_dispatcher, 
     path('attachments/<int:attachment_id>', attachment, name='attachment'),
     path('attachments/<int:attachment_id>/delete', attachment_delete_web, name='attachment_delete'),
 
+    path('settings/<str:entity>/<int:pk>/', settings_api_detail, name='settings_api_detail'),
+    path('settings/<str:entity>/', settings_api_collection, name='settings_api_collection'),
     path('settings/', settings_view, name='settings_view'),
     path('settings/<str:entity>/add/', settings_save, name='settings_add'),
     path('settings/<str:entity>/<int:pk>/edit/', settings_save, name='settings_edit'),
     path('settings/<str:entity>/<int:pk>/delete/', settings_delete, name='settings_delete'),
     path('settings/statuses/<int:pk>/toggle-closed/', settings_toggle_closed, name='settings_toggle_closed'),
-    path('settings/<str:entity>/<int:pk>/move-up/', settings_move_up, name='settings_move_up'),
-    path('settings/<str:entity>/<int:pk>/move-down/', settings_move_down, name='settings_move_down'),
+    path('settings/<str:entity>/<int:pk>/move-up/', settings_move_up_dispatcher, name='settings_move_up'),
+    path('settings/<str:entity>/<int:pk>/move-down/', settings_move_down_dispatcher, name='settings_move_down'),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
