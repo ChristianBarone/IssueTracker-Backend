@@ -690,10 +690,8 @@ def issue_update_deadline_detail(request, issue_id):
         )
     if request.content_type == "application/json":
         return JsonResponse({
-            'status': 'success',
             'new_deadline': issue.deadline.strftime('%Y-%m-%d') if issue.deadline else None,
-            'message': 'Deadline updated successfully'
-        })
+        }, status=201)
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
@@ -758,11 +756,10 @@ def watcher_add(request, issue_id):
 
     if request.content_type == "application/json":
         return JsonResponse({
-            'status': 'success',
             'issue_id': issue.id,
             'current_watchers_count': issue.watchers.count(),
             'watchers_list': [w.username for w in issue.watchers.all()]
-        })
+        }, status=201)
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
@@ -787,11 +784,10 @@ def remove_watcher(request, issue_id):
 
     if request.content_type == "application/json":
         return JsonResponse({
-            'status': 'success',
             'issue_id': issue.id,
             'current_watchers_count': issue.watchers.count(),
             'watchers_list': [w.username for w in issue.watchers.all()]
-        })
+        }, status=201)
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
