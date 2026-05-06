@@ -50,8 +50,8 @@ path('issue/<int:issue_id>/update-assignee/', issue_update_assignee_dispatcher, 
     path('comment/<int:comment_id>/delete/', comment_delete_web, name='comment_delete'),
     path('comments/<int:comment_id>/', comment_detail_route, name='comment_api_detail'),
 
-    path('users/<str:username>/', profile_view, name='profile_view'),
-    path('users/<str:username>/edit/', profile_edit, name='profile_edit'),
+    path('profile/<str:username>/', profile_dispatcher, name='profile_view'),
+    path('users/<str:username>/edit/', profile_edit_dispatcher, name='profile_edit'),
     path('accounts/', include('allauth.urls')),
 
     path('issue/<int:issue_id>/attachments', attachments, name='attachment_add'),
