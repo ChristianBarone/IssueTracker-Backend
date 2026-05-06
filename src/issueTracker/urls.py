@@ -32,8 +32,7 @@ urlpatterns = [
     path('issue/<int:issue_id>/delete/', issue_detail_dispatcher, name='issue_delete'),
 
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
-    path('issue/<int:issue_id>/update-assignee/', issue_update_assignee, name='issue_update_assignee'),
-    path('issue/<int:issue_id>/update-type/', issue_update_type, name='issue_update_type'),
+path('issue/<int:issue_id>/update-assignee/', issue_update_assignee_dispatcher, name='issue_update_assignee'),    path('issue/<int:issue_id>/update-type/', issue_update_type, name='issue_update_type'),
     path('issue/<int:issue_id>/update-severity/', issue_update_severity, name='issue_update_severity'),
     path('issue/<int:issue_id>/update-priority/', issue_update_priority, name='issue_update_priority'),
     path('issue/<int:issue_id>/update-status-detail/', issue_update_status_detail, name='issue_update_status_detail'),

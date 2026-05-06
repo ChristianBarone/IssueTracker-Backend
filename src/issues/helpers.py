@@ -1,10 +1,12 @@
 from django.shortcuts import get_object_or_404
 
-from .controllers import *
+from .models import *
+from django.contrib.auth.models import User
 from django.http import HttpResponse, JsonResponse
 
 
-def issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
+def issue_create_instance(subject, description, issue_type,
+                           issue_severity, priority, status, d_line, creator,
                           assignee):
     issue = Issue.objects.create(
         subject=subject,
@@ -27,6 +29,28 @@ def issue_create_instance(subject, description, issue_type, issue_severity, prio
     )
 
     return issue
+
+def update_issue_assignee(issue, new_assignee, actor):
+    previous_assignee = issue.assignee
+
+    if previous_assignee == new_assignee:
+        return False  # no change
+
+    issue.assignee = new_assignee
+    issue.save(update_fields=['assignee', 'modified_at'])
+
+    old_value = f"@{previous_assignee.username}" if previous_assignee else 'Unassigned'
+    new_value = f"@{new_assignee.username}" if new_assignee else 'Unassigned'
+
+    IssueActivity.objects.create(
+        issue=issue,
+        actor=actor,
+        field_name='assignee',
+        old_value=old_value,
+        new_value=new_value,
+    )
+
+    return True
 
 
 def attachment_create_instance(issue_id, creator, file):

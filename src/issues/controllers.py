@@ -7,7 +7,8 @@ from .views import *
 from .models import *
 from .helpers import *
 from .forms import *
-
+from .helpers import update_issue_assignee
+from .helpers import log_watcher_activity
 import os
 import json
 
@@ -619,37 +620,42 @@ def issue_update_status(request, issue_id):
         return redirect('issue_list')
 
 @login_required
-def issue_update_assignee(request, issue_id):
+def issue_update_assignee_web(request, issue_id):
     issue = get_object_or_404(Issue, id=issue_id)
 
     if request.method == 'POST':
         assignee_id = request.POST.get('assignee_id', '').strip()
-        previous_assignee = issue.assignee
-        new_assignee = None
 
+        new_assignee = None
         if assignee_id:
             new_assignee = get_object_or_404(User, id=assignee_id)
 
-        if previous_assignee != new_assignee:
-            issue.assignee = new_assignee
-            issue.save(update_fields=['assignee', 'modified_at'])
+        update_issue_assignee(issue, new_assignee, request.user)
 
-            old_value = f"@{previous_assignee.username}" if previous_assignee else 'Unassigned'
-            new_value = f"@{new_assignee.username}" if new_assignee else 'Unassigned'
+    return redirect('issue_detail', issue_id=issue_id)
 
-            IssueActivity.objects.create(
-                issue=issue,
-                actor=request.user if request.user.is_authenticated else None,
-                field_name='assignee',
-                old_value=old_value,
-                new_value=new_value,
-            )
+def issue_update_assignee_api(request, issue_id, user):
+    issue = get_object_or_404(Issue, id=issue_id)
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+    assignee_id = str(data.get('assignee_id', '')).strip()
+
+    new_assignee = None
+    if assignee_id:
+        new_assignee = User.objects.filter(id=assignee_id).first()
+        if not new_assignee:
+            return JsonResponse({'message': 'Invalid assignee_id'}, status=400)
+
+    update_issue_assignee(issue, new_assignee, user)
+
+    return JsonResponse({
+        'message': 'Assignee updated',
+        'assignee': new_assignee.username if new_assignee else 'Unassigned'
+    }, status=200)
 
 @login_required
 def issue_update_type(request, issue_id):
