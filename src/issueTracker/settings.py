@@ -70,10 +70,6 @@ else:
     if os.path.exists(credentials_path):
         GS_CREDENTIALS = service_account.Credentials.from_service_account_file(credentials_path)
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://8886e6181fdc44dfbb69832587320098.vfs.cloud9.us-east-1.amazonaws.com'
-]
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -90,7 +86,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.github',
     'issues.apps.IssuesConfig',
     'storages',
-    'corsheaders'
+    'rest_framework',
+    'corsheaders',
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -105,18 +102,24 @@ LOGOUT_REDIRECT_URL = '/'
 SITE_ID = 1
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+    "https://issuetracker-ff8u.onrender.com",
+    'https://editor.swagger.io'
+]
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'issueTracker.urls'
 
@@ -156,15 +159,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# En produccion pondremos los origenes de verdad
-#CORS_ALLOWED_ORIGINS = [
-#]
-#CSRF_TRUSTED_ORIGINS = [
-#]
-#CORS_ALLOW_CREDENTIALS = True
-
-# De momento aceptamos todo
-CORS_ALLOW_ALL_ORIGINS = True
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/

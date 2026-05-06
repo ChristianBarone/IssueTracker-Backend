@@ -1,7 +1,7 @@
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
-from django.http import JsonResponse
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, HttpResponseNotFound, Http404
 from django.db.models import Q, Count
 
 from .views import *
@@ -10,6 +10,7 @@ from .helpers import *
 from .forms import *
 
 import os
+import json
 
 """""""""""""""""""""""""""""""""
              GLOBALS
@@ -66,74 +67,91 @@ def login_page(request):
     return render_login_page(request, context)
 
 # ISSUES
-@login_required(login_url='/')
-def issue_list(request):
-    # Ordenades de més noves a més velles (Requisit)
+def _apply_issue_queries(request):
+    #priority es asc pero -priority es desc
     order_param = request.GET.get('order_by', '-created_at')
+
+    allowed_order_fields = [
+        'issue_type', 'issue_severity', 'priority', 'subject',
+        'status', 'assignee', 'modified_at', 'deadline', 'created_at'
+    ]
+
+    clean_order = order_param.lstrip('-')
+    if clean_order not in allowed_order_fields:
+        order_param = '-created_at'
+
     issues = Issue.objects.all().order_by(order_param)
 
-    #Captura de parámetros
-    selected_types = request.GET.getlist('issue_type')
-    selected_statuses = request.GET.getlist('filter_status')
-    selected_severities = request.GET.getlist('issue_severity')
-    selected_priorities = request.GET.getlist('priority')
-    f_assignee = request.GET.get('assigned_to')
-
     search_query = request.GET.get('search', '').strip()
-
     if search_query:
-        # Cerca: Subject i ID (o Description si vols afegir-ho)
         issues = issues.filter(Q(subject__icontains=search_query) | Q(id__icontains=search_query) | Q(description__icontains=search_query))
 
-    # Filtrado por TYPE (Acumulativo)
-    if selected_types:
-        issues = issues.filter(issue_type__name__in=selected_types)
+    if request.GET.getlist('issue_type'):
+        issues = issues.filter(issue_type__name__in=request.GET.getlist('issue_type'))
 
-    # Filtrado por SEVERITY (Acumulativo)
-    if selected_severities:
-        issues = issues.filter(issue_severity__name__in=selected_severities)
+    if request.GET.getlist('filter_status'):
+        issues = issues.filter(status__name__in=request.GET.getlist('filter_status'))
 
-    # Filtrado por STATUS (Acumulativo)
-    if selected_statuses:
-        issues = issues.filter(status__name__in=selected_statuses)
+    if request.GET.getlist('issue_severity'):
+        issues = issues.filter(issue_severity__name__in=request.GET.getlist('issue_severity'))
 
-    if selected_priorities:
-        issues = issues.filter(priority__name__in=selected_priorities)
+    if request.GET.getlist('priority'):
+        issues = issues.filter(priority__name__in=request.GET.getlist('priority'))
 
-    # Filtrado por ASIGNADO (Uno solo)
+    f_assignee = request.GET.get('assigned_to')
     if f_assignee == 'unassigned':
         issues = issues.filter(assignee__isnull=True)
     elif f_assignee:
         issues = issues.filter(assignee_id=f_assignee)
 
+    return issues, order_param
 
+def issue_list_api(request):
+    issues, order_param = _apply_issue_queries(request)
+
+    valid_fields = ['issue_type', 'issue_severity', 'priority', 'subject', 'status', 'assignee', 'modified_at', 'deadline', 'created_at']
+    if order_param.lstrip('-') not in valid_fields:
+        return JsonResponse({'error': f'Invalid order_by field: {order_param}'}, status=400)
+
+    issues_data = []
+    for issue in issues:
+        issues_data.append({
+            'id': issue.id,
+            'subject': issue.subject,
+            'description': issue.description,
+            'priority': issue.priority.name if issue.priority else None,
+            'status': issue.status.name if issue.status else None,
+            'type': issue.issue_type.name if issue.issue_type else None,
+            'assignee': issue.assignee.username if issue.assignee else "Unassigned",
+            'created_at': issue.created_at.isoformat(),
+        })
+
+    return JsonResponse({
+        'issues': issues_data,
+        'current_order': order_param,
+        'unassigned_count': Issue.objects.filter(assignee__isnull=True).count()
+    }, status=200)
+
+def issue_list_web(request):
+    issues, order_param = _apply_issue_queries(request)
     def toggle_order(field):
         if order_param == field:
-            return f"-{field}" # Si ya es asc, pasamos a desc
-        return field # Si es cualquier otra cosa, ponemos asc
-
-    users = User.objects.annotate(num_issues=Count('assigned_issues'))
-    unassigned_issues_count = Issue.objects.filter(assignee__isnull=True).count()
-
-    # Listas desde BD (dinámicas) — queryset con color e issue_count por anotación
-    all_types = IssueType.objects.annotate(issue_count=Count('issue')).order_by('order', 'name')
-    all_severities = Severity.objects.annotate(issue_count=Count('issue')).order_by('order', 'name')
-    all_statuses = Status.objects.annotate(issue_count=Count('issue')).order_by('order', 'name')
+            return f"-{field}"
+        return field
 
     context = {
         'issues': issues,
-        'users': users,
+        'users': User.objects.annotate(num_issues=Count('assigned_issues')),
         'show_filters': request.GET.get('show_filters') == '1',
-        'all_types': all_types,
-        'all_severities': all_severities,
-        'all_statuses': all_statuses,
-        'selected_types': selected_types,
-        'selected_severities': selected_severities,
-        'selected_statuses': selected_statuses,
-        'search_query': search_query,
-        'f_assignee': f_assignee,
-        'unassigned_issues_count': unassigned_issues_count,
-        'current_order':order_param,
+
+        'all_types': IssueType.objects.annotate(issue_count=Count('issue')).order_by('order'),
+        'all_severities': Severity.objects.annotate(issue_count=Count('issue')).order_by('order'),
+        'all_statuses': Status.objects.annotate(issue_count=Count('issue')).order_by('order'),
+
+        'search_query': request.GET.get('search', ''),
+        'unassigned_issues_count': Issue.objects.filter(assignee__isnull=True).count(),
+        'current_order': order_param,
+        'f_assignee': request.GET.get('assigned_to'),
         'order_links': {
             'type': toggle_order('issue_type'),
             'sev': toggle_order('issue_severity'),
@@ -144,45 +162,76 @@ def issue_list(request):
             'mod': toggle_order('modified_at'),
             'deadline': toggle_order('deadline'),
         },
+
+        'selected_types': request.GET.getlist('issue_type'),
+        'selected_statuses': request.GET.getlist('filter_status'),
+        'selected_severities': request.GET.getlist('issue_severity'),
+        'selected_priorities': request.GET.getlist('priority'),
     }
+    return render_issue_list(request, context)
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return render_issue_list(request, context)
+def issue_create_api(request, user):
+    subject = request.POST.get('subject')
+    if not subject or subject.strip() == "":
+        return JsonResponse({'error': 'Subject is required'}, status=400)
 
-@login_required
-def issue_create(request):
+    assignee_id = request.POST.get('assignee_id', '').strip()
+    assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
+
+    d_line = request.POST.get('deadline')
+    deadline_value = d_line if d_line and d_line.strip() != "" else None
+
+    issue = issue_create_instance(
+        subject=subject,
+        description=request.POST.get('description'),
+        issue_type=request.POST.get('issue_type'),
+        issue_severity=request.POST.get('issue_severity'),
+        priority=request.POST.get('priority'),
+        status=request.POST.get('status') or 'New',
+        d_line= deadline_value,
+        creator=user,
+        assignee = assignee
+    )
+    return JsonResponse({
+        'id': issue.id,
+        'subject': issue.subject,
+        'description': issue.description,
+        'issue_type': issue.issue_type.name if issue.issue_type else None,
+        'issue_severity': issue.issue_severity.name if issue.issue_severity else None,
+        'priority': issue.priority.name if issue.priority else None,
+        'status': issue.status.name if issue.status else None,
+        'deadline': issue.deadline.isoformat() if issue.deadline else None,
+        'creator': issue.creator.username if issue.creator else None,
+        'assignee': issue.assignee.username if issue.assignee else None
+    }, status=201)
+
+def issue_create_web(request):
     if request.method == "POST":
         subject = request.POST.get('subject')
-        description = request.POST.get('description')
-        issue_type = request.POST.get('issue_type')
-        issue_severity = request.POST.get('issue_severity')
-        priority = request.POST.get('priority')
-        status = request.POST.get('status') or 'New'
+        if not subject or subject.strip() == "":
+            return redirect('issue_list')
+
+        assignee_id = request.POST.get('assignee_id', '').strip()
+        assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
+
         d_line = request.POST.get('deadline')
         deadline_value = d_line if d_line and d_line.strip() != "" else None
-        creator = request.user
-        assignee_id = request.POST.get('assignee_id', '').strip()
-        assignee = None
 
-        if assignee_id:
-            assignee = get_object_or_404(User, id=assignee_id)
+        issue = issue_create_instance(
+            subject=subject,
+            description=request.POST.get('description'),
+            issue_type=request.POST.get('issue_type'),
+            issue_severity=request.POST.get('issue_severity'),
+            priority=request.POST.get('priority'),
+            status=request.POST.get('status') or 'New',
+            d_line=deadline_value,
+            creator=request.user,
+            assignee=assignee
+        )
+        if request.FILES.get('files'):
+            attachment_create_instance(issue.id, request.user, request.FILES.get('files'))
 
-        # Creem l'issue amb assignació per defecte: unassigned
-        issue = issue_create_instance(subject, description, issue_type, issue_severity, priority, status,
-                                      deadline_value, creator,
-                                      assignee)
-
-        if request.FILES.get('files') is not None:
-            attachment_create_instance(issue.id, creator, request.FILES.get('files'))
-
-        if request.content_type == "application/json":
-            # implementar
-            return None
-        else:
-            return redirect('issue_list')
+        return redirect('issue_list')
     else:
         context = {
             'statuses': Status.objects.all(),
@@ -191,72 +240,73 @@ def issue_create(request):
             'severities': Severity.objects.all(),
             'assignable_users': User.objects.all().order_by('username'),
         }
-        
-        if request.content_type == "application/json":
-            # implementar
-            return None
-        else:
-            return render_issue_create(request, context)
-
-@login_required
-def issue_bulk_create(request):
-    if request.method == "POST":
-        # Valors per defecte en fer bulk add
-        subjects = request.POST.get('list').splitlines()
-        description = ''
-        issue_type = 'Bug'
-        issue_severity = 'Normal'
-        priority = 'Normal'
-        status = 'New'
-        d_line = None
-        creator = request.user
-        assignee = None
-
-        for subject in subjects:
-            issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
-                              assignee)
-
-        return redirect('issue_list')
-    else:
-        if request.content_type == "application/json":
-            # implementar
-            return None
-        else:
-            return render_issue_bulk_create(request)
+        return render_issue_create(request, context)
 
 
-@login_required
-def issue_detail(request, issue_id):
-    issue = get_object_or_404(Issue, id=issue_id)
+def issue_detail_api(issue):
+    attachments = issue.attachments.all()
+    return JsonResponse({
+        'id': issue.id,
+        'subject': issue.subject,
+        'description': issue.description,
+        'status': issue.status.name if issue.status else None,
+        'priority': issue.priority.name if issue.priority else None,
+        'severity': issue.issue_severity.name if issue.issue_severity else None,
+        'type': issue.issue_type.name if issue.issue_type else None,
+        'creator': issue.creator.username,
+        'assignee': issue.assignee.username if issue.assignee else "Unassigned",
+        'created_at': issue.created_at.isoformat(),
+        'comments': [
+            {
+                'id': c.id,
+                'author': c.author.username,
+                'body': c.body,
+                'created_at': c.created_at.isoformat()
+            } for c in issue.comments.all()
+        ],
+        'attachments': [
+            {
+                'id': a.id,
+                'name': a.file.name,
+                'url': a.file.url
+            } for a in attachments
+        ],
+        'tags': [t.name for t in issue.tags.all()],
+        'watchers': [w.username for w in issue.watchers.all()],
+        'activities': [
+            {
+                'user': a.actor.username if a.actor else "System",
+                'field': a.field_name,
+                'old': a.old_value,
+                'new': a.new_value,
+                'date': a.created_at.isoformat()
+            } for a in issue.activities.all()
+        ]
+    }, status=200)
 
+def issue_detail_web(request, issue):
     available_users = User.objects.exclude(id__in=issue.watchers.all())
     assignable_users = User.objects.all().order_by('username')
 
     edit_comment_id = request.GET.get('edit_comment')
     edit_comment_obj = None
-    active_tab = request.GET.get('tab', 'comments')
-    editing = request.GET.get('editing', '')
-    subject_error = request.GET.get('subject_error', '')
-    is_creator = request.user.is_authenticated and request.user == issue.creator
-
     if edit_comment_id:
         edit_comment_obj = get_object_or_404(Comment, id=edit_comment_id, issue=issue)
 
-    attachments = issue.attachments.all()
     issue_tags = issue.tags.all()
     available_tags = Tag.objects.exclude(pk__in=issue_tags.values_list('pk', flat=True)).order_by('name')
 
     context = {
         'issue': issue,
-        'attachments': attachments,
+        'attachments': issue.attachments.all(),
         'edit_comment_obj': edit_comment_obj,
-        'active_tab': active_tab,
+        'active_tab': request.GET.get('tab', 'comments'),
         'activities': issue.activities.select_related('actor').all(),
         'available_users': available_users,
         'assignable_users': assignable_users,
-        'editing': editing,
-        'subject_error': subject_error,
-        'is_creator': is_creator,
+        'editing': request.GET.get('editing', ''),
+        'subject_error': request.GET.get('subject_error', ''),
+        'is_creator': request.user.is_authenticated and request.user == issue.creator,
         'all_types': IssueType.objects.order_by('order', 'name'),
         'all_severities': Severity.objects.order_by('order', 'name'),
         'all_statuses': Status.objects.order_by('order', 'name'),
@@ -264,25 +314,226 @@ def issue_detail(request, issue_id):
         'issue_tags': issue_tags,
         'available_tags': available_tags,
     }
+    return render_issue_detail(request, context)
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return render_issue_detail(request, context)
 
-@login_required
-def issue_delete(request, issue_id):
-    if request.method == 'POST':
-        issue = get_object_or_404(Issue, id=issue_id)
-        if issue.creator == request.user:
-            issue.delete()
+def issue_edit_api(request, issue, user):
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'message': 'Invalid JSON body'}, status=400)
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
+    update_fields = ['modified_at']
+
+    if 'subject' in data:
+        subject = str(data['subject']).strip() if data['subject'] else ''
+        if not subject:
+            return JsonResponse({'message': 'Subject cannot be empty'}, status=400)
+        if subject != issue.subject:
+            IssueActivity.objects.create(
+                issue=issue, actor=user,
+                field_name='subject',
+                old_value=issue.subject,
+                new_value=subject,
+            )
+            issue.subject = subject
+            update_fields.append('subject')
+
+    if 'description' in data:
+        description = data['description'] or ''
+        old = issue.description or ''
+        if description != old:
+            IssueActivity.objects.create(
+                issue=issue, actor=user,
+                field_name='description',
+                old_value=old[:120],
+                new_value=description[:120],
+            )
+            issue.description = description
+            update_fields.append('description')
+
+    if 'status' in data:
+        status_id = data['status']
+        if status_id is None:
+            if issue.status is not None:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='status',
+                    old_value=issue.status.name,
+                    new_value='—',
+                )
+                issue.status = None
+                update_fields.append('status')
+        else:
+            new_status = Status.objects.filter(pk=status_id).first()
+            if not new_status:
+                return JsonResponse({'message': f"There is no status with 'id'={status_id}"}, status=400)
+            if new_status != issue.status:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='status',
+                    old_value=issue.status.name if issue.status else '—',
+                    new_value=new_status.name,
+                )
+                issue.status = new_status
+                update_fields.append('status')
+
+    if 'issue_type' in data:
+        type_id = data['issue_type']
+        if type_id is None:
+            if issue.issue_type is not None:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='type',
+                    old_value=issue.issue_type.name,
+                    new_value='—',
+                )
+                issue.issue_type = None
+                update_fields.append('issue_type')
+        else:
+            new_type = IssueType.objects.filter(pk=type_id).first()
+            if not new_type:
+                return JsonResponse({'message': f"There is no type with 'id'={type_id}"}, status=400)
+            if new_type != issue.issue_type:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='type',
+                    old_value=issue.issue_type.name if issue.issue_type else '—',
+                    new_value=new_type.name,
+                )
+                issue.issue_type = new_type
+                update_fields.append('issue_type')
+
+    if 'issue_severity' in data:
+        sev_id = data['issue_severity']
+        if sev_id is None:
+            if issue.issue_severity is not None:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='severity',
+                    old_value=issue.issue_severity.name,
+                    new_value='—',
+                )
+                issue.issue_severity = None
+                update_fields.append('issue_severity')
+        else:
+            new_sev = Severity.objects.filter(pk=sev_id).first()
+            if not new_sev:
+                return JsonResponse({'message': f"There is no severity with 'id'={sev_id}"}, status=400)
+            if new_sev != issue.issue_severity:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='severity',
+                    old_value=issue.issue_severity.name if issue.issue_severity else '—',
+                    new_value=new_sev.name,
+                )
+                issue.issue_severity = new_sev
+                update_fields.append('issue_severity')
+
+    if 'priority' in data:
+        prio_id = data['priority']
+        if prio_id is None:
+            if issue.priority is not None:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='priority',
+                    old_value=issue.priority.name,
+                    new_value='—',
+                )
+                issue.priority = None
+                update_fields.append('priority')
+        else:
+            new_prio = Priority.objects.filter(pk=prio_id).first()
+            if not new_prio:
+                return JsonResponse({'message': f"There is no priority with 'id'={prio_id}"}, status=400)
+            if new_prio != issue.priority:
+                IssueActivity.objects.create(
+                    issue=issue, actor=user,
+                    field_name='priority',
+                    old_value=issue.priority.name if issue.priority else '—',
+                    new_value=new_prio.name,
+                )
+                issue.priority = new_prio
+                update_fields.append('priority')
+
+    if 'deadline' in data:
+        deadline_val = data['deadline']
+        old_deadline = str(issue.deadline) if issue.deadline else '—'
+        new_deadline = deadline_val if deadline_val else None
+        if new_deadline != issue.deadline:
+            IssueActivity.objects.create(
+                issue=issue, actor=user,
+                field_name='deadline',
+                old_value=old_deadline,
+                new_value=str(new_deadline) if new_deadline else '—',
+            )
+            issue.deadline = new_deadline
+            update_fields.append('deadline')
+
+    if 'tags' in data:
+        tag_ids = data['tags']
+        if not isinstance(tag_ids, list):
+            return JsonResponse({'message': "'tags' must be a list of IDs"}, status=400)
+        new_tags = []
+        for tid in tag_ids:
+            tag = Tag.objects.filter(pk=tid).first()
+            if not tag:
+                return JsonResponse({'message': f"There is no tag with 'id'={tid}"}, status=400)
+            new_tags.append(tag)
+        old_tag_names = set(issue.tags.values_list('name', flat=True))
+        new_tag_names = {t.name for t in new_tags}
+        added = new_tag_names - old_tag_names
+        removed = old_tag_names - new_tag_names
+        if added:
+            IssueActivity.objects.create(
+                issue=issue, actor=user,
+                field_name='tags',
+                old_value='',
+                new_value=f"added {', '.join(sorted(added))}",
+            )
+        if removed:
+            IssueActivity.objects.create(
+                issue=issue, actor=user,
+                field_name='tags',
+                old_value=f"removed {', '.join(sorted(removed))}",
+                new_value='',
+            )
+        if added or removed:
+            issue.tags.set(new_tags)
+
+    issue.save(update_fields=update_fields)
+    issue.refresh_from_db()
+    return issue_detail_api(issue)
+
+
+def issue_delete_api(issue_id):
+    Issue.objects.filter(id=issue_id).delete()
+    return JsonResponse({'message': 'Issue deleted'}, status=204)
+
+def issue_delete_web(request, issue_id):
+    issue = get_object_or_404(Issue, id=issue_id)
+    if issue.creator == request.user:
+        issue.delete()
         return redirect('issue_list')
+    else:
+        return HttpResponseForbidden()
+
+def issue_bulk_web(request):
+    issue_bulk_create(request.POST.get('list').splitlines(), request.user)
+    return redirect('issue_list')
+
+def issue_bulk_api(list, user):
+    issues = issue_bulk_create(list, user)
+
+    data = []
+    for issue in issues:
+        data.append({
+            'id': issue.id,
+            'subject': issue.subject,
+        })
+
+    return JsonResponse(data, status=201, safe=False)
+
 
 @login_required
 def issue_update_status(request, issue_id):
@@ -544,82 +795,137 @@ def remove_watcher(request, issue_id):
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
-# COMMENTS
-@login_required
-def comment_add(request, issue_id):
-    issue = get_object_or_404(Issue, id=issue_id)
-    if request.method == "POST":
-        text = request.POST.get('body', '').strip()
-        if text:
-            Comment.objects.create(issue=issue, author=request.user, body=text)
+# --- COMMENTS ---
+def comment_list_api(issue_id):
+    comments = Comment.objects.filter(issue_id=issue_id)
+    data = []
+    for c in comments:
+        data.append({
+            'id': c.id,
+            'body': c.body,
+            'author': c.author.username,
+            'created_at': c.created_at.isoformat(),
+            'issue_id': c.issue_id
+        })
+    return JsonResponse(data, status=200, safe=False)
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        # Importante: Usa issue_id=issue_id para coincidir con tu nombre en urls.py
-        return redirect('issue_detail', issue_id=issue_id)
+def comment_add_api(request, issue_id, user):
+    text = request.POST.get('body', '').strip()
+    if not text:
+        return JsonResponse({'message': 'Body is required'}, status=400)
 
-@login_required
-def comment_edit(request, comment_id):
+    if Comment.objects.filter(issue_id=issue_id, author=user, body=text).exists():
+        return JsonResponse({'error': 'Duplicate comment'}, status=409)
+
+    comment = Comment.objects.create(issue_id=issue_id, author=user, body=text)
+    return JsonResponse({
+        'id': comment.id,
+        'body': comment.body,
+        'author': comment.author.username,
+        'issue_id': issue_id
+    }, status=201)
+
+def comment_add_web(request, issue_id):
+    text = request.POST.get('body', '').strip()
+    if text:
+        Comment.objects.create(issue_id=issue_id, author=request.user, body=text)
+    return redirect('issue_detail', issue_id=issue_id)
+
+def comment_edit_api(request, comment):
+    text = request.POST.get('body', '').strip()
+    if not text:
+        return JsonResponse({'message': 'Body is required'}, status=400)
+
+    if Comment.objects.filter(issue=comment.issue, author=comment.author, body=text).exclude(id=comment.id).exists():
+        return JsonResponse({'error': 'Duplicate comment'}, status=409)
+
+    comment.body = text
+    comment.save()
+    return JsonResponse({'id': comment.id, 'body': comment.body, 'message': 'Comment updated'}, status=200)
+
+def comment_edit_web(request, comment):
+    text = request.POST.get('body', '').strip()
+    if text:
+        comment.body = text
+        comment.save()
+    return redirect('issue_detail', issue_id=comment.issue_id)
+
+def comment_delete_api(comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    issue_id = getattr(comment, 'issue_id')
+    comment.delete()
+    return JsonResponse({'message': 'Comment deleted'}, status=204)
 
-    # Només el creador edita el comentari
-    if request.method == 'POST' and comment.author == request.user:
-        text = request.POST.get('body', '').strip()
-        if text:
-            comment.body = text
-            comment.save()
-
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
-
-@login_required
-def comment_delete(request, comment_id):
+def comment_delete_web(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    issue_id = getattr(comment, 'issue_id')
-
-    # Només el creador esborra request.user
-    if comment.author == request.user:
-        comment.delete()
-
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
+    issue_id = comment.issue.id
+    comment.delete()
+    return redirect('issue_detail', issue_id=issue_id)
 
 # ATTACHMENTS
-@login_required
-def attachment_add(request, issue_id):
-    if request.method == 'POST':
+def attachment_get_api(attachment_id):
+    attachment = get_object_or_404(Attachment, id=attachment_id)
+    data = {
+        'attachment_id': attachment.id,
+        'issue_id': attachment.issue_id,
+        'creator_id': attachment.creator_id,
+        'url': attachment.file.url,
+        'name': attachment.name
+    }
 
-        form = UploadFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            attachment_create_instance(issue_id, request.user, request.FILES['files'])
+    return JsonResponse(data, status=200)
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
+def attachment_list_api(issue_id):
+    attachments = Attachment.objects.filter(issue_id=issue_id)
+    data = []
+    for attachment in attachments:
+        data.append({
+            'attachment_id': attachment.id,
+            'issue_id': attachment.issue_id,
+            'creator_id': attachment.creator_id,
+            'url': attachment.file.url,
+            'name': attachment.name
+        })
 
-@login_required
-def attachment_delete(request, attachment_id):
+    return JsonResponse(data, status=200, safe=False)
+
+def attachment_add_api(request, issue_id, user):
+    form = UploadFileForm(request.POST, request.FILES)
+    if not form.is_valid():
+        return JsonResponse({'message': 'Invalid request format'}, status=400)
+
+    attachment = attachment_create_instance(issue_id, user, request.FILES['files'])
+
+    data = {
+        'attachment_id': attachment.id,
+        'issue_id': attachment.issue_id,
+        'creator_id': attachment.creator_id,
+        'url': attachment.file.url,
+        'name': attachment.name
+    }
+
+    return JsonResponse(data, status=201)
+
+def attachment_add_web(request, issue_id):
+    form = UploadFileForm(request.POST, request.FILES)
+    if not form.is_valid():
+        return JsonResponse({'message': 'Invalid request format'}, status=400)
+
+    attachment_create_instance(issue_id, request.user, request.FILES['files'])
+    return redirect('issue_detail', issue_id=issue_id)
+
+def attachment_delete_api(attachment_id):
+    attachment = get_object_or_404(Attachment, id=attachment_id)
+    attachment.delete()
+
+    return JsonResponse({'message': 'Attachment deleted'}, status=204)
+
+def attachment_delete_web(request, attachment_id):
     attachment = get_object_or_404(Attachment, id=attachment_id)
     issue_id = getattr(attachment, 'issue_id')
 
     attachment.delete()
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
+    return redirect('issue_detail', issue_id=issue_id)
 
 # PROFILES
 def profile_view(request, username):

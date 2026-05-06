@@ -20,15 +20,17 @@ from django.conf.urls.static import static
 
 from issues.controllers import *
 from issues.views import *
+from issues.routes import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', login_page, name='login_page'),
-    path('issues/', issue_list, name='issue_list'),
-    path('new/', issue_create, name='issue_create'),
-    path('new_bulk/', issue_bulk_create, name='issue_bulk_create'),
-    path('issue/<int:issue_id>/', issue_detail, name='issue_detail'),
-    path('issue/<int:issue_id>/delete/', issue_delete, name='issue_delete'),
+    path('issues/', issues_dispatcher, name='issue_list'),
+    path('new/', issues_dispatcher, name='issue_create'),
+    path('issues/bulk/', issues_bulk_dispatcher, name='issue_bulk_create'),
+    path('issue/<int:issue_id>/', issue_detail_dispatcher, name='issue_detail'),
+    path('issue/<int:issue_id>/delete/', issue_detail_dispatcher, name='issue_delete'),
+
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
     path('issue/<int:issue_id>/update-assignee/', issue_update_assignee, name='issue_update_assignee'),
     path('issue/<int:issue_id>/update-type/', issue_update_type, name='issue_update_type'),
@@ -44,15 +46,17 @@ urlpatterns = [
     path('issue/<int:issue_id>/watcher_add/', watcher_add, name='watcher_add'),
     path('issue/<int:issue_id>/remove_watcher/', remove_watcher, name='remove_watcher'),
 
-    path('issue/<int:issue_id>/comment/', comment_add, name='comment_add'),
-    path('comment/<int:comment_id>/edit/', comment_edit, name='comment_edit'),
-    path('comment/<int:comment_id>/delete/', comment_delete, name='comment_delete'),
+    path('issue/<int:issue_id>/comment/', issue_comments, name='comment_add'),
+    path('comment/<int:comment_id>/edit/', comment_detail_route, name='comment_edit'),
+    path('comment/<int:comment_id>/delete/', comment_delete_web, name='comment_delete'),
+
     path('users/<str:username>/', profile_view, name='profile_view'),
     path('users/<str:username>/edit/', profile_edit, name='profile_edit'),
     path('accounts/', include('allauth.urls')),
 
-    path('issue/<int:issue_id>/attachments', attachment_add, name='attachment_add'),
-    path('attachments/<int:attachment_id>/delete', attachment_delete, name='attachment_delete'),
+    path('issue/<int:issue_id>/attachments', attachments, name='attachment_add'),
+    path('attachments/<int:attachment_id>', attachment, name='attachment'),
+    path('attachments/<int:attachment_id>/delete', attachment_delete_web, name='attachment_delete'),
 
     path('settings/', settings_view, name='settings_view'),
     path('settings/<str:entity>/add/', settings_save, name='settings_add'),

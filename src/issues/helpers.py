@@ -1,5 +1,8 @@
+from django.shortcuts import get_object_or_404
+
 from .controllers import *
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+
 
 def issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
                           assignee):
@@ -32,6 +35,7 @@ def attachment_create_instance(issue_id, creator, file):
     attachment = Attachment(issue=issue, creator=creator, file=file, name=os.path.basename(file.name))
     attachment.save()
 
+    return attachment
 
 def log_watcher_activity(issue, actor, action, watcher_user):
     IssueActivity.objects.create(
@@ -95,14 +99,39 @@ def update_fk_field(request, issue_id, field_name, model, activity_label):
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
-def validate_api_key(api_key, user_id):
+def validate_api_user(api_key, user_id):
     user = Profile.objects.filter(api_key=api_key)
 
-    #user.count() ?
-    if user.length() != 1:
-        return HttpResponse(code=401)
+    if user.count() != 1:
+        return JsonResponse({'message': "The API key you provided does not belong to any users"}, status=401)
 
-    if user[0].id != user_id:
-        return HttpResponseForbidden()
+    if user[0].user.id != user_id:
+        return JsonResponse({'message': "The provided API key does not authorize this action"}, status= 403)
 
-    return None
+    return user[0].user
+
+def validate_api_key(api_key):
+    user = Profile.objects.filter(api_key=api_key)
+
+    if user.count() != 1:
+        return JsonResponse({'message': "The API key you provided does not belong to any users"}, status=401)
+    else:
+        return user[0].user
+
+def issue_bulk_create(subjects, creator):
+    # Valors per defecte en fer bulk add
+    description = ''
+    issue_type = 'Bug'
+    issue_severity = 'Normal'
+    priority = 'Normal'
+    status = 'New'
+    d_line = None
+    assignee = None
+
+    issues = []
+
+    for subject in subjects:
+        issues.append(issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
+                          assignee))
+
+    return issues

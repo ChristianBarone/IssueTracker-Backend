@@ -1,0 +1,887 @@
+openapi: 3.0.2
+info:
+  version: 1.0.0
+  title: Issue Tracker
+  description: "This is the Open API documentation for the REST API of the issue tracker developed for the ASW Lab class. All operations require authentication."
+servers:
+  - url: 'https://issuetracker-ff8u.onrender.com/'
+  - url: 'http://localhost:8000'
+paths:
+  /issues/:
+    get:
+      tags:
+        - issues
+      summary: List and filter issues
+      operationId: listIssues
+      parameters:
+        - name: search
+          in: query
+          description: Search text for subject or description
+          schema:
+            type: string
+        - name: order_by
+          in: query
+          description: Field to order by (e.g., priority is asc, -priority is desc)
+          schema:
+            type: string
+            enum: [issue_type, -issue_type, priority, -priority, created_at, -created_at, deadline, -deadline]
+      responses:
+        '200':
+          description: Issues retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  issues:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Issue'
+                  current_order:
+                    type: string
+                  unassigned_count:
+                    type: integer
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+      security:
+        - ApiKeyAuth: []
+    post:
+      tags:
+        - issues
+      summary: Create a new issue
+      operationId: createIssue
+      requestBody:
+        description: Provide the details for the new issue
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  example: "Bug in login"
+                description:
+                  type: string
+                  example: "The login button is not working"
+                issue_type:
+                  type: string
+                  example: "Bug"
+                priority:
+                  type: string
+                  example: "High"
+                issue_severity:
+                  type: string
+                  example: "Normal"
+              required:
+                - subject
+        required: true
+      responses:
+        '201':
+          description: Issue created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          description: Bad Request (Subject is required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+      security:
+        - ApiKeyAuth: []
+  /issues/bulk/:
+    post:
+      tags:
+        - issues
+      summary: Bulk create a list of issues
+      operationId: bulkCreateIssues
+      requestBody:
+        description: Provide a list of issue subjects
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                list:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Issue 1", "Issue 2"]
+              required:
+                - list
+        required: true
+      responses:
+        '201':
+          description: Issues created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkIssues'
+        '400':
+          description: Bad Request (List is required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+      security:
+        - ApiKeyAuth: [ ]
+
+  /issue/{issueId}/:
+    get:
+      tags:
+        - issues
+      summary: Get issue details
+      operationId: getIssue
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Issue details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueDetail'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+    put:
+      tags:
+        - issues
+      summary: Update an issue (only the creator can edit)
+      operationId: updateIssue
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Fields to update (all optional; only provided fields are modified)
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  example: "Updated bug title"
+                description:
+                  type: string
+                  example: "More details about the bug"
+                status:
+                  type: integer
+                  description: ID of the status
+                  example: 2
+                issue_type:
+                  type: integer
+                  description: ID of the type
+                  example: 1
+                issue_severity:
+                  type: integer
+                  description: ID of the severity
+                  example: 3
+                priority:
+                  type: integer
+                  description: ID of the priority
+                  example: 2
+                tags:
+                  type: array
+                  description: List of tag IDs (replaces current tags)
+                  items:
+                    type: integer
+                  example: [1, 3]
+                deadline:
+                  type: string
+                  format: date
+                  nullable: true
+                  description: Deadline date, or null to remove it
+                  example: "2026-06-01"
+      responses:
+        '200':
+          description: Issue updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueDetail'
+        '400':
+          description: Bad request (e.g. empty subject or unknown ID)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '403':
+          description: Forbidden (only the issue creator can edit it)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error403'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
+    delete:
+      tags:
+        - issues
+      summary: Delete an issue
+      operationId: deleteIssue
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Issue deleted
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '403':
+          description: Invalid user (Only creator can delete)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error403'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
+  /issue/{issueId}/attachments:
+    get:
+      tags:
+        - attachments
+      summary: List an issue's attachments
+      operationId: listAttachments
+      parameters:
+        - name: issueId
+          in: path
+          description: Issue to get the attachments from
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Attachments retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Attachment'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: [ ]
+    post:
+      tags:
+        - attachments
+      summary: Upload an attachment
+      operationId: uploadAttachment
+      parameters:
+        - name: issueId
+          in: path
+          description: Issue to upload the attachment to
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Provide the file for the attachment
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - files
+              type: object
+              properties:
+                files:
+                  type: string
+                  format: binary
+        required: true
+      responses:
+        '201':
+          description: Attachment uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attachment'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
+  /attachments/{attachmentId}:
+    get:
+      tags:
+        - attachments
+      summary: Get an attachment by its ID
+      operationId: getAttachment
+      parameters:
+        - name: attachmentId
+          in: path
+          description: Attachment to get the information about
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Attachment retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attachment'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Attachment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: [ ]
+    delete:
+      tags:
+        - attachments
+      summary: Delete an attachment
+      operationId: deleteAttachment
+      parameters:
+        - name: attachmentId
+          in: path
+          description: Attachment to delete
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Attachment deleted
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '403':
+          description: Invalid user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error403'
+        '404':
+          description: Attachment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: [ ]
+
+  /issue/{issueId}/comment/:
+    get:
+      tags:
+        - comments
+      summary: List an issue's comments
+      operationId: listComments
+      parameters:
+        - name: issueId
+          in: path
+          description: Issue to get the comments from
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Comments retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: [ ]
+    post:
+      tags:
+        - comments
+      summary: Create a comment
+      operationId: createComment
+      parameters:
+        - name: issueId
+          in: path
+          description: Issue to add the comment to
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Provide the body text for the comment
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                  example: "This is a new comment"
+              required:
+                - body
+        required: true
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Bad Request (Body is required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: [ ]
+
+  /comments/{commentId}:
+    put:
+      tags:
+        - comments
+      summary: Update a comment
+      operationId: updateComment
+      parameters:
+        - name: commentId
+          in: path
+          description: Comment to update
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Provide the updated text for the comment
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                  example: "Updated comment text"
+              required:
+                - body
+        required: true
+      responses:
+        '200':
+          description: Comment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Bad Request (Body is required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '403':
+          description: Invalid user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error403'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: [ ]
+    delete:
+      tags:
+        - comments
+      summary: Delete a comment
+      operationId: deleteComment
+      parameters:
+        - name: commentId
+          in: path
+          description: Comment to delete
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Comment deleted
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '403':
+          description: Invalid user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error403'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: [ ]
+
+components:
+  schemas:
+    Issue:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        subject:
+          type: string
+          example: "Bug in login"
+        status:
+          type: string
+          example: "Open"
+        priority:
+          type: string
+          example: "High"
+        severity:
+          type: string
+          example: "Normal"
+        assignee:
+          type: string
+          example: "Andreu-Caro"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-04T21:00:00Z"
+
+    IssueDetail:
+      allOf:
+        - $ref: '#/components/schemas/Issue'
+        - type: object
+          properties:
+            description:
+              type: string
+              example: "The login button is not working on Chrome"
+            comments:
+              type: array
+              items:
+                $ref: '#/components/schemas/Comment'
+            attachments:
+              type: array
+              items:
+                $ref: '#/components/schemas/Attachment'
+            tags:
+              type: array
+              items:
+                type: string
+                example: "frontend"
+
+    BulkIssues:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: integer
+            example: 1
+          subject:
+            type: string
+            example: "Bug in login"
+
+    Attachment:
+      type: object
+      properties:
+        attachment_id:
+          type: integer
+          format: int64
+          example: 2
+        issue_id:
+          type: integer
+          format: int64
+          example: 6
+        creator_id:
+          type: integer
+          format: int64
+          example: 8
+        url:
+          type: string
+          format: url
+          example: 'https://storage.googleapis.com/issue-tracker2026-media/attachments/barcelona.webp'
+        name:
+          type: string
+          example: 'Barcelona'
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+        body:
+          type: string
+          example: "This is a comment body"
+        author:
+          type: string
+          example: "john_doe"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-04T21:00:00Z"
+        issue_id:
+          type: integer
+          format: int64
+          example: 6
+    ErrorResult:
+      type: object
+      properties:
+        message:
+          type: string
+          example: 'Content is too long (maximum is 280 characters)'
+      required:
+        - message
+  examples:
+    success204:
+      value:
+        message: "Successfully deleted resource"
+    error400:
+      value:
+        message: "Body is required"
+    error401:
+      value:
+        message: "The API key you provided does not belong to any users"
+    error403:
+      value:
+        message: "The provided API key does not authorize this action"
+    error404:
+      value:
+        message: "There is no resource with 'id'=8"
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      name: Authorization
+      in: header
