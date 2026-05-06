@@ -1111,6 +1111,120 @@ paths:
       security:
         - ApiKeyAuth: []
 
+  /settings/{entity}/{id}/move-up/:
+    post:
+      tags:
+        - settings
+      summary: Move a settings record one position up
+      operationId: moveSettingUp
+      parameters:
+        - name: entity
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [statuses, priorities, types, severities, duedates]
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Record moved up — returns the updated object with its new order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsObject'
+        '400':
+          description: Already at the top or entity is not orderable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  value:
+                    message: "Already at the top"
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Record or entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
+  /settings/{entity}/{id}/move-down/:
+    post:
+      tags:
+        - settings
+      summary: Move a settings record one position down
+      operationId: moveSettingDown
+      parameters:
+        - name: entity
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [statuses, priorities, types, severities, duedates]
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Record moved down — returns the updated object with its new order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsObject'
+        '400':
+          description: Already at the bottom or entity is not orderable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  value:
+                    message: "Already at the bottom"
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Record or entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
 components:
   schemas:
     Issue:
