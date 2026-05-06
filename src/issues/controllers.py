@@ -1331,3 +1331,32 @@ def settings_delete_api(request, entity, pk):
 
     obj.delete()
     return JsonResponse({'message': 'Deleted'}, status=200)
+
+
+def settings_move_api(entity, pk, direction):
+    if entity not in ORDERABLE_ENTITIES:
+        return JsonResponse({'message': f"Entity '{entity}' is not orderable"}, status=400)
+
+    model = SETTINGS_MODELS[entity]
+    serializer = SETTINGS_SERIALIZERS[entity]
+    obj = get_object_or_404(model, pk=pk)
+
+    items = list(model.objects.order_by('order', 'name'))
+    idx = next((i for i, item in enumerate(items) if item.pk == pk), None)
+
+    if direction == 'up':
+        if idx == 0:
+            return JsonResponse({'message': 'Already at the top'}, status=400)
+        swap_idx = idx - 1
+    else:
+        if idx == len(items) - 1:
+            return JsonResponse({'message': 'Already at the bottom'}, status=400)
+        swap_idx = idx + 1
+
+    items[idx], items[swap_idx] = items[swap_idx], items[idx]
+    for i, item in enumerate(items):
+        item.order = i + 1
+        item.save(update_fields=['order'])
+
+    obj.refresh_from_db()
+    return JsonResponse(serializer(obj), status=200)

@@ -243,3 +243,41 @@ def settings_api_detail(request, entity, pk):
         response = JsonResponse({'message': 'Method not allowed'}, status=405)
         response.headers["Allow"] = "PUT, DELETE"
         return response
+
+
+def settings_move_up_dispatcher(request, entity, pk):
+    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+        return settings_move_up(request, entity, pk)
+
+    user = validate_api_key(request.headers.get("Authorization"))
+    if isinstance(user, JsonResponse):
+        return user
+
+    if entity not in SETTINGS_MODELS:
+        return JsonResponse({'message': f"Unknown entity '{entity}'"}, status=404)
+
+    if request.method != 'POST':
+        response = JsonResponse({'message': 'Method not allowed'}, status=405)
+        response.headers["Allow"] = "POST"
+        return response
+
+    return settings_move_api(entity, pk, 'up')
+
+
+def settings_move_down_dispatcher(request, entity, pk):
+    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+        return settings_move_down(request, entity, pk)
+
+    user = validate_api_key(request.headers.get("Authorization"))
+    if isinstance(user, JsonResponse):
+        return user
+
+    if entity not in SETTINGS_MODELS:
+        return JsonResponse({'message': f"Unknown entity '{entity}'"}, status=404)
+
+    if request.method != 'POST':
+        response = JsonResponse({'message': 'Method not allowed'}, status=405)
+        response.headers["Allow"] = "POST"
+        return response
+
+    return settings_move_api(entity, pk, 'down')
