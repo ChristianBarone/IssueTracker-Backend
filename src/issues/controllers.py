@@ -820,7 +820,17 @@ def comment_add_web(request, issue_id):
     return redirect('issue_detail', issue_id=issue_id)
 
 def comment_edit_api(request, comment):
-    text = request.POST.get('body', '').strip()
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        # Si falla el JSON, intentamos ver si viene de un formulario
+        text = request.POST.get('body', '').strip()
+        if not text:
+            return JsonResponse({'message': 'Invalid JSON body or missing body field'}, status=400)
+    else:
+        # Si el JSON es válido, extraemos el campo 'body'
+        text = data.get('body', '').strip() if 'body' in data else ''
+
     if not text:
         return JsonResponse({'message': 'Body is required'}, status=400)
 
@@ -829,7 +839,13 @@ def comment_edit_api(request, comment):
 
     comment.body = text
     comment.save()
-    return JsonResponse({'id': comment.id, 'body': comment.body, 'message': 'Comment updated'}, status=200)
+    return JsonResponse({
+        'id': comment.id,
+        'body': comment.body,
+        'author': comment.author.username,
+        'created_at': comment.created_at.isoformat(),
+        'issue_id': comment.issue.id
+    }, status=200)
 
 def comment_edit_web(request, comment):
     text = request.POST.get('body', '').strip()
