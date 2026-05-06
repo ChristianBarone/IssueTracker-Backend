@@ -983,26 +983,47 @@ def attachment_delete_web(request, attachment_id):
     return redirect('issue_detail', issue_id=issue_id)
 
 # PROFILES
-def profile_view(request, username):
-    # Obtenemos al usuario del perfil que estamos visitando
+def profile_view_web(request, username):
     profile_user = get_object_or_404(User, username=username)
     profile_obj, _ = Profile.objects.get_or_create(user=profile_user)
 
     tab = request.GET.get('tab', 'assigned')
 
-    created_issues = Issue.objects.filter(creator=profile_user).count()
-    open_assigned_issues = Issue.objects.filter(assignee=profile_user).exclude(status__name='Closed').count()
-    comments_count = Comment.objects.filter(author=profile_user).count()
-    watched_issues = Issue.objects.filter(watchers=profile_user).count()
+    created_issues = Issue.objects.filter(
+        creator=profile_user
+    ).count()
+
+    open_assigned_issues = Issue.objects.filter(
+        assignee=profile_user
+    ).exclude(status__name='Closed').count()
+
+    comments_count = Comment.objects.filter(
+        author=profile_user
+    ).count()
+
+    watched_issues = Issue.objects.filter(
+        watchers=profile_user
+    ).count()
 
     if tab == 'assigned':
-        items = Issue.objects.filter(assignee=profile_user).exclude(status__name='Closed').order_by('-modified_at')
-    elif tab == 'watched':
-        items = Issue.objects.filter(watchers=profile_user).order_by('-modified_at')
-    else:
-        items = Comment.objects.filter(author=profile_user).order_by('-created_at')
+        items = Issue.objects.filter(
+            assignee=profile_user
+        ).exclude(status__name='Closed').order_by('-modified_at')
 
-    is_owner = request.user.is_authenticated and request.user == profile_user
+    elif tab == 'watched':
+        items = Issue.objects.filter(
+            watchers=profile_user
+        ).order_by('-modified_at')
+
+    else:
+        items = Comment.objects.filter(
+            author=profile_user
+        ).order_by('-created_at')
+
+    is_owner = (
+        request.user.is_authenticated
+        and request.user == profile_user
+    )
 
     context = {
         'profile_user': profile_user,
@@ -1016,14 +1037,37 @@ def profile_view(request, username):
         'is_owner': is_owner,
     }
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return render_profile_view(request, context)
+    return render_profile_view(request, context)
+
+def profile_view_api(request, username):
+    profile_user = get_object_or_404(User, username=username)
+    profile_obj, _ = Profile.objects.get_or_create(user=profile_user)
+
+    data = {
+        'username': profile_user.username,
+
+        'bio': profile_obj.bio,
+        'created_issues': Issue.objects.filter(
+            creator=profile_user
+        ).count(),
+
+        'open_assigned_issues': Issue.objects.filter(
+            assignee=profile_user
+        ).exclude(status__name='Closed').count(),
+
+        'comments_count': Comment.objects.filter(
+            author=profile_user
+        ).count(),
+
+        'watched_issues': Issue.objects.filter(
+            watchers=profile_user
+        ).count(),
+    }
+
+    return JsonResponse(data, status=200)
 
 @login_required
-def profile_edit(request, username):
+def profile_edit_web(request, username):
     profile_user = get_object_or_404(User, username=username)
 
     if request.user != profile_user:
@@ -1032,24 +1076,60 @@ def profile_edit(request, username):
     profile_obj, _ = Profile.objects.get_or_create(user=profile_user)
 
     if request.method == 'POST':
-        form = ProfileForm(request.POST, request.FILES, instance=profile_obj)
+        form = ProfileForm(
+            request.POST,
+            request.FILES,
+            instance=profile_obj
+        )
+
         if form.is_valid():
             form.save()
             return redirect('profile_view', username=username)
+
     else:
         form = ProfileForm(instance=profile_obj)
-
 
     context = {
         'profile_user': profile_user,
         'profile_obj': profile_obj,
         'form': form,
     }
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return render_profile_edit(request, context)
+
+    return render_profile_edit(request, context)
+
+def profile_edit_api(request, username, user):
+    profile_user = get_object_or_404(User, username=username)
+
+    if user != profile_user:
+        return JsonResponse({
+            'message': 'Forbidden'
+        }, status=403)
+
+    profile_obj, _ = Profile.objects.get_or_create(
+        user=profile_user
+    )
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({
+            'message': 'Invalid JSON body'
+        }, status=400)
+
+    if 'bio' in data:
+        profile_obj.bio = data['bio']
+
+    if 'location' in data:
+        profile_obj.location = data['location']
+
+    profile_obj.save()
+
+    return JsonResponse({
+        'message': 'Profile updated',
+        'bio': profile_obj.bio,
+    }, status=200)
+
+
 
 # SETTINGS
 @login_required

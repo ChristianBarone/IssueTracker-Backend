@@ -299,6 +299,41 @@ def issue_update_assignee_dispatcher(request, issue_id):
             response.headers["Allow"] = "POST"
             return response
 
+# profile 
+def profile_dispatcher(request, username):
+
+    if not _is_api_request(request):
+        return profile_view_web(request, username)
+
+    if request.user.is_authenticated:
+        user = request.user
+    else:
+        user = validate_api_key(
+            request.headers.get("Authorization")
+        )
+
+        if isinstance(user, JsonResponse):
+            return user
+
+    return profile_view_api(request, username)
+
+def profile_edit_dispatcher(request, username):
+
+    if not _is_api_request(request):
+        return profile_edit_web(request, username)
+
+    if request.user.is_authenticated:
+        user = request.user
+    else:
+        user = validate_api_key(
+            request.headers.get("Authorization")
+        )
+
+        if isinstance(user, JsonResponse):
+            return user
+
+    return profile_edit_api(request, username, user)           
+
 
 # SETTINGS API
 

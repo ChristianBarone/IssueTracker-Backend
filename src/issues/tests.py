@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .helpers import update_issue_assignee
-from .models import Issue, IssueActivity
+from .models import Issue, IssueActivity, Profile
 
 
 class IssueAssignmentAndWatcherTests(TestCase):
@@ -257,3 +257,153 @@ class IssueAssignmentAndWatcherTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+        
+class ProfileWebTests(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='alice',
+            password='test123'
+        )
+
+        self.profile = Profile.objects.get(user=self.user)
+        self.profile.bio = 'hello'
+        self.profile.save()
+
+    def test_profile_view_web(self):
+        response = self.client.get(
+            reverse('profile_view', args=[self.user.username]),
+            HTTP_ACCEPT='text/html'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'alice')
+
+    def test_profile_edit_requires_login(self):
+        response = self.client.get(
+            reverse('profile_edit', args=[self.user.username]),
+            HTTP_ACCEPT='text/html'
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+    def test_profile_edit_web(self):
+        self.client.login(
+            username='alice',
+            password='test123'
+        )
+
+        response = self.client.post(
+            reverse('profile_edit', args=[self.user.username]),
+            {
+                'bio': 'new bio'
+            },
+            HTTP_ACCEPT='text/html'
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.profile.refresh_from_db()
+
+        self.assertEqual(self.profile.bio, 'new bio')
+
+    def test_profile_edit_forbidden_for_other_user(self):
+        other = User.objects.create_user(
+            username='bob',
+            password='test123'
+        )
+
+        self.client.login(
+            username='bob',
+            password='test123'
+        )
+
+        response = self.client.post(
+            reverse('profile_edit', args=[self.user.username]),
+            {
+                'bio': 'hacked'
+            },
+            HTTP_ACCEPT='text/html'
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.profile.refresh_from_db()
+
+        self.assertNotEqual(self.profile.bio, 'hacked')
+
+
+class ProfileApiTests(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='alice',
+            password='test123'
+        )
+
+        self.profile = Profile.objects.get(user=self.user)
+        self.profile.api_key = 'abc123'
+        self.profile.bio = 'hello'
+        self.profile.save()
+
+    def test_profile_view_api(self):
+        response = self.client.get(
+            reverse('profile_view', args=[self.user.username]),
+            HTTP_ACCEPT='application/json',
+            HTTP_AUTHORIZATION='abc123'
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+
+        self.assertEqual(data['username'], 'alice')
+
+    def test_profile_edit_api(self):
+        response = self.client.post(
+            reverse('profile_edit', args=[self.user.username]),
+            data=json.dumps({
+                'bio': 'updated bio'
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION='abc123'
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.profile.refresh_from_db()
+
+        self.assertEqual(self.profile.bio, 'updated bio')
+
+    def test_profile_edit_invalid_api_key(self):
+        response = self.client.post(
+            reverse('profile_edit', args=[self.user.username]),
+            data=json.dumps({
+                'bio': 'updated bio'
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION='wrongkey'
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_profile_edit_other_user_forbidden(self):
+        other = User.objects.create_user(
+            username='bob',
+            password='test123'
+        )
+
+        other_profile = Profile.objects.get(user=other)
+        other_profile.api_key = 'bobkey'
+        other_profile.save()
+
+        response = self.client.post(
+            reverse('profile_edit', args=[self.user.username]),
+            data=json.dumps({
+                'bio': 'hack'
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION='bobkey'
+        )
+
+        self.assertEqual(response.status_code, 403)

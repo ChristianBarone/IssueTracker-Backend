@@ -507,6 +507,73 @@ paths:
       security:
         - ApiKeyAuth: []
 
+  /issue/{issueId}/assignee/:
+    post:
+      tags:
+        - issues
+      summary: Update issue assignee
+      operationId: updateIssueAssignee
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assignee_id:
+                  type: integer
+                  nullable: true
+                  example: 3
+                  description: "User ID to assign. Empty/null unassigns the issue."
+
+      responses:
+        '200':
+          description: Assignee updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Assignee updated"
+                  assignee:
+                    type: string
+                    example: "john_doe"
+
+        '400':
+          description: Invalid assignee ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
+      security:
+        - ApiKeyAuth: []
+
+
   /attachments/{attachmentId}:
     get:
       tags:
@@ -1224,9 +1291,130 @@ paths:
                   $ref: '#/components/examples/error404'
       security:
         - ApiKeyAuth: []
+  /profile/{username}/:
+    get:
+      tags:
+        - profiles
+      summary: Get profile information
+      operationId: getProfile
+
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
+      security:
+        - ApiKeyAuth: []
+
+  /profile/{username}/edit/:
+    post:
+      tags:
+        - profiles
+      summary: Edit user profile
+      operationId: editProfile
+
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bio:
+                  type: string
+                  example: "Backend developer and AI enthusiast"
+
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
+        '403':
+          description: Cannot edit another user's profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+
+      security:
+        - ApiKeyAuth: []       
 
 components:
   schemas:
+    Profile:
+      type: object
+      properties:
+        username:
+          type: string
+          example: "alice"
+
+        bio:
+          type: string
+          example: "Software engineering student"
+
+        watched_issues:
+          type: integer
+          example: 5
+
+        created_issues:
+          type: integer
+          example: 10
+
+        comments_count:
+          type: integer
+          example: 22
+
+        open_assigned_issues:
+          type: integer
+          example: 3
     Issue:
       type: object
       properties:
