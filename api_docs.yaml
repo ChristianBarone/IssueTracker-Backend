@@ -827,6 +827,290 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
+  /settings/{entity}/:
+    get:
+      tags:
+        - settings
+      summary: List all records for a settings entity
+      operationId: listSettings
+      parameters:
+        - name: entity
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [statuses, priorities, types, severities, tags, duedates]
+      responses:
+        '200':
+          description: List of records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SettingsObject'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Unknown entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+    post:
+      tags:
+        - settings
+      summary: Create a new record for a settings entity
+      operationId: createSetting
+      parameters:
+        - name: entity
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [statuses, priorities, types, severities, tags, duedates]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: "New Status"
+                color:
+                  type: string
+                  example: "#FF5733"
+                is_default:
+                  type: boolean
+                  description: "statuses, priorities, types, severities only"
+                  example: false
+                is_closed:
+                  type: boolean
+                  description: "statuses only"
+                  example: false
+                days_offset:
+                  type: integer
+                  nullable: true
+                  description: "duedates only"
+                  example: 7
+                before_or_after:
+                  type: string
+                  enum: [before, after]
+                  nullable: true
+                  description: "duedates only"
+                  example: "before"
+      responses:
+        '201':
+          description: Record created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsObject'
+        '400':
+          description: Bad request (e.g. missing name)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Unknown entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
+  /settings/{entity}/{id}/:
+    put:
+      tags:
+        - settings
+      summary: Update a settings record
+      operationId: updateSetting
+      parameters:
+        - name: entity
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [statuses, priorities, types, severities, tags, duedates]
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Fields to update (all optional; only provided fields are modified)
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Updated Name"
+                color:
+                  type: string
+                  example: "#3399FF"
+                is_default:
+                  type: boolean
+                  description: "statuses, priorities, types, severities only"
+                  example: true
+                is_closed:
+                  type: boolean
+                  description: "statuses only"
+                  example: false
+                days_offset:
+                  type: integer
+                  nullable: true
+                  description: "duedates only"
+                  example: 14
+                before_or_after:
+                  type: string
+                  enum: [before, after]
+                  nullable: true
+                  description: "duedates only"
+                  example: "after"
+      responses:
+        '200':
+          description: Record updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsObject'
+        '400':
+          description: Bad request (e.g. empty name)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Record or entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+    delete:
+      tags:
+        - settings
+      summary: Delete a settings record
+      description: |
+        Deletes a settings record.
+
+        For `statuses`, `priorities`, `types`, and `severities`: query param `replacement_id` is required. All issues referencing the deleted record are reassigned to the replacement. Cannot delete the last remaining record.
+
+        For `tags` and `duedates`: direct deletion, no replacement needed.
+      operationId: deleteSetting
+      parameters:
+        - name: entity
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [statuses, priorities, types, severities, tags, duedates]
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: replacement_id
+          in: query
+          required: false
+          description: "Required for statuses, priorities, types, severities. ID of the record to reassign issues to."
+          schema:
+            type: integer
+            example: 2
+      responses:
+        '200':
+          description: Record deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Deleted"
+        '400':
+          description: Bad request (e.g. missing replacement_id or last element)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Record or entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
 components:
   schemas:
     Issue:
@@ -932,6 +1216,47 @@ components:
           type: integer
           format: int64
           example: 6
+    SettingsObject:
+      type: object
+      description: "Representation of a settings record. Fields vary by entity type."
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "New"
+        color:
+          type: string
+          example: "#70728F"
+        order:
+          type: integer
+          description: "Not present for tags"
+          example: 1
+        is_default:
+          type: boolean
+          description: "statuses, priorities, types, severities only"
+          example: true
+        is_closed:
+          type: boolean
+          description: "statuses only"
+          example: false
+        slug:
+          type: string
+          description: "statuses only"
+          example: "new"
+        days_offset:
+          type: integer
+          nullable: true
+          description: "duedates only"
+          example: 7
+        before_or_after:
+          type: string
+          enum: [before, after]
+          nullable: true
+          description: "duedates only"
+          example: "before"
+
     ErrorResult:
       type: object
       properties:

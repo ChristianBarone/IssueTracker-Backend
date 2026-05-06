@@ -59,6 +59,8 @@ urlpatterns = [
     path('attachments/<int:attachment_id>', attachment, name='attachment'),
     path('attachments/<int:attachment_id>/delete', attachment_delete_web, name='attachment_delete'),
 
+    path('settings/<str:entity>/<int:pk>/', settings_api_detail, name='settings_api_detail'),
+    path('settings/<str:entity>/', settings_api_collection, name='settings_api_collection'),
     path('settings/', settings_view, name='settings_view'),
     path('settings/<str:entity>/add/', settings_save, name='settings_add'),
     path('settings/<str:entity>/<int:pk>/edit/', settings_save, name='settings_edit'),

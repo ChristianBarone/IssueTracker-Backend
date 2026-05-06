@@ -205,3 +205,41 @@ def issue_detail_dispatcher(request, issue_id):
             response = JsonResponse({'message': 'Method not allowed'}, status=405)
             response.headers["Allow"] = "GET, PUT, DELETE"
             return response
+
+
+# SETTINGS API
+
+def settings_api_collection(request, entity):
+    user = validate_api_key(request.headers.get("Authorization"))
+    if isinstance(user, JsonResponse):
+        return user
+
+    if entity not in SETTINGS_MODELS:
+        return JsonResponse({'message': f"Unknown entity '{entity}'"}, status=404)
+
+    if request.method == 'GET':
+        return settings_list_api(entity)
+    elif request.method == 'POST':
+        return settings_create_api(request, entity)
+    else:
+        response = JsonResponse({'message': 'Method not allowed'}, status=405)
+        response.headers["Allow"] = "GET, POST"
+        return response
+
+
+def settings_api_detail(request, entity, pk):
+    user = validate_api_key(request.headers.get("Authorization"))
+    if isinstance(user, JsonResponse):
+        return user
+
+    if entity not in SETTINGS_MODELS:
+        return JsonResponse({'message': f"Unknown entity '{entity}'"}, status=404)
+
+    if request.method == 'PUT':
+        return settings_update_api(request, entity, pk)
+    elif request.method == 'DELETE':
+        return settings_delete_api(request, entity, pk)
+    else:
+        response = JsonResponse({'message': 'Method not allowed'}, status=405)
+        response.headers["Allow"] = "PUT, DELETE"
+        return response

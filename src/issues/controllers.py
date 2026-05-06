@@ -1082,6 +1082,11 @@ def settings_delete(request, entity, pk):
                 replacement = get_object_or_404(model, pk=replacement_pk)
                 field_name = REASSIGNABLE_FIELD[entity]
                 Issue.objects.filter(**{field_name: obj}).update(**{field_name: replacement})
+        if getattr(obj, 'is_default', False):
+            next_obj = model.objects.exclude(pk=pk).order_by('order', 'name').first()
+            if next_obj:
+                next_obj.is_default = True
+                next_obj.save(update_fields=['is_default'])
         obj.delete()
         return redirect(f'/settings/?tab={entity}')
 
@@ -1174,3 +1179,155 @@ def settings_save(request, entity, pk=None):
     }
 
     return render_settings_form(request, context)
+
+
+# ── SETTINGS API ──────────────────────────────────────────────────────────────
+
+def _serialize_status(o):
+    return {'id': o.id, 'name': o.name, 'color': o.color, 'slug': o.slug,
+            'is_closed': o.is_closed, 'is_default': o.is_default, 'order': o.order}
+
+def _serialize_priority(o):
+    return {'id': o.id, 'name': o.name, 'color': o.color, 'is_default': o.is_default, 'order': o.order}
+
+def _serialize_type(o):
+    return {'id': o.id, 'name': o.name, 'color': o.color, 'is_default': o.is_default, 'order': o.order}
+
+def _serialize_severity(o):
+    return {'id': o.id, 'name': o.name, 'color': o.color, 'is_default': o.is_default, 'order': o.order}
+
+def _serialize_tag(o):
+    return {'id': o.id, 'name': o.name, 'color': o.color}
+
+def _serialize_duedate(o):
+    return {'id': o.id, 'name': o.name, 'color': o.color,
+            'days_offset': o.days_offset, 'before_or_after': o.before_or_after, 'order': o.order}
+
+SETTINGS_SERIALIZERS = {
+    'statuses':   _serialize_status,
+    'priorities': _serialize_priority,
+    'types':      _serialize_type,
+    'severities': _serialize_severity,
+    'tags':       _serialize_tag,
+    'duedates':   _serialize_duedate,
+}
+
+
+def settings_list_api(entity):
+    model = SETTINGS_MODELS[entity]
+    serializer = SETTINGS_SERIALIZERS[entity]
+    return JsonResponse([serializer(o) for o in model.objects.all()], safe=False, status=200)
+
+
+def settings_create_api(request, entity):
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+    name = str(data.get('name', '')).strip()
+    if not name:
+        return JsonResponse({'message': "'name' is required"}, status=400)
+
+    model = SETTINGS_MODELS[entity]
+    serializer = SETTINGS_SERIALIZERS[entity]
+
+    kwargs = {'name': name, 'color': data.get('color', '') or ''}
+
+    if entity in ('statuses', 'priorities', 'types', 'severities'):
+        kwargs['is_default'] = bool(data.get('is_default', False))
+    if entity == 'statuses':
+        kwargs['is_closed'] = bool(data.get('is_closed', False))
+        from django.utils.text import slugify
+        base_slug = slugify(name)
+        slug = base_slug
+        if Status.objects.filter(slug=slug).exists():
+            slug = f"{base_slug}-new"
+        kwargs['slug'] = slug
+    if entity == 'duedates':
+        kwargs['days_offset'] = data.get('days_offset')
+        kwargs['before_or_after'] = data.get('before_or_after')
+
+    if entity in ORDERABLE_ENTITIES:
+        from django.db.models import Max
+        kwargs['order'] = (model.objects.aggregate(m=Max('order'))['m'] or 0) + 1
+
+    obj = model(**kwargs)
+    obj.save()
+
+    if entity == 'statuses':
+        obj.refresh_from_db()
+
+    return JsonResponse(serializer(obj), status=201)
+
+
+def settings_update_api(request, entity, pk):
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+    model = SETTINGS_MODELS[entity]
+    serializer = SETTINGS_SERIALIZERS[entity]
+    obj = get_object_or_404(model, pk=pk)
+
+    if 'name' in data:
+        name = str(data['name']).strip()
+        if not name:
+            return JsonResponse({'message': "'name' cannot be empty"}, status=400)
+        obj.name = name
+        if entity == 'statuses':
+            from django.utils.text import slugify
+            base_slug = slugify(name)
+            slug = base_slug
+            if Status.objects.filter(slug=slug).exclude(pk=pk).exists():
+                slug = f"{base_slug}-{pk}"
+            obj.slug = slug
+
+    if 'color' in data:
+        obj.color = data['color'] or ''
+
+    if entity == 'statuses' and 'is_closed' in data:
+        obj.is_closed = bool(data['is_closed'])
+
+    if entity in ('statuses', 'priorities', 'types', 'severities') and 'is_default' in data:
+        obj.is_default = bool(data['is_default'])
+
+    if entity == 'duedates':
+        if 'days_offset' in data:
+            obj.days_offset = data['days_offset']
+        if 'before_or_after' in data:
+            obj.before_or_after = data['before_or_after']
+
+    obj.save()
+    obj.refresh_from_db()
+    return JsonResponse(serializer(obj), status=200)
+
+
+def settings_delete_api(request, entity, pk):
+    model = SETTINGS_MODELS[entity]
+    obj = get_object_or_404(model, pk=pk)
+
+    if entity in REASSIGNABLE_FIELD:
+        if model.objects.count() <= 1:
+            return JsonResponse({'message': 'Cannot delete the last element'}, status=400)
+
+        replacement_id = request.GET.get('replacement_id')
+        if not replacement_id:
+            return JsonResponse({'message': "'replacement_id' is required"}, status=400)
+
+        replacement = model.objects.filter(pk=replacement_id).exclude(pk=pk).first()
+        if not replacement:
+            return JsonResponse({'message': f"There is no {entity.rstrip('s')} with 'id'={replacement_id}"}, status=400)
+
+        field_name = REASSIGNABLE_FIELD[entity]
+        Issue.objects.filter(**{field_name: obj}).update(**{field_name: replacement})
+
+    if getattr(obj, 'is_default', False):
+        next_obj = model.objects.exclude(pk=pk).order_by('order', 'name').first()
+        if next_obj:
+            next_obj.is_default = True
+            next_obj.save(update_fields=['is_default'])
+
+    obj.delete()
+    return JsonResponse({'message': 'Deleted'}, status=200)
