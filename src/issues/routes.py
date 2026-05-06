@@ -1,23 +1,47 @@
 from .controllers import *
+from .helpers import validate_api_key
+
+
+def _is_api_request(request):
+    """Return True when the request should be treated as API.
+
+    Heuristics:
+    - If the client explicitly requests JSON in the Accept header
+    - If an Authorization header is present (API key)
+    - If the content type is JSON
+    Otherwise treat as a web (HTML) request.
+    """
+    accept = request.META.get('HTTP_ACCEPT', '') or ''
+    if 'application/json' in accept:
+        return True
+    if request.headers.get('Authorization'):
+        return True
+    if request.content_type == 'application/json':
+        return True
+    return False
 
 # ATTACHMENTS
 def attachments(request, issue_id):
-    if "text/html" in request.META["HTTP_ACCEPT"]:
+    if not _is_api_request(request):
         if request.method == 'POST':
             return attachment_add_web(request, issue_id)
         else:
             response = JsonResponse({'message': 'The requested method for this resource is not allowed'}, status=205)
             response.headers["Allow"] = "GET, POST"
             return response
+
     else:
         try:
             get_object_or_404(Issue, id=issue_id)
         except Http404:
             return JsonResponse({'message': 'There is no issue with \'id\'=' + str(issue_id)}, status=404)
 
-        user = validate_api_key(request.headers.get("Authorization"))
-        if type(user) is JsonResponse:
-            return user
+        if request.user.is_authenticated:
+            user = request.user
+        else:
+            user = validate_api_key(request.headers.get("Authorization"))
+            if type(user) is JsonResponse:
+                return user
 
         if request.method == 'POST':
             return attachment_add_api(request, issue_id, user)
@@ -35,14 +59,20 @@ def attachment(request, attachment_id):
     except Http404:
         return JsonResponse({'message': 'There is no attachment with \'id\'=' + str(attachment_id)}, status=404)
 
-    user = validate_api_key(request.headers.get("Authorization"))
-    if type(user) is JsonResponse:
-        return user
-
-    if request.method == 'DELETE':
-        user = validate_api_user(request.headers.get("Authorization"), attachment.creator.id)
+    if request.user.is_authenticated:
+        user = request.user
+    else:
+        user = validate_api_key(request.headers.get("Authorization"))
         if type(user) is JsonResponse:
             return user
+
+    if request.method == 'DELETE':
+        if request.user.is_authenticated:
+            perm = request.user
+        else:
+            perm = validate_api_user(request.headers.get("Authorization"), attachment.creator.id)
+            if type(perm) is JsonResponse:
+                return perm
 
         return attachment_delete_api(attachment_id)
     elif request.method == 'GET':
@@ -55,7 +85,7 @@ def attachment(request, attachment_id):
 # COMMENTS
 
 def issue_comments(request, issue_id):
-    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+    if not _is_api_request(request):
         if request.method == 'POST':
             return comment_add_web(request, issue_id)
         else:
@@ -69,8 +99,11 @@ def issue_comments(request, issue_id):
         except:
             return JsonResponse({'message': f"There is no issue with 'id'={issue_id}"}, status=404)
 
-        user = validate_api_key(request.headers.get("Authorization"))
-        if type(user) is JsonResponse: return user
+        if request.user.is_authenticated:
+            user = request.user
+        else:
+            user = validate_api_key(request.headers.get("Authorization"))
+            if type(user) is JsonResponse: return user
 
         if request.method == 'POST':
             return comment_add_api(request, issue_id, user)
@@ -89,7 +122,7 @@ def comment_detail_route(request, comment_id):
     except Http404:
         return JsonResponse({'message': 'There is no comment with \'id\'=' + str(comment_id)}, status=404)
 
-    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+    if not _is_api_request(request):
         if comment.author != request.user:
             return JsonResponse({'message': 'Forbidden'}, status=403)
 
@@ -99,11 +132,17 @@ def comment_detail_route(request, comment_id):
             return comment_edit_web(request, comment)
 
     else:
-        user = validate_api_key(request.headers.get("Authorization"))
-        if type(user) is JsonResponse: return user
+        if request.user.is_authenticated:
+            user = request.user
+        else:
+            user = validate_api_key(request.headers.get("Authorization"))
+            if type(user) is JsonResponse: return user
 
-        perm = validate_api_user(request.headers.get("Authorization"), comment.author.id)
-        if type(perm) is JsonResponse: return perm
+        if request.user.is_authenticated:
+            perm = request.user
+        else:
+            perm = validate_api_user(request.headers.get("Authorization"), comment.author.id)
+            if type(perm) is JsonResponse: return perm
 
         if request.method == 'DELETE':
             return comment_delete_api(comment_id)
@@ -115,7 +154,7 @@ def comment_detail_route(request, comment_id):
     return response
 
 def issues_dispatcher(request):
-    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+    if not _is_api_request(request):
         if not request.user.is_authenticated:
             return redirect('/')
         #Lista filtron i new
@@ -130,9 +169,12 @@ def issues_dispatcher(request):
         return JsonResponse({'message': 'Method not allowed'}, status=405)
 
     else:
-        user = validate_api_key(request.headers.get("Authorization"))
-        if isinstance(user, JsonResponse):
-            return user
+        if request.user.is_authenticated:
+            user = request.user
+        else:
+            user = validate_api_key(request.headers.get("Authorization"))
+            if isinstance(user, JsonResponse):
+                return user
         if request.method == 'GET':
             return issue_list_api(request)
         elif request.method == 'POST':
@@ -140,7 +182,7 @@ def issues_dispatcher(request):
         return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 def issues_bulk_dispatcher(request):
-    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+    if not _is_api_request(request):
         if not request.user.is_authenticated:
             return redirect('/')
 
@@ -149,9 +191,12 @@ def issues_bulk_dispatcher(request):
         elif request.method == 'POST':
             return issue_bulk_web(request)
     else:
-        user = validate_api_key(request.headers.get("Authorization"))
-        if isinstance(user, JsonResponse):
-            return user
+        if request.user.is_authenticated:
+            user = request.user
+        else:
+            user = validate_api_key(request.headers.get("Authorization"))
+            if isinstance(user, JsonResponse):
+                return user
 
         if request.method == 'POST':
             if request.POST.get('list') is None:
@@ -170,7 +215,7 @@ def issue_detail_dispatcher(request, issue_id):
         return JsonResponse({'error': f'Issue {issue_id} not found'}, status=404)
 
     # Web
-    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+    if not _is_api_request(request):
         if request.method == 'GET':
             return issue_detail_web(request, issue)
 
@@ -185,20 +230,32 @@ def issue_detail_dispatcher(request, issue_id):
 
     # API
     else:
-        user = validate_api_key(request.headers.get("Authorization"))
-        if isinstance(user, JsonResponse):
-            return user
+        if request.user.is_authenticated:
+            user = request.user
+        else:
+            user = validate_api_key(request.headers.get("Authorization"))
+            if isinstance(user, JsonResponse):
+                return user
 
         if request.method == 'GET':
             return issue_detail_api(issue)
 
         elif request.method == 'PUT':
+            if request.user.is_authenticated:
+                auth_check = request.user
+            else:
+                auth_check = validate_api_user(request.headers.get("Authorization"), issue.creator.id)
+                if isinstance(auth_check, JsonResponse):
+                    return auth_check
             return issue_edit_api(request, issue, user)
 
         elif request.method == 'DELETE':
-            auth_check = validate_api_user(request.headers.get("Authorization"), issue.creator.id)
-            if isinstance(auth_check, JsonResponse):
-                return auth_check
+            if request.user.is_authenticated:
+                auth_check = request.user
+            else:
+                auth_check = validate_api_user(request.headers.get("Authorization"), issue.creator.id)
+                if isinstance(auth_check, JsonResponse):
+                    return auth_check
             return issue_delete_api(issue_id)
 
         else:
