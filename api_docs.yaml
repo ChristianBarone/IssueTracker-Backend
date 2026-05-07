@@ -410,6 +410,188 @@ paths:
       security:
         - ApiKeyAuth: []
 
+  /issues/{issue_id}/update-deadline/:
+    post:
+      tags:
+        - issues
+      summary: Update the deadline of an issue
+      operationId: updateOrDeleteDeadline
+      parameters:
+        - name: issue_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Deadline'
+      responses:
+        '201':
+          description: Deadline updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deadline'
+        '400':
+          description: Bad Request (Body is required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '403':
+          description: Invalid user (only the issue creator can edit the deadline)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error403'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
+  /issues/{issue_id}/watchers/add/:
+    post:
+      tags:
+        - issues
+      summary: Add a watcher to the issue
+      operationId: addWatcher
+      parameters:
+        - name: issue_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  description: ID of the user to be added as a watcher
+      responses:
+        '201':
+          description: Watcher added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatcherResp'
+        '400':
+          description: Bad Request (Body is required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
+  /issues/{issue_id}/watchers/remove/:
+    post:
+      tags:
+        - issues
+      summary: Remove a watcher from the issue
+      operationId: removeWatcher
+      parameters:
+        - name: issue_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  description: ID of the user to be removed. Send empty to remove self
+      responses:
+        '201':
+          description: Watcher removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatcherResp'
+        '400':
+          description: Bad Request (Body is required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+      security:
+        - ApiKeyAuth: []
+
   /issue/{issueId}/attachments:
     get:
       tags:
@@ -1436,6 +1618,8 @@ components:
         assignee:
           type: string
           example: "Andreu-Caro"
+        deadline:
+          $ref: '#/components/schemas/Deadline'
         created_at:
           type: string
           format: date-time
@@ -1449,6 +1633,14 @@ components:
             description:
               type: string
               example: "The login button is not working on Chrome"
+            current_watchers_count:
+              type: integer
+              example: 5
+            watchers_list:
+              type: array
+              items:
+                type: string
+              example: [ "Christian-Barone", "Andreu-Caro" ]
             comments:
               type: array
               items:
@@ -1474,6 +1666,28 @@ components:
           subject:
             type: string
             example: "Bug in login"
+
+    Deadline:
+      type: object
+      properties:
+        deadline:
+          type: string
+          format: date
+          example: "2026-05-08"
+
+    WatcherResp:
+      type: object
+      properties:
+        issue_id:
+          type: integer
+        current_watchers_count:
+          type: integer
+          example: 5
+        watchers_list:
+          type: array
+          items:
+            type: string
+          example: [ "Christian-Barone", "Andreu-Caro" ]
 
     Attachment:
       type: object

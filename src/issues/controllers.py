@@ -1,5 +1,6 @@
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, HttpResponseNotFound, Http404
 from django.db.models import Q, Count
 
@@ -739,8 +740,9 @@ def issue_update_deadline_detail(request, issue_id):
             new_value=deadline_str or '—',
         )
     if request.content_type == "application/json":
-        # implementar
-        return None
+        return JsonResponse({
+            'new_deadline': issue.deadline.strftime('%Y-%m-%d') if issue.deadline else None,
+        }, status=201)
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
@@ -804,8 +806,11 @@ def watcher_add(request, issue_id):
                 )
 
     if request.content_type == "application/json":
-        # implementar
-        return None
+        return JsonResponse({
+            'issue_id': issue.id,
+            'current_watchers_count': issue.watchers.count(),
+            'watchers_list': [w.username for w in issue.watchers.all()]
+        }, status=201)
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
@@ -829,8 +834,11 @@ def remove_watcher(request, issue_id):
         )
 
     if request.content_type == "application/json":
-        # implementar
-        return None
+        return JsonResponse({
+            'issue_id': issue.id,
+            'current_watchers_count': issue.watchers.count(),
+            'watchers_list': [w.username for w in issue.watchers.all()]
+        }, status=201)
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
