@@ -106,7 +106,15 @@ def issue_comments(request, issue_id):
             if type(user) is JsonResponse: return user
 
         if request.method == 'POST':
-            return comment_add_api(request, issue_id, user)
+            try:
+                data = json.loads(request.body)
+            except (json.JSONDecodeError, ValueError):
+                return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+            if 'body' not in data or data['body'].strip() == '':
+                return JsonResponse({'message': 'Body is required'}, status=400)
+
+            return comment_add_api(data['body'], issue_id, user)
         elif request.method == 'GET':
             return comment_list_api(issue_id)
         else:
@@ -199,10 +207,54 @@ def issues_bulk_dispatcher(request):
                 return user
 
         if request.method == 'POST':
-            if request.POST.get('list') is None:
+            try:
+                data = json.loads(request.body)
+                print(data)
+            except (json.JSONDecodeError, ValueError):
+                return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+            if data['list'] is None:
                 return JsonResponse({'message': "Subject list is required."}, status=400)
 
-            return issue_bulk_api(request.POST.get('list').split(','), user)
+            return issue_bulk_api(data['list'], user)
+
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+def issue_watchers_dispatcher(request, issue_id, watcher_id=None):
+    # only API
+    watcher = None
+    try:
+        issue = get_object_or_404(Issue, id=issue_id)
+    except Http404:
+        return JsonResponse({'message': 'There is no issue with \'id\'=' + str(issue_id)}, status=404)
+
+    if watcher_id:
+        try:
+            watcher = get_object_or_404(User, id=watcher_id)
+        except Http404:
+            return JsonResponse({'message': 'There is no user with \'id\'=' + str(watcher_id)}, status=404)
+
+        if not issue.watchers.filter(id=watcher_id).exists():
+            return JsonResponse({'message': 'The user you\'re trying to remove is not watching this issue.'}, status=400)
+
+    if request.user.is_authenticated:
+        user = request.user
+    else:
+        user = validate_api_key(request.headers.get("Authorization"))
+        if isinstance(user, JsonResponse):
+            return user
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            print(data)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+        target_user_id = data['user_id'] if data['user_id'] else user
+        return watcher_add_api(request, issue, target_user_id)
+    elif request.method == 'DELETE':
+        return remove_watcher_api(request, issue, watcher)
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 

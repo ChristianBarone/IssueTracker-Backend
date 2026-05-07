@@ -176,26 +176,32 @@ def issue_list_web(request):
     return render_issue_list(request, context)
 
 def issue_create_api(request, user):
-    subject = request.POST.get('subject')
+    try:
+        data = json.loads(request.body)
+        print(data)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+    subject = data['subject']
     if not subject or subject.strip() == "":
         return JsonResponse({'error': 'Subject is required'}, status=400)
 
-    assignee_id = request.POST.get('assignee_id', '').strip()
+    assignee_id = data['assignee']
     assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
 
-    d_line = request.POST.get('deadline')
+    d_line = data['deadline']
     deadline_value = d_line if d_line and d_line.strip() != "" else None
 
     issue = issue_create_instance(
         subject=subject,
-        description=request.POST.get('description'),
-        issue_type=request.POST.get('issue_type'),
-        issue_severity=request.POST.get('issue_severity'),
-        priority=request.POST.get('priority'),
-        status=request.POST.get('status') or 'New',
+        description=data['description'],
+        issue_type=data['issue_type'],
+        issue_severity=data['issue_severity'],
+        priority=data['priority'],
+        status=data['status'] or 'New',
         d_line= deadline_value,
         creator=user,
-        assignee = assignee
+        assignee=assignee
     )
     return JsonResponse({
         'id': issue.id,
@@ -205,7 +211,7 @@ def issue_create_api(request, user):
         'issue_severity': issue.issue_severity.name if issue.issue_severity else None,
         'priority': issue.priority.name if issue.priority else None,
         'status': issue.status.name if issue.status else None,
-        'deadline': issue.deadline.isoformat() if issue.deadline else None,
+        'deadline': issue.deadline if issue.deadline else None,
         'creator': issue.creator.username if issue.creator else None,
         'assignee': issue.assignee.username if issue.assignee else None
     }, status=201)
@@ -842,6 +848,40 @@ def remove_watcher(request, issue_id):
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
+# WATCHERS
+def watcher_add_api(request, issue, user_id):
+    user_to_add = get_object_or_404(User, id=user_id)
+
+    if not issue.watchers.filter(id=user_to_add.id).exists():
+        issue.watchers.add(user_to_add)
+        log_watcher_activity(
+            issue,
+            request.user if request.user.is_authenticated else None,
+            'added',
+            user_to_add,
+        )
+
+    return JsonResponse({
+        'issue_id': issue.id,
+        'current_watchers_count': issue.watchers.count(),
+        'watchers_list': [w.username for w in issue.watchers.all()]
+    }, status=201)
+
+def remove_watcher_api(request, issue, user):
+    issue.watchers.remove(user)
+    log_watcher_activity(
+        issue,
+        request.user if request.user.is_authenticated else None,
+        'removed',
+        user,
+    )
+
+    return JsonResponse({
+        'issue_id': issue.id,
+        'current_watchers_count': issue.watchers.count(),
+        'watchers_list': [w.username for w in issue.watchers.all()]
+    }, status=204)
+
 # --- COMMENTS ---
 def comment_list_api(issue_id):
     comments = Comment.objects.filter(issue_id=issue_id)
@@ -856,11 +896,7 @@ def comment_list_api(issue_id):
         })
     return JsonResponse(data, status=200, safe=False)
 
-def comment_add_api(request, issue_id, user):
-    text = request.POST.get('body', '').strip()
-    if not text:
-        return JsonResponse({'message': 'Body is required'}, status=400)
-
+def comment_add_api(text, issue_id, user):
     if Comment.objects.filter(issue_id=issue_id, author=user, body=text).exists():
         return JsonResponse({'error': 'Duplicate comment'}, status=409)
 

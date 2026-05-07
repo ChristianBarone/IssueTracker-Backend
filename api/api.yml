@@ -94,7 +94,7 @@ paths:
       requestBody:
         description: Provide the details for the new issue
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
               properties:
@@ -104,6 +104,13 @@ paths:
                 description:
                   type: string
                   example: "The login button is not working"
+                assignee:
+                  type: integer
+                  example: "1"
+                deadline:
+                  type: string
+                  format: date
+                  example: '2026-05-08'
                 issue_type:
                   type: string
                   example: "Bug"
@@ -113,6 +120,9 @@ paths:
                 issue_severity:
                   type: string
                   example: "Normal"
+                status:
+                  type: string
+                  example: "New"
               required:
                 - subject
         required: true
@@ -152,7 +162,7 @@ paths:
       requestBody:
         description: Provide a list of issue subjects
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
               properties:
@@ -410,71 +420,7 @@ paths:
       security:
         - ApiKeyAuth: []
 
-  /issues/{issue_id}/update-deadline/:
-    post:
-      tags:
-        - issues
-      summary: Update the deadline of an issue
-      operationId: updateOrDeleteDeadline
-      parameters:
-        - name: issue_id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Deadline'
-      responses:
-        '201':
-          description: Deadline updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Deadline'
-        '400':
-          description: Bad Request (Body is required)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
-              examples:
-                errorExample:
-                  $ref: '#/components/examples/error400'
-        '401':
-          description: Invalid API key
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
-              examples:
-                errorExample:
-                  $ref: '#/components/examples/error401'
-        '403':
-          description: Invalid user (only the issue creator can edit the deadline)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
-              examples:
-                errorExample:
-                  $ref: '#/components/examples/error403'
-        '404':
-          description: Issue not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
-              examples:
-                errorExample:
-                  $ref: '#/components/examples/error404'
-      security:
-        - ApiKeyAuth: []
-
-  /issues/{issue_id}/watchers/add/:
+  /issue/{issue_id}/watchers/:
     post:
       tags:
         - issues
@@ -489,7 +435,7 @@ paths:
             format: int64
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
               properties:
@@ -532,9 +478,8 @@ paths:
                   $ref: '#/components/examples/error404'
       security:
         - ApiKeyAuth: []
-
-  /issues/{issue_id}/watchers/remove/:
-    post:
+  /issue/{issue_id}/watchers/{watcher_id}:
+    delete:
       tags:
         - issues
       summary: Remove a watcher from the issue
@@ -546,17 +491,14 @@ paths:
           schema:
             type: integer
             format: int64
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              properties:
-                user_id:
-                  type: integer
-                  description: ID of the user to be removed. Send empty to remove self
+        - name: watcher_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
-        '201':
+        '204':
           description: Watcher removed
           content:
             application/json:
@@ -688,73 +630,6 @@ paths:
                   $ref: '#/components/examples/error404'
       security:
         - ApiKeyAuth: []
-
-  /issue/{issueId}/assignee/:
-    post:
-      tags:
-        - issues
-      summary: Update issue assignee
-      operationId: updateIssueAssignee
-      parameters:
-        - name: issueId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                assignee_id:
-                  type: integer
-                  nullable: true
-                  example: 3
-                  description: "User ID to assign. Empty/null unassigns the issue."
-
-      responses:
-        '200':
-          description: Assignee updated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Assignee updated"
-                  assignee:
-                    type: string
-                    example: "john_doe"
-
-        '400':
-          description: Invalid assignee ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
-
-        '401':
-          description: Invalid API key
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
-
-        '404':
-          description: Issue not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
-
-      security:
-        - ApiKeyAuth: []
-
 
   /attachments/{attachmentId}:
     get:
@@ -902,7 +777,7 @@ paths:
       requestBody:
         description: Provide the body text for the comment
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
               properties:
