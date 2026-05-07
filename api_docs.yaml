@@ -348,7 +348,7 @@ paths:
       tags:
         - issues
       summary: Update the deadline of an issue
-      operationId: deleteDeadline
+      operationId: updateOrDeleteDeadline
       parameters:
         - name: issue_id
           in: path
@@ -360,19 +360,14 @@ paths:
         content:
           application/x-www-form-urlencoded:
             schema:
-              type: object
-              properties:
-                deadline:
-                  type: string
-                  format: date
-                  description: New deadline in format YYYY-MM-DD. Send empty to delete it
+              $ref: '#/components/schemas/Deadline'
       responses:
         '201':
           description: Deadline updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Issue'
+                $ref: '#/components/schemas/Deadline'
         '400':
           description: Bad Request (Body is required)
           content:
@@ -962,10 +957,7 @@ components:
           type: string
           example: "Andreu-Caro"
         deadline:
-          type: string
-          format: date
-          nullable: true
-          example: "2026-05-08"
+          $ref: '#/components/schemas/Deadline'
         created_at:
           type: string
           format: date-time
@@ -1012,6 +1004,14 @@ components:
           subject:
             type: string
             example: "Bug in login"
+
+    Deadline:
+      type: object
+      properties:
+        deadline:
+          type: string
+          format: date
+          example: "2026-05-08"
 
     WatcherResp:
       type: object
