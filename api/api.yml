@@ -104,6 +104,13 @@ paths:
                 description:
                   type: string
                   example: "The login button is not working"
+                assignee:
+                  type: integer
+                  example: "1"
+                deadline:
+                  type: string
+                  format: date
+                  example: '2026-05-08'
                 issue_type:
                   type: string
                   example: "Bug"
@@ -113,6 +120,9 @@ paths:
                 issue_severity:
                   type: string
                   example: "Normal"
+                status:
+                  type: string
+                  example: "New"
               required:
                 - subject
         required: true
@@ -152,7 +162,7 @@ paths:
       requestBody:
         description: Provide a list of issue subjects
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
               properties:
@@ -767,7 +777,7 @@ paths:
       requestBody:
         description: Provide the body text for the comment
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
               properties:

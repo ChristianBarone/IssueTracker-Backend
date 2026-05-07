@@ -106,7 +106,15 @@ def issue_comments(request, issue_id):
             if type(user) is JsonResponse: return user
 
         if request.method == 'POST':
-            return comment_add_api(request, issue_id, user)
+            try:
+                data = json.loads(request.body)
+            except (json.JSONDecodeError, ValueError):
+                return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+            if 'body' not in data or data['body'].strip() == '':
+                return JsonResponse({'message': 'Body is required'}, status=400)
+
+            return comment_add_api(data['body'], issue_id, user)
         elif request.method == 'GET':
             return comment_list_api(issue_id)
         else:
@@ -199,10 +207,16 @@ def issues_bulk_dispatcher(request):
                 return user
 
         if request.method == 'POST':
-            if request.POST.get('list') is None:
+            try:
+                data = json.loads(request.body)
+                print(data)
+            except (json.JSONDecodeError, ValueError):
+                return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+            if data['list'] is None:
                 return JsonResponse({'message': "Subject list is required."}, status=400)
 
-            return issue_bulk_api(request.POST.get('list').split(','), user)
+            return issue_bulk_api(data['list'], user)
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
