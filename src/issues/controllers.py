@@ -842,6 +842,40 @@ def remove_watcher(request, issue_id):
     else:
         return redirect('issue_detail', issue_id=issue_id)
 
+# WATCHERS
+def watcher_add_api(request, issue, user_id):
+    user_to_add = get_object_or_404(User, id=user_id)
+
+    if not issue.watchers.filter(id=user_to_add.id).exists():
+        issue.watchers.add(user_to_add)
+        log_watcher_activity(
+            issue,
+            request.user if request.user.is_authenticated else None,
+            'added',
+            user_to_add,
+        )
+
+    return JsonResponse({
+        'issue_id': issue.id,
+        'current_watchers_count': issue.watchers.count(),
+        'watchers_list': [w.username for w in issue.watchers.all()]
+    }, status=201)
+
+def remove_watcher_api(request, issue, user):
+    issue.watchers.remove(user)
+    log_watcher_activity(
+        issue,
+        request.user if request.user.is_authenticated else None,
+        'removed',
+        user,
+    )
+
+    return JsonResponse({
+        'issue_id': issue.id,
+        'current_watchers_count': issue.watchers.count(),
+        'watchers_list': [w.username for w in issue.watchers.all()]
+    }, status=204)
+
 # --- COMMENTS ---
 def comment_list_api(issue_id):
     comments = Comment.objects.filter(issue_id=issue_id)

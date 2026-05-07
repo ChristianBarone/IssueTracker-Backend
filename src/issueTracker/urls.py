@@ -32,7 +32,8 @@ urlpatterns = [
     path('issue/<int:issue_id>/delete/', issue_detail_dispatcher, name='issue_delete'),
 
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
-path('issue/<int:issue_id>/update-assignee/', issue_update_assignee_dispatcher, name='issue_update_assignee'),    path('issue/<int:issue_id>/update-type/', issue_update_type, name='issue_update_type'),
+    path('issue/<int:issue_id>/update-assignee/', issue_update_assignee_dispatcher, name='issue_update_assignee'),
+    path('issue/<int:issue_id>/update-type/', issue_update_type, name='issue_update_type'),
     path('issue/<int:issue_id>/update-severity/', issue_update_severity, name='issue_update_severity'),
     path('issue/<int:issue_id>/update-priority/', issue_update_priority, name='issue_update_priority'),
     path('issue/<int:issue_id>/update-status-detail/', issue_update_status_detail, name='issue_update_status_detail'),
@@ -43,7 +44,10 @@ path('issue/<int:issue_id>/update-assignee/', issue_update_assignee_dispatcher, 
     path('issue/<int:issue_id>/remove-tag/<int:tag_id>/', issue_remove_tag, name='issue_remove_tag'),
 
     path('issue/<int:issue_id>/watcher_add/', watcher_add, name='watcher_add'),
-    path('issue/<int:issue_id>/remove_watcher/', remove_watcher, name='remove_watcher'),
+    path('issue/<int:issue_id>/remove_watcher/',remove_watcher, name='remove_watcher'),
+
+    path('issue/<int:issue_id>/watchers/', issue_watchers_dispatcher, name='post_watcher'),
+    path('issue/<int:issue_id>/watchers/<int:watcher_id>', issue_watchers_dispatcher, name='delete_watcher'),
 
     path('issue/<int:issue_id>/comment/', issue_comments, name='comment_add'),
     path('comment/<int:comment_id>/edit/', comment_detail_route, name='comment_edit'),
