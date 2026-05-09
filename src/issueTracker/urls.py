@@ -18,13 +18,14 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 
-from issues.controllers import *
+from issues.controllers.controllers_web import *
 from issues.views import *
 from issues.routes import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', login_page, name='login_page'),
+    
     path('issues/', issues_dispatcher, name='issue_list'),
     path('new/', issues_dispatcher, name='issue_create'),
     path('issues/bulk/', issues_bulk_dispatcher, name='issue_bulk_create'),

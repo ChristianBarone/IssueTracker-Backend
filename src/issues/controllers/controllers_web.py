@@ -4,55 +4,14 @@ from django.http import HttpResponseForbidden
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, HttpResponseNotFound, Http404
 from django.db.models import Q, Count
 
-from .views import *
-from .models import *
-from .helpers import *
-from .forms import *
-from .helpers import update_issue_assignee
-from .helpers import log_watcher_activity
+from issues.views import *
+from issues.models import *
+from issues.helpers import *
+from issues.forms import *
+from issues.helpers import update_issue_assignee
+from issues.helpers import log_watcher_activity
 import os
 import json
-
-"""""""""""""""""""""""""""""""""
-             GLOBALS
-"""""""""""""""""""""""""""""""""
-GITHUB_LOGIN_URL = '/accounts/github/login/'
-
-SETTINGS_MODELS = {
-    'statuses':   Status,
-    'priorities': Priority,
-    'types':      IssueType,
-    'severities': Severity,
-    'tags':       Tag,
-    'duedates':   DueDate,
-}
-
-SETTINGS_FORMS = {
-    'statuses':   StatusForm,
-    'priorities': PriorityForm,
-    'types':      IssueTypeForm,
-    'severities': SeverityForm,
-    'tags':       TagForm,
-    'duedates':   DueDateForm,
-}
-
-ENTITY_LABELS = {
-    'statuses':   'Status',
-    'priorities': 'Priority',
-    'types':      'Type',
-    'severities': 'Severity',
-    'tags':       'Tag',
-    'duedates':   'Due Date Status',
-}
-
-REASSIGNABLE_FIELD = {
-    'statuses':   'status',
-    'priorities': 'priority',
-    'types':      'issue_type',
-    'severities': 'issue_severity',
-}
-
-ORDERABLE_ENTITIES = {'statuses', 'priorities', 'types', 'severities', 'duedates'}
 
 """""""""""""""""""""""""""""""""
             ENDPOINTS
@@ -68,77 +27,8 @@ def login_page(request):
     return render_login_page(request, context)
 
 # ISSUES
-def _apply_issue_queries(request):
-    #priority es asc pero -priority es desc
-    order_param = request.GET.get('order_by', '-created_at')
-
-    allowed_order_fields = [
-        'issue_type', 'issue_severity', 'priority', 'subject',
-        'status', 'assignee', 'modified_at', 'deadline', 'created_at'
-    ]
-
-    clean_order = order_param.lstrip('-')
-    if clean_order not in allowed_order_fields:
-        order_param = '-created_at'
-
-    issues = Issue.objects.all().order_by(order_param)
-
-    search_query = request.GET.get('search', '').strip()
-    if search_query:
-        issues = issues.filter(Q(subject__icontains=search_query) | Q(id__icontains=search_query) | Q(description__icontains=search_query))
-
-    if request.GET.getlist('issue_type'):
-        issues = issues.filter(issue_type__name__in=request.GET.getlist('issue_type'))
-
-    if request.GET.getlist('filter_status'):
-        issues = issues.filter(status__name__in=request.GET.getlist('filter_status'))
-
-    if request.GET.getlist('issue_severity'):
-        issues = issues.filter(issue_severity__name__in=request.GET.getlist('issue_severity'))
-
-    if request.GET.getlist('priority'):
-        issues = issues.filter(priority__name__in=request.GET.getlist('priority'))
-
-    f_assignee = request.GET.get('assigned_to')
-    if f_assignee == 'unassigned':
-        issues = issues.filter(assignee__isnull=True)
-    elif f_assignee:
-        issues = issues.filter(assignee_id=f_assignee)
-
-    return issues, order_param
-
-def issue_list_api(request):
-    issues, order_param = _apply_issue_queries(request)
-
-    valid_fields = ['issue_type', 'issue_severity', 'priority', 'subject', 'status', 'assignee', 'modified_at', 'deadline', 'created_at']
-    if order_param.lstrip('-') not in valid_fields:
-        return JsonResponse({'error': f'Invalid order_by field: {order_param}'}, status=400)
-
-    issues_data = []
-    for issue in issues:
-        issues_data.append({
-            'id': issue.id,
-            'subject': issue.subject,
-            'description': issue.description,
-            'priority': issue.priority.name if issue.priority else None,
-            'status': issue.status.name if issue.status else None,
-            'issue_type': issue.issue_type.name if issue.issue_type else None,
-            'severity': issue.issue_severity.name if issue.issue_severity else None,
-            'assignee': issue.assignee.username if issue.assignee else "Unassigned",
-            'created_at': issue.created_at.isoformat(),
-            'modified_at': issue.modified_at.isoformat() if hasattr(issue, 'modified_at') else None,
-            'deadline': issue.deadline.isoformat() if issue.deadline else None,
-        })
-
-    return JsonResponse({
-        'issues': issues_data,
-        'current_order': order_param,
-        'total_count': issues.count(),
-        'unassigned_count': Issue.objects.filter(assignee__isnull=True).count()
-    }, status=200)
-
 def issue_list_web(request):
-    issues, order_param = _apply_issue_queries(request)
+    issues, order_param = apply_issue_queries(request)
     def toggle_order(field):
         if order_param == field:
             return f"-{field}"
@@ -169,89 +59,39 @@ def issue_list_web(request):
         },
 
         'selected_types': request.GET.getlist('issue_type'),
-        'selected_statuses': request.GET.getlist('filter_status'),
+        'selected_statuses': request.GET.getlist('status'),
         'selected_severities': request.GET.getlist('issue_severity'),
         'selected_priorities': request.GET.getlist('priority'),
     }
     return render_issue_list(request, context)
 
-def issue_create_api(request, user):
-    try:
-        data = json.loads(request.body)
-        print(data)
-    except (json.JSONDecodeError, ValueError):
-        return JsonResponse({'message': 'Invalid JSON body'}, status=400)
-
-    subject = data['subject']
+def issue_create_web(request):
+    subject = request.POST.get('subject')
     if not subject or subject.strip() == "":
-        return JsonResponse({'error': 'Subject is required'}, status=400)
+        return redirect('issue_list')
 
-    assignee_id = data['assignee']
+    assignee_id = request.POST.get('assignee_id', '').strip()
     assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
 
-    d_line = data['deadline']
+    d_line = request.POST.get('deadline')
     deadline_value = d_line if d_line and d_line.strip() != "" else None
 
     issue = issue_create_instance(
         subject=subject,
-        description=data['description'],
-        issue_type=data['issue_type'],
-        issue_severity=data['issue_severity'],
-        priority=data['priority'],
-        status=data['status'] or 'New',
-        d_line= deadline_value,
-        creator=user,
+        description=request.POST.get('description'),
+        issue_type=request.POST.get('issue_type'),
+        issue_severity=request.POST.get('issue_severity'),
+        priority=request.POST.get('priority'),
+        status=request.POST.get('status') or 'New',
+        d_line=deadline_value,
+        creator=request.user,
         assignee=assignee
     )
-    return JsonResponse({
-        'id': issue.id,
-        'subject': issue.subject,
-        'description': issue.description,
-        'issue_type': issue.issue_type.name if issue.issue_type else None,
-        'issue_severity': issue.issue_severity.name if issue.issue_severity else None,
-        'priority': issue.priority.name if issue.priority else None,
-        'status': issue.status.name if issue.status else None,
-        'deadline': issue.deadline if issue.deadline else None,
-        'creator': issue.creator.username if issue.creator else None,
-        'assignee': issue.assignee.username if issue.assignee else None
-    }, status=201)
 
-def issue_create_web(request):
-    if request.method == "POST":
-        subject = request.POST.get('subject')
-        if not subject or subject.strip() == "":
-            return redirect('issue_list')
+    if request.FILES.get('files'):
+        attachment_create_instance(issue.id, request.user, request.FILES.get('files'))
 
-        assignee_id = request.POST.get('assignee_id', '').strip()
-        assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
-
-        d_line = request.POST.get('deadline')
-        deadline_value = d_line if d_line and d_line.strip() != "" else None
-
-        issue = issue_create_instance(
-            subject=subject,
-            description=request.POST.get('description'),
-            issue_type=request.POST.get('issue_type'),
-            issue_severity=request.POST.get('issue_severity'),
-            priority=request.POST.get('priority'),
-            status=request.POST.get('status') or 'New',
-            d_line=deadline_value,
-            creator=request.user,
-            assignee=assignee
-        )
-        if request.FILES.get('files'):
-            attachment_create_instance(issue.id, request.user, request.FILES.get('files'))
-
-        return redirect('issue_list')
-    else:
-        context = {
-            'statuses': Status.objects.all(),
-            'priorities': Priority.objects.all(),
-            'issue_types': IssueType.objects.all(),
-            'severities': Severity.objects.all(),
-            'assignable_users': User.objects.all().order_by('username'),
-        }
-        return render_issue_create(request, context)
+    return redirect('issue_list')
 
 
 def issue_detail_api(issue):

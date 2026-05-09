@@ -43,7 +43,7 @@ paths:
             items:
               type: string
               enum: [Wishlist, Minor, Normal, Important, Critical]
-        - name: filter_status
+        - name: status
           in: query
           description: "Filter by status"
           explode: true
@@ -94,7 +94,7 @@ paths:
       requestBody:
         description: Provide the details for the new issue
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               properties:
@@ -113,16 +113,23 @@ paths:
                   example: '2026-05-08'
                 issue_type:
                   type: string
+                  enum: [Bug, Question, Enhancement]
                   example: "Bug"
                 priority:
                   type: string
-                  example: "High"
+                  enum: [Low, Normal, High]
+                  example: "Normal"
                 issue_severity:
                   type: string
+                  enum: [Wishlist, Minor, Normal, Important, Critical]
                   example: "Normal"
                 status:
                   type: string
+                  enum: [New, In Progress, Ready for test, Needs Info, Rejected, Postponed, Closed]
                   example: "New"
+                files:
+                  type: string
+                  format: binary
               required:
                 - subject
         required: true

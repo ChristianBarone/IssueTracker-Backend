@@ -1,4 +1,5 @@
-from .controllers import *
+from .controllers.controllers_web import *
+from .controllers.controllers_api import *
 from .helpers import validate_api_key
 
 
@@ -19,6 +20,46 @@ def _is_api_request(request):
     if request.content_type == 'application/json':
         return True
     return False
+
+# ISSUES
+def issues_dispatcher(request):
+    if not _is_api_request(request):
+        if not request.user.is_authenticated:
+            return redirect('/')
+
+        #Lista filtro i new
+        if request.method == 'GET':
+            if 'new' in request.path:
+                return render_issue_create(request)
+            else:
+                return issue_list_web(request)
+
+        #Creacion
+        if request.method == 'POST':
+            return issue_create_web(request)
+    else:
+        user = validate_api_key(request.headers.get("Authorization"))
+        if isinstance(user, JsonResponse):
+            return user
+
+        if request.method == 'GET':
+            return issue_list_api(request)
+        elif request.method == 'POST':
+            data = {
+                'subject': request.POST.get('subject'),
+                'description': request.POST.get('description'),
+                'assignee': request.POST.get('assignee'),
+                'deadline': request.POST.get('deadline'),
+                'issue_type': request.POST.get('issue_type'),
+                'priority': request.POST.get('priority'),
+                'issue_severity': request.POST.get('issue_severity'),
+                'status': request.POST.get('status'),
+                'attachment': request.FILES.get('files')
+            }
+
+            return issue_create_api(data, user)
+
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 # ATTACHMENTS
 def attachments(request, issue_id):
@@ -83,7 +124,6 @@ def attachment(request, attachment_id):
         return response
 
 # COMMENTS
-
 def issue_comments(request, issue_id):
     if not _is_api_request(request):
         if request.method == 'POST':
@@ -160,34 +200,6 @@ def comment_detail_route(request, comment_id):
     response = JsonResponse({'message': 'Method not allowed'}, status=405)
     response.headers["Allow"] = "GET, POST, PUT, DELETE"
     return response
-
-def issues_dispatcher(request):
-    if not _is_api_request(request):
-        if not request.user.is_authenticated:
-            return redirect('/')
-        #Lista filtron i new
-        if request.method == 'GET':
-            if 'new' in request.path:
-                return issue_create_web(request)
-            else:
-                return issue_list_web(request)
-        #Creacion
-        if request.method == 'POST':
-            return issue_create_web(request)
-        return JsonResponse({'message': 'Method not allowed'}, status=405)
-
-    else:
-        if request.user.is_authenticated:
-            user = request.user
-        else:
-            user = validate_api_key(request.headers.get("Authorization"))
-            if isinstance(user, JsonResponse):
-                return user
-        if request.method == 'GET':
-            return issue_list_api(request)
-        elif request.method == 'POST':
-            return issue_create_api(request, user)
-        return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 def issues_bulk_dispatcher(request):
     if not _is_api_request(request):

@@ -1,12 +1,23 @@
 from django.shortcuts import render
 
+from issues.models import *
+
+
 def render_login_page(request, context):
     return render(request, 'issues/login.html', context)
 
 def render_issue_list(request, context):
     return render(request, 'issues/list.html', context)
 
-def render_issue_create(request, context):
+def render_issue_create(request):
+    context = {
+        'statuses': Status.objects.all(),
+        'priorities': Priority.objects.all(),
+        'issue_types': IssueType.objects.all(),
+        'severities': Severity.objects.all(),
+        'assignable_users': User.objects.all().order_by('username'),
+    }
+
     return render(request, 'issues/create.html', context)
 
 def render_issue_bulk_create(request):

@@ -1,9 +1,49 @@
-from django.shortcuts import get_object_or_404
-
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect
+from issues.forms import *
 from .models import *
-from django.contrib.auth.models import User
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 
+"""""""""""""""""""""""""""""""""
+             GLOBALS
+"""""""""""""""""""""""""""""""""
+GITHUB_LOGIN_URL = '/accounts/github/login/'
+
+SETTINGS_MODELS = {
+    'statuses':   Status,
+    'priorities': Priority,
+    'types':      IssueType,
+    'severities': Severity,
+    'tags':       Tag,
+    'duedates':   DueDate,
+}
+
+SETTINGS_FORMS = {
+    'statuses':   StatusForm,
+    'priorities': PriorityForm,
+    'types':      IssueTypeForm,
+    'severities': SeverityForm,
+    'tags':       TagForm,
+    'duedates':   DueDateForm,
+}
+
+ENTITY_LABELS = {
+    'statuses':   'Status',
+    'priorities': 'Priority',
+    'types':      'Type',
+    'severities': 'Severity',
+    'tags':       'Tag',
+    'duedates':   'Due Date Status',
+}
+
+REASSIGNABLE_FIELD = {
+    'statuses':   'status',
+    'priorities': 'priority',
+    'types':      'issue_type',
+    'severities': 'issue_severity',
+}
+
+ORDERABLE_ENTITIES = {'statuses', 'priorities', 'types', 'severities', 'duedates'}
 
 def issue_create_instance(subject, description, issue_type,
                            issue_severity, priority, status, d_line, creator,
@@ -72,7 +112,7 @@ def log_watcher_activity(issue, actor, action, watcher_user):
 
 
 def do_move(request, entity, pk, direction):
-    from .controllers import ORDERABLE_ENTITIES, SETTINGS_MODELS
+    from issues.controllers.controllers_web import ORDERABLE_ENTITIES, SETTINGS_MODELS
     if request.method != 'POST' or entity not in ORDERABLE_ENTITIES:
         return redirect(f'/settings/?tab={entity}')
 
@@ -101,7 +141,7 @@ def update_fk_field(request, issue_id, field_name, model, activity_label):
     """Generic handler: update one FK field on an issue, log activity, redirect to detail."""
     issue = get_object_or_404(Issue, id=issue_id)
     if not request.user.is_authenticated:
-        return HttpResponseForbidden()
+        return JsonResponse({ 'message': "This action is not allowed." }, status=403)
     if request.method == 'POST':
         pk = request.POST.get('value_pk')
         if pk:
@@ -160,3 +200,42 @@ def issue_bulk_create(subjects, creator):
                           assignee))
 
     return issues
+
+def apply_issue_queries(request):
+    #priority es asc pero -priority es desc
+    order_param = request.GET.get('order_by', '-created_at')
+
+    allowed_order_fields = [
+        'issue_type', 'issue_severity', 'priority', 'subject',
+        'status', 'assignee', 'modified_at', 'deadline', 'created_at'
+    ]
+
+    clean_order = order_param.lstrip('-')
+    if clean_order not in allowed_order_fields:
+        order_param = '-created_at'
+
+    issues = Issue.objects.all().order_by(order_param)
+
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        issues = issues.filter(Q(subject__icontains=search_query) | Q(id__icontains=search_query) | Q(description__icontains=search_query))
+
+    if request.GET.getlist('issue_type'):
+        issues = issues.filter(issue_type__name__in=request.GET.getlist('issue_type'))
+
+    if request.GET.getlist('status'):
+        issues = issues.filter(status__name__in=request.GET.getlist('status'))
+
+    if request.GET.getlist('issue_severity'):
+        issues = issues.filter(issue_severity__name__in=request.GET.getlist('issue_severity'))
+
+    if request.GET.getlist('priority'):
+        issues = issues.filter(priority__name__in=request.GET.getlist('priority'))
+
+    f_assignee = request.GET.get('assigned_to')
+    if f_assignee == 'unassigned':
+        issues = issues.filter(assignee__isnull=True)
+    elif f_assignee:
+        issues = issues.filter(assignee_id=f_assignee)
+
+    return issues, order_param
