@@ -61,6 +61,80 @@ def issues_dispatcher(request):
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
+def issue_detail_dispatcher(request, issue_id):
+    try:
+        issue = get_object_or_404(Issue, id=issue_id)
+    except Http404:
+        return JsonResponse({'message': f'There is no issue with \'id\'={issue_id}'}, status=404)
+
+    # Web
+    if not _is_api_request(request):
+        if request.method == 'GET':
+            return issue_detail_web(request, issue)
+
+        if request.method == 'POST':
+            # ERROR 403: No es el creador
+            if request.POST.get('_method') == 'DELETE' or 'delete' in request.path:
+                if issue.creator == request.user:
+                    return issue_delete_web(request, issue_id)
+                else:
+                    return HttpResponseForbidden("You don't have permissions to delete")
+        else:
+            return issue_detail_web(request,issue)
+
+    # API
+    else:
+        user = validate_api_key(request.headers.get("Authorization"))
+        if isinstance(user, JsonResponse):
+            return user
+
+        if request.method == 'GET':
+            return issue_detail_api(issue)
+        else:
+            auth_check = validate_api_user(request.headers.get("Authorization"), issue.creator.id)
+            if isinstance(auth_check, JsonResponse):
+                return auth_check
+
+            if request.method == 'PUT':
+                try:
+                    data = json.loads(request.body)
+                except (json.JSONDecodeError, ValueError):
+                    return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+                return issue_edit_api(data, issue, user)
+            elif request.method == 'DELETE':
+                return issue_delete_api(issue_id)
+
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+def issues_bulk_dispatcher(request):
+    if not _is_api_request(request):
+        if not request.user.is_authenticated:
+            return redirect('/')
+
+        if request.method == 'GET':
+            return render_issue_bulk_create(request)
+        elif request.method == 'POST':
+            return issue_bulk_web(request)
+    else:
+        if request.method == 'POST':
+            user = validate_api_key(request.headers.get("Authorization"))
+            if isinstance(user, JsonResponse):
+                return user
+
+            try:
+                data = json.loads(request.body)
+                print(data)
+            except (json.JSONDecodeError, ValueError):
+                return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+            if data['list'] is None:
+                return JsonResponse({'message': "Subject list is required."}, status=400)
+
+            return issue_bulk_api(data['list'], user)
+
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
+
 # ATTACHMENTS
 def attachments(request, issue_id):
     if not _is_api_request(request):
@@ -201,37 +275,6 @@ def comment_detail_route(request, comment_id):
     response.headers["Allow"] = "GET, POST, PUT, DELETE"
     return response
 
-def issues_bulk_dispatcher(request):
-    if not _is_api_request(request):
-        if not request.user.is_authenticated:
-            return redirect('/')
-
-        if request.method == 'GET':
-            return render_issue_bulk_create(request)
-        elif request.method == 'POST':
-            return issue_bulk_web(request)
-    else:
-        if request.user.is_authenticated:
-            user = request.user
-        else:
-            user = validate_api_key(request.headers.get("Authorization"))
-            if isinstance(user, JsonResponse):
-                return user
-
-        if request.method == 'POST':
-            try:
-                data = json.loads(request.body)
-                print(data)
-            except (json.JSONDecodeError, ValueError):
-                return JsonResponse({'message': 'Invalid JSON body'}, status=400)
-
-            if data['list'] is None:
-                return JsonResponse({'message': "Subject list is required."}, status=400)
-
-            return issue_bulk_api(data['list'], user)
-
-    return JsonResponse({'message': 'Method not allowed'}, status=405)
-
 def issue_watchers_dispatcher(request, issue_id, watcher_id=None):
     # only API
     watcher = None
@@ -269,63 +312,6 @@ def issue_watchers_dispatcher(request, issue_id, watcher_id=None):
         return remove_watcher_api(request, issue, watcher)
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
-
-def issue_detail_dispatcher(request, issue_id):
-    try:
-        issue = get_object_or_404(Issue, id=issue_id)
-    except Exception:
-        if "text/html" in request.META.get("HTTP_ACCEPT", ""):
-            return render(request, '404.html', status=404)
-        return JsonResponse({'error': f'Issue {issue_id} not found'}, status=404)
-
-    # Web
-    if not _is_api_request(request):
-        if request.method == 'GET':
-            return issue_detail_web(request, issue)
-
-        if request.method == 'POST':
-            # ERROR 403: No es el creador
-            if request.POST.get('_method') == 'DELETE' or 'delete' in request.path:
-                if issue.creator == request.user:
-                    return issue_delete_web(request, issue_id)
-                else:
-                    return HttpResponseForbidden("You don't have permissions to delete")
-            return issue_detail_web(request,issue)
-
-    # API
-    else:
-        if request.user.is_authenticated:
-            user = request.user
-        else:
-            user = validate_api_key(request.headers.get("Authorization"))
-            if isinstance(user, JsonResponse):
-                return user
-
-        if request.method == 'GET':
-            return issue_detail_api(issue)
-
-        elif request.method == 'PUT':
-            if request.user.is_authenticated:
-                auth_check = request.user
-            else:
-                auth_check = validate_api_user(request.headers.get("Authorization"), issue.creator.id)
-                if isinstance(auth_check, JsonResponse):
-                    return auth_check
-            return issue_edit_api(request, issue, user)
-
-        elif request.method == 'DELETE':
-            if request.user.is_authenticated:
-                auth_check = request.user
-            else:
-                auth_check = validate_api_user(request.headers.get("Authorization"), issue.creator.id)
-                if isinstance(auth_check, JsonResponse):
-                    return auth_check
-            return issue_delete_api(issue_id)
-
-        else:
-            response = JsonResponse({'message': 'Method not allowed'}, status=405)
-            response.headers["Allow"] = "GET, PUT, DELETE"
-            return response
 
 
 def issue_update_assignee_dispatcher(request, issue_id):

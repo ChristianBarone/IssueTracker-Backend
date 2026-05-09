@@ -20,7 +20,7 @@ from django.conf.urls.static import static
 
 from issues.controllers.controllers_web import *
 from issues.views import *
-from issues.routes import *
+from issues.dispatchers import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),

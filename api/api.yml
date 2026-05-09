@@ -73,6 +73,8 @@ paths:
                       $ref: '#/components/schemas/Issue'
                   current_order:
                     type: string
+                  total_count:
+                    type: integer
                   unassigned_count:
                     type: integer
         '401':
@@ -162,6 +164,7 @@ paths:
         - ApiKeyAuth: []
   /issues/bulk/:
     post:
+      description: Create a series of issues from an array of subjects. All created issues will have identical, default parameters.
       tags:
         - issues
       summary: Bulk create a list of issues
@@ -256,11 +259,9 @@ paths:
       description: |
         Updates an issue. All fields are optional; only provided fields are modified.
 
-        **Creator-only fields** (`subject`, `description`, `status`, `issue_type`, `issue_severity`, `priority`, `tags`, `deadline`): only the issue creator can send these. Returns 403 if a non-creator includes any of them.
+        **Editable fields** (`subject`, `description`, `status`, `issue_type`, `issue_severity`, `priority`, `tags`, `deadline`).
 
-        **Any authenticated user** can modify `assignee` and `watchers`.
-
-        **Attachments**: any authenticated user can add or delete attachments via the dedicated endpoints (`POST /issue/{issueId}/attachments` and `DELETE /attachments/{attachmentId}`).
+        **Only the issue creator** can modify the fields. To edit fields modifiable by all users (`attachments`, `watchers`, and `assignee`), use the dedicated endpoints.
       operationId: updateIssue
       parameters:
         - name: issueId
@@ -324,18 +325,6 @@ paths:
                   nullable: true
                   description: "[Creator only] Deadline date, or null to remove it"
                   example: "2026-06-01"
-                assignee:
-                  type: integer
-                  nullable: true
-                  description: "ID of the user to assign, or null to unassign"
-                  example: 5
-                watchers:
-                  type: array
-                  description: "List of user IDs that will watch the issue (replaces current watchers)"
-                  items:
-                    type: integer
-                  example: [2, 7]
-
       responses:
         '200':
           description: Issue updated
@@ -362,7 +351,7 @@ paths:
                 errorExample:
                   $ref: '#/components/examples/error401'
         '403':
-          description: Forbidden (non-creator attempted to edit a creator-only field)
+          description: Forbidden (non-creator attempted to edit an issue)
           content:
             application/json:
               schema:
@@ -430,7 +419,7 @@ paths:
   /issue/{issue_id}/watchers/:
     post:
       tags:
-        - issues
+        - watchers
       summary: Add a watcher to the issue
       operationId: addWatcher
       parameters:
@@ -488,7 +477,7 @@ paths:
   /issue/{issue_id}/watchers/{watcher_id}:
     delete:
       tags:
-        - issues
+        - watchers
       summary: Remove a watcher from the issue
       operationId: removeWatcher
       parameters:
@@ -1488,6 +1477,9 @@ components:
         subject:
           type: string
           example: "Bug in login"
+        description:
+          type: string
+          example: "Logging in sometimes throws unexpected errors."
         status:
           type: string
           example: "Open"
@@ -1497,16 +1489,27 @@ components:
         severity:
           type: string
           example: "Normal"
+        type:
+          type: string
+          example: "Bug"
+        creator:
+          type: string
+          example: "martipiris"
         assignee:
           type: string
           example: "Andreu-Caro"
-        deadline:
-          $ref: '#/components/schemas/Deadline'
         created_at:
           type: string
           format: date-time
           example: "2026-05-04T21:00:00Z"
-
+        modified_at:
+          type: string
+          format: date-time
+          example: "2026-05-04T21:00:00Z"
+        deadline:
+          type: string
+          format: date
+          example: "2026-05-08"
     IssueDetail:
       allOf:
         - $ref: '#/components/schemas/Issue'
@@ -1515,14 +1518,6 @@ components:
             description:
               type: string
               example: "The login button is not working on Chrome"
-            current_watchers_count:
-              type: integer
-              example: 5
-            watchers_list:
-              type: array
-              items:
-                type: string
-              example: [ "Christian-Barone", "Andreu-Caro" ]
             comments:
               type: array
               items:
@@ -1536,7 +1531,15 @@ components:
               items:
                 type: string
                 example: "frontend"
-
+            watchers:
+              type: array
+              items:
+                type: string
+              example: [ "Christian-Barone", "Andreu-Caro" ]
+            activities:
+              type: array
+              items:
+                $ref: '#/components/schemas/Activity'
     BulkIssues:
       type: array
       items:
@@ -1548,15 +1551,6 @@ components:
           subject:
             type: string
             example: "Bug in login"
-
-    Deadline:
-      type: object
-      properties:
-        deadline:
-          type: string
-          format: date
-          example: "2026-05-08"
-
     WatcherResp:
       type: object
       properties:
@@ -1614,6 +1608,25 @@ components:
           type: integer
           format: int64
           example: 6
+    Activity:
+      type: object
+      properties:
+        user:
+          type: string
+          example: "martipiris"
+        field:
+          type: string
+          example: "watchers"
+        old:
+          type: string
+          example: ""
+        new:
+          type: string
+          example: "removed @martipiris"
+        date:
+          type: string
+          format: date-time
+          example: "2026-04-16T21:29:29.184088+00:00"
     SettingsObject:
       type: object
       description: "Representation of a settings record. Fields vary by entity type."
