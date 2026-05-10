@@ -134,6 +134,36 @@ def issues_bulk_dispatcher(request):
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
+def issue_update_assignee_dispatcher(request, issue_id):
+    try:
+        issue = get_object_or_404(Issue, id=issue_id)
+    except Http404:
+        return JsonResponse({'message': f'Issue {issue_id} not found'}, status=404)
+
+    # Web
+    if not _is_api_request(request):
+        if not request.user.is_authenticated:
+            return redirect('/')
+
+        if request.method == 'POST':
+            return issue_update_assignee_web(request, issue_id)
+
+    # API
+    else:
+        user = validate_api_key(request.headers.get("Authorization"))
+        if isinstance(user, JsonResponse):
+            return user
+
+        try:
+            data = json.loads(request.body) if request.body else {}
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'message': 'Invalid JSON body'}, status=400)
+
+        if request.method == 'PUT':
+            return issue_update_assignee_api(data, issue, user)
+
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
+
 def issue_watchers_dispatcher(request, issue_id, watcher_id=None):
     # only API
     try:
@@ -153,7 +183,7 @@ def issue_watchers_dispatcher(request, issue_id, watcher_id=None):
 
         return watcher_add_api(user, issue, data)
     elif request.method == 'DELETE':
-        return remove_watcher_api(user, issue, watcher_id)
+        return watcher_remove_api(user, issue, watcher_id)
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
@@ -296,41 +326,6 @@ def comment_detail_route(request, comment_id):
     response = JsonResponse({'message': 'Method not allowed'}, status=405)
     response.headers["Allow"] = "GET, POST, PUT, DELETE"
     return response
-
-def issue_update_assignee_dispatcher(request, issue_id):
-    try:
-        issue = get_object_or_404(Issue, id=issue_id)
-    except Exception:
-        if "text/html" in request.META.get("HTTP_ACCEPT", ""):
-            return redirect('issue_detail', issue_id=issue_id)
-        return JsonResponse({'message': f'Issue {issue_id} not found'}, status=404)
-
-    # Web
-    if not _is_api_request(request):
-        if not request.user.is_authenticated:
-            return redirect('/')
-        if request.method == 'POST':
-            return issue_update_assignee_web(request, issue_id)
-        else:
-            response = JsonResponse({'message': 'Method not allowed'}, status=405)
-            response.headers["Allow"] = "POST"
-            return response
-
-    # API
-    else:
-        if request.user.is_authenticated:
-            user = request.user
-        else:
-            user = validate_api_key(request.headers.get("Authorization"))
-            if isinstance(user, JsonResponse):
-                return user
-
-        if request.method == 'POST':
-            return issue_update_assignee_api(request, issue_id, user)
-        else:
-            response = JsonResponse({'message': 'Method not allowed'}, status=405)
-            response.headers["Allow"] = "POST"
-            return response
 
 # profile 
 def profile_dispatcher(request, username):

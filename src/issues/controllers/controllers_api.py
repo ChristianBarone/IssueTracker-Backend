@@ -312,6 +312,20 @@ def issue_bulk_api(subjects, user):
 
     return JsonResponse(data, status=201, safe=False)
 
+def issue_update_assignee_api(data, issue, user):
+    assignee_id = data.get('user_id')
+
+    new_assignee = None
+    if assignee_id:
+        new_assignee = User.objects.filter(id=assignee_id).first()
+        if not new_assignee:
+            return JsonResponse({'message': 'Invalid user_id'}, status=400)
+
+    if not update_issue_assignee(issue, new_assignee, user):
+        return JsonResponse({'message': 'Provided user is already assigned to this issue'}, status=409)
+
+    return issue_detail_api(issue)
+
 # WATCHERS
 def watcher_add_api(request_user, issue, data):
     try:

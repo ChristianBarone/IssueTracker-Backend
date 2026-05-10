@@ -32,20 +32,7 @@ urlpatterns = [
     path('issues/<int:issue_id>/', issue_detail_dispatcher, name='issue_detail'),
     path('issues/<int:issue_id>/delete/', issue_detail_dispatcher, name='issue_delete'),
 
-    path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
-    path('issue/<int:issue_id>/update-assignee/', issue_update_assignee_dispatcher, name='issue_update_assignee'),
-    path('issue/<int:issue_id>/update-type/', issue_update_type, name='issue_update_type'),
-    path('issue/<int:issue_id>/update-severity/', issue_update_severity, name='issue_update_severity'),
-    path('issue/<int:issue_id>/update-priority/', issue_update_priority, name='issue_update_priority'),
-    path('issue/<int:issue_id>/update-status-detail/', issue_update_status_detail, name='issue_update_status_detail'),
-    path('issue/<int:issue_id>/update-subject/', issue_update_subject, name='issue_update_subject'),
-    path('issue/<int:issue_id>/update-description/', issue_update_description, name='issue_update_description'),
-    path('issue/<int:issue_id>/update-deadline/', issue_update_deadline_detail, name='issue_update_deadline_detail'),
-    path('issue/<int:issue_id>/add-tag/', issue_add_tag, name='issue_add_tag'),
-    path('issue/<int:issue_id>/remove-tag/<int:tag_id>/', issue_remove_tag, name='issue_remove_tag'),
-
-    path('issue/<int:issue_id>/watcher_add/', watcher_add, name='watcher_add'),
-    path('issue/<int:issue_id>/remove_watcher/',remove_watcher, name='remove_watcher'),
+    path('issues/<int:issue_id>/assignee/', issue_update_assignee_dispatcher, name='issue_update_assignee'),
 
     path('issues/<int:issue_id>/watchers/', issue_watchers_dispatcher, name='post_watcher'),
     path('issues/<int:issue_id>/watchers/<int:watcher_id>', issue_watchers_dispatcher, name='delete_watcher'),
@@ -61,7 +48,6 @@ urlpatterns = [
 
     path('issues/<int:issue_id>/attachments', attachments, name='attachment_add'),
     path('attachments/<int:attachment_id>', attachment, name='attachment'),
-    path('attachments/<int:attachment_id>/delete', attachment_delete_web, name='attachment_delete'),
 
     path('settings/<str:entity>/<int:pk>/', settings_api_detail, name='settings_api_detail'),
     path('settings/<str:entity>/', settings_api_collection, name='settings_api_collection'),
@@ -72,6 +58,23 @@ urlpatterns = [
     path('settings/statuses/<int:pk>/toggle-closed/', settings_toggle_closed, name='settings_toggle_closed'),
     path('settings/<str:entity>/<int:pk>/move-up/', settings_move_up_dispatcher, name='settings_move_up'),
     path('settings/<str:entity>/<int:pk>/move-down/', settings_move_down_dispatcher, name='settings_move_down'),
+
+    path('attachments/<int:attachment_id>/delete', attachment_delete_web, name='attachment_delete'),
+
+    path('issue/<int:issue_id>/watcher_add/', watcher_add, name='watcher_add'),
+    path('issue/<int:issue_id>/remove_watcher/', remove_watcher, name='remove_watcher'),
+
+    path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
+    path('issue/<int:issue_id>/update-assignee/', issue_update_assignee_dispatcher, name='issue_update_assignee'),
+    path('issue/<int:issue_id>/update-type/', issue_update_type, name='issue_update_type'),
+    path('issue/<int:issue_id>/update-severity/', issue_update_severity, name='issue_update_severity'),
+    path('issue/<int:issue_id>/update-priority/', issue_update_priority, name='issue_update_priority'),
+    path('issue/<int:issue_id>/update-status-detail/', issue_update_status_detail, name='issue_update_status_detail'),
+    path('issue/<int:issue_id>/update-subject/', issue_update_subject, name='issue_update_subject'),
+    path('issue/<int:issue_id>/update-description/', issue_update_description, name='issue_update_description'),
+    path('issue/<int:issue_id>/update-deadline/', issue_update_deadline_detail, name='issue_update_deadline_detail'),
+    path('issue/<int:issue_id>/add-tag/', issue_add_tag, name='issue_add_tag'),
+    path('issue/<int:issue_id>/remove-tag/<int:tag_id>/', issue_remove_tag, name='issue_remove_tag'),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

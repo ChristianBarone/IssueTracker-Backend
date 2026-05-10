@@ -177,42 +177,16 @@ def issue_update_status(request, issue_id):
         return redirect('issue_list')
 
 @login_required
-def issue_update_assignee_web(request, issue_id):
-    issue = get_object_or_404(Issue, id=issue_id)
-
-    if request.method == 'POST':
-        assignee_id = request.POST.get('assignee_id', '').strip()
-
-        new_assignee = None
-        if assignee_id:
-            new_assignee = get_object_or_404(User, id=assignee_id)
-
-        update_issue_assignee(issue, new_assignee, request.user)
-
-    return redirect('issue_detail', issue_id=issue_id)
-
-def issue_update_assignee_api(request, issue_id, user):
-    issue = get_object_or_404(Issue, id=issue_id)
-
-    try:
-        data = json.loads(request.body) if request.body else {}
-    except (json.JSONDecodeError, ValueError):
-        return JsonResponse({'message': 'Invalid JSON body'}, status=400)
-
-    assignee_id = str(data.get('assignee_id', '')).strip()
+def issue_update_assignee_web(request, issue):
+    assignee_id = request.POST.get('assignee_id', '').strip()
 
     new_assignee = None
     if assignee_id:
-        new_assignee = User.objects.filter(id=assignee_id).first()
-        if not new_assignee:
-            return JsonResponse({'message': 'Invalid assignee_id'}, status=400)
+        new_assignee = get_object_or_404(User, id=assignee_id)
 
-    update_issue_assignee(issue, new_assignee, user)
+    update_issue_assignee(issue, new_assignee, request.user)
 
-    return JsonResponse({
-        'message': 'Assignee updated',
-        'assignee': new_assignee.username if new_assignee else 'Unassigned'
-    }, status=200)
+    return redirect('issue_detail', issue_id=issue.id)
 
 @login_required
 def issue_update_type(request, issue_id):
