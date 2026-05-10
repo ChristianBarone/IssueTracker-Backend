@@ -29,8 +29,8 @@ urlpatterns = [
     path('issues/', issues_dispatcher, name='issue_list'),
     path('new/', issues_dispatcher, name='issue_create'),
     path('issues/bulk/', issues_bulk_dispatcher, name='issue_bulk_create'),
-    path('issue/<int:issue_id>/', issue_detail_dispatcher, name='issue_detail'),
-    path('issue/<int:issue_id>/delete/', issue_detail_dispatcher, name='issue_delete'),
+    path('issues/<int:issue_id>/', issue_detail_dispatcher, name='issue_detail'),
+    path('issues/<int:issue_id>/delete/', issue_detail_dispatcher, name='issue_delete'),
 
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
     path('issue/<int:issue_id>/update-assignee/', issue_update_assignee_dispatcher, name='issue_update_assignee'),
@@ -47,10 +47,10 @@ urlpatterns = [
     path('issue/<int:issue_id>/watcher_add/', watcher_add, name='watcher_add'),
     path('issue/<int:issue_id>/remove_watcher/',remove_watcher, name='remove_watcher'),
 
-    path('issue/<int:issue_id>/watchers/', issue_watchers_dispatcher, name='post_watcher'),
-    path('issue/<int:issue_id>/watchers/<int:watcher_id>', issue_watchers_dispatcher, name='delete_watcher'),
+    path('issues/<int:issue_id>/watchers/', issue_watchers_dispatcher, name='post_watcher'),
+    path('issues/<int:issue_id>/watchers/<int:watcher_id>', issue_watchers_dispatcher, name='delete_watcher'),
 
-    path('issue/<int:issue_id>/comment/', issue_comments, name='comment_add'),
+    path('issues/<int:issue_id>/comment/', issue_comments, name='comment_add'),
     path('comment/<int:comment_id>/edit/', comment_detail_route, name='comment_edit'),
     path('comment/<int:comment_id>/delete/', comment_delete_web, name='comment_delete'),
     path('comments/<int:comment_id>/', comment_detail_route, name='comment_api_detail'),
@@ -59,7 +59,7 @@ urlpatterns = [
     path('users/<str:username>/edit/', profile_edit_dispatcher, name='profile_edit'),
     path('accounts/', include('allauth.urls')),
 
-    path('issue/<int:issue_id>/attachments', attachments, name='attachment_add'),
+    path('issues/<int:issue_id>/attachments', attachments, name='attachment_add'),
     path('attachments/<int:attachment_id>', attachment, name='attachment'),
     path('attachments/<int:attachment_id>/delete', attachment_delete_web, name='attachment_delete'),
 

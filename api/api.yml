@@ -212,7 +212,7 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
-  /issue/{issueId}/:
+  /issues/{issueId}/:
     get:
       tags:
         - issues
@@ -416,12 +416,13 @@ paths:
       security:
         - ApiKeyAuth: []
 
-  /issue/{issue_id}/watchers/:
+  /issues/{issue_id}/watchers/:
     post:
       tags:
         - watchers
       summary: Add a watcher to the issue
       operationId: addWatcher
+      description: Any user can add `watchers` to any issue. If no `user_id` is provided, the authorized user is added instead.
       parameters:
         - name: issue_id
           in: path
@@ -446,7 +447,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/WatcherResp'
         '400':
-          description: Bad Request (Body is required)
+          description: Bad Request (Body is required or provided user does not exist)
           content:
             application/json:
               schema:
@@ -472,9 +473,18 @@ paths:
               examples:
                 errorExample:
                   $ref: '#/components/examples/error404'
+        '409':
+          description: User is already watching this issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error409_watchers'
       security:
         - ApiKeyAuth: []
-  /issue/{issue_id}/watchers/{watcher_id}:
+  /issues/{issue_id}/watchers/{watcher_id}:
     delete:
       tags:
         - watchers
@@ -501,7 +511,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/WatcherResp'
         '400':
-          description: Bad Request (Body is required)
+          description: Bad Request (Body is required or user is not watching this issue)
           content:
             application/json:
               schema:
@@ -530,7 +540,7 @@ paths:
       security:
         - ApiKeyAuth: []
 
-  /issue/{issueId}/attachments:
+  /issues/{issueId}/attachments:
     get:
       tags:
         - attachments
@@ -714,7 +724,7 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
-  /issue/{issueId}/comment/:
+  /issues/{issueId}/comment/:
     get:
       tags:
         - comments
@@ -1558,7 +1568,7 @@ components:
           type: integer
         current_watchers_count:
           type: integer
-          example: 5
+          example: 2
         watchers_list:
           type: array
           items:
@@ -1695,6 +1705,9 @@ components:
     error409:
       value:
         message: "Duplicate comment"
+    error409_watchers:
+      value:
+        message: "User martipiris is already watching this issue"
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

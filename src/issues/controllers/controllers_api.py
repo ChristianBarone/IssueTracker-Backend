@@ -1,6 +1,6 @@
 from issues.helpers import *
 from issues.models import *
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.shortcuts import get_object_or_404
 
 # ISSUES
@@ -311,3 +311,52 @@ def issue_bulk_api(subjects, user):
         } for issue in issues]
 
     return JsonResponse(data, status=201, safe=False)
+
+# WATCHERS
+def watcher_add_api(request_user, issue, data):
+    try:
+        user_to_add = get_object_or_404(User, id=data['user_id']) if 'user_id' in data else request_user
+    except Http404:
+        return JsonResponse({'message': f'There is no user with \'id\'={data['user_id']}'}, status=400)
+
+    if issue.watchers.filter(id=user_to_add.id).exists():
+        return JsonResponse({'message': f"User {user_to_add} is already watching this issue" }, status=409)
+
+    issue.watchers.add(user_to_add.id)
+    log_watcher_activity(
+        issue,
+        request_user if request_user.is_authenticated else None,
+        'added',
+        user_to_add,
+    )
+
+    return JsonResponse({
+        'issue_id': issue.id,
+        'current_watchers_count': issue.watchers.count(),
+        'watchers_list': [w.username for w in issue.watchers.all()]
+    }, status=201)
+
+def watcher_remove_api(request_user, issue, watcher_id):
+    try:
+        watcher = get_object_or_404(User, id=watcher_id)
+
+    except Http404:
+        return JsonResponse({'message': f'There is no user with \'id\'={watcher_id}'}, status=404)
+
+    if not issue.watchers.filter(id=watcher_id).exists():
+        return JsonResponse({'message': 'The user you\'re trying to remove is not watching this issue'},
+                            status=400)
+
+    issue.watchers.remove(watcher)
+    log_watcher_activity(
+        issue,
+        request_user if request_user.is_authenticated else None,
+        'removed',
+        watcher,
+    )
+
+    return JsonResponse({
+        'issue_id': issue.id,
+        'current_watchers_count': issue.watchers.count(),
+        'watchers_list': [w.username for w in issue.watchers.all()]
+    }, status=204)
