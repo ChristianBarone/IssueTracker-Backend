@@ -188,66 +188,55 @@ def issue_watchers_dispatcher(request, issue_id, watcher_id=None):
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 # ATTACHMENTS
-def attachments(request, issue_id):
+def attachments_dispatcher(request, issue_id):
+    try:
+        issue = get_object_or_404(Issue, id=issue_id)
+    except Http404:
+        return JsonResponse({'message': 'There is no issue with \'id\'=' + str(issue_id)}, status=404)
+
+    # Web
     if not _is_api_request(request):
         if request.method == 'POST':
-            return attachment_add_web(request, issue_id)
-        else:
-            response = JsonResponse({'message': 'The requested method for this resource is not allowed'}, status=205)
-            response.headers["Allow"] = "GET, POST"
-            return response
-
-    else:
-        try:
-            get_object_or_404(Issue, id=issue_id)
-        except Http404:
-            return JsonResponse({'message': 'There is no issue with \'id\'=' + str(issue_id)}, status=404)
-
-        if request.user.is_authenticated:
-            user = request.user
-        else:
-            user = validate_api_key(request.headers.get("Authorization"))
-            if type(user) is JsonResponse:
-                return user
-
-        if request.method == 'POST':
-            return attachment_add_api(request, issue_id, user)
-        elif request.method == 'GET':
-            return attachment_list_api(issue_id)
-        else:
-            response = JsonResponse({'message': 'The requested method for this resource is not allowed'}, status=205)
-            response.headers["Allow"] = "GET, POST"
-            return response
-
-def attachment(request, attachment_id):
-    # only used by API
-    try:
-        attachment = get_object_or_404(Attachment, id=attachment_id)
-    except Http404:
-        return JsonResponse({'message': 'There is no attachment with \'id\'=' + str(attachment_id)}, status=404)
-
-    if request.user.is_authenticated:
-        user = request.user
+            return attachment_add_web(request, issue)
+    # API
     else:
         user = validate_api_key(request.headers.get("Authorization"))
         if type(user) is JsonResponse:
             return user
 
-    if request.method == 'DELETE':
-        if request.user.is_authenticated:
-            perm = request.user
-        else:
-            perm = validate_api_user(request.headers.get("Authorization"), attachment.creator.id)
-            if type(perm) is JsonResponse:
-                return perm
+        if request.method == 'POST':
+            uploaded_attachment = request.FILES.get('files')
+            if not uploaded_attachment:
+                return JsonResponse({'message': 'An attachment is mandatory'}, status=400)
 
-        return attachment_delete_api(attachment_id)
+            return attachment_add_api(uploaded_attachment, issue, user)
+        elif request.method == 'GET':
+            return attachment_list_api(issue_id)
+
+    return JsonResponse({'message': 'The requested method for this resource is not allowed'}, status=205)
+
+def attachment_instance_dispatcher(request, attachment_id):
+    # only used by API
+    try:
+        target_attachment = get_object_or_404(Attachment, id=attachment_id)
+    except Http404:
+        return JsonResponse({'message': f'There is no attachment with \'id\'={attachment_id}'}, status=404)
+
+    user = validate_api_key(request.headers.get("Authorization"))
+    if type(user) is JsonResponse:
+        return user
+
+    if request.method == 'DELETE':
+        perm = validate_api_user(request.headers.get("Authorization"), target_attachment.creator.id)
+        if type(perm) is JsonResponse:
+            return perm
+
+        return attachment_delete_api(target_attachment)
     elif request.method == 'GET':
-        return attachment_get_api(attachment_id)
-    else:
-        response = JsonResponse({'message': 'The requested method for this resource is not allowed'}, status=205)
-        response.headers["Allow"] = "GET, DELETE"
-        return response
+        return attachment_get_api(target_attachment)
+
+    return JsonResponse({'message': 'The requested method for this resource is not allowed'}, status=205)
+
 
 # COMMENTS
 def issue_comments(request, issue_id):

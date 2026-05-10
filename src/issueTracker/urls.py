@@ -46,8 +46,8 @@ urlpatterns = [
     path('users/<str:username>/edit/', profile_edit_dispatcher, name='profile_edit'),
     path('accounts/', include('allauth.urls')),
 
-    path('issues/<int:issue_id>/attachments', attachments, name='attachment_add'),
-    path('attachments/<int:attachment_id>', attachment, name='attachment'),
+    path('issues/<int:issue_id>/attachments', attachments_dispatcher, name='attachment_add'),
+    path('attachments/<int:attachment_id>', attachment_instance_dispatcher, name='attachment'),
 
     path('settings/<str:entity>/<int:pk>/', settings_api_detail, name='settings_api_detail'),
     path('settings/<str:entity>/', settings_api_collection, name='settings_api_collection'),
@@ -61,8 +61,8 @@ urlpatterns = [
 
     path('attachments/<int:attachment_id>/delete', attachment_delete_web, name='attachment_delete'),
 
-    path('issue/<int:issue_id>/watcher_add/', watcher_add, name='watcher_add'),
-    path('issue/<int:issue_id>/remove_watcher/', remove_watcher, name='remove_watcher'),
+    path('issue/<int:issue_id>/watcher_add/', watcher_add_web, name='watcher_add'),
+    path('issue/<int:issue_id>/remove_watcher/', watcher_remove_web, name='remove_watcher'),
 
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
     path('issue/<int:issue_id>/update-assignee/', issue_update_assignee_dispatcher, name='issue_update_assignee'),

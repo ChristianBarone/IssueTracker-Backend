@@ -57,7 +57,7 @@ def issue_create_api(data, user):
         assignee=assignee
     )
     if data['attachment']:
-        attachment_create_instance(issue.id, user, data['attachment'])
+        attachment_create_instance(issue, user, data['attachment'])
 
     return JsonResponse({
         'id': issue.id,
@@ -374,3 +374,46 @@ def watcher_remove_api(request_user, issue, watcher_id):
         'current_watchers_count': issue.watchers.count(),
         'watchers_list': [w.username for w in issue.watchers.all()]
     }, status=204)
+
+# ATTACHMENTS
+def attachment_list_api(issue_id):
+    attachments = Attachment.objects.filter(issue_id=issue_id)
+    data = []
+    for attachment in attachments:
+        data.append({
+            'attachment_id': attachment.id,
+            'issue_id': attachment.issue_id,
+            'creator_id': attachment.creator_id,
+            'url': attachment.file.url,
+            'name': attachment.name
+        })
+
+    return JsonResponse(data, status=200, safe=False)
+
+def attachment_add_api(file, issue, user):
+    attachment = attachment_create_instance(issue, user, file)
+
+    data = {
+        'attachment_id': attachment.id,
+        'issue_id': attachment.issue_id,
+        'creator_id': attachment.creator_id,
+        'url': attachment.file.url,
+        'name': attachment.name
+    }
+
+    return JsonResponse(data, status=201)
+
+def attachment_get_api(attachment):
+    data = {
+        'attachment_id': attachment.id,
+        'issue_id': attachment.issue_id,
+        'creator_id': attachment.creator_id,
+        'url': attachment.file.url,
+        'name': attachment.name
+    }
+
+    return JsonResponse(data, status=200)
+
+def attachment_delete_api(attachment):
+    attachment.delete()
+    return JsonResponse({'message': 'Attachment deleted'}, status=204)

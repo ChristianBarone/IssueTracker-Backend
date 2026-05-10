@@ -93,9 +93,7 @@ def update_issue_assignee(issue, new_assignee, actor):
     return True
 
 
-def attachment_create_instance(issue_id, creator, file):
-    issue = get_object_or_404(Issue, id=issue_id)
-
+def attachment_create_instance(issue, creator, file):
     attachment = Attachment(issue=issue, creator=creator, file=file, name=os.path.basename(file.name))
     attachment.save()
 

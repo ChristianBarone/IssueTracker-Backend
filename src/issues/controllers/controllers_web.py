@@ -89,7 +89,7 @@ def issue_create_web(request):
     )
 
     if request.FILES.get('files'):
-        attachment_create_instance(issue.id, request.user, request.FILES.get('files'))
+        attachment_create_instance(issue, request.user, request.FILES.get('files'))
 
     return redirect('issue_list')
 
@@ -318,7 +318,7 @@ def issue_remove_tag(request, issue_id, tag_id):
 
 # WATCHERS
 @login_required
-def watcher_add(request, issue_id):
+def watcher_add_web(request, issue_id):
     if request.method == "POST":
         issue = get_object_or_404(Issue, id=issue_id)
         user_id = request.POST.get('user_id')
@@ -335,17 +335,10 @@ def watcher_add(request, issue_id):
                     user_to_add,
                 )
 
-    if request.content_type == "application/json":
-        return JsonResponse({
-            'issue_id': issue.id,
-            'current_watchers_count': issue.watchers.count(),
-            'watchers_list': [w.username for w in issue.watchers.all()]
-        }, status=201)
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
+    return redirect('issue_detail', issue_id=issue_id)
 
 @login_required
-def remove_watcher(request, issue_id):
+def watcher_remove_web(request, issue_id):
     if request.method == "POST":
         issue = get_object_or_404(Issue, id=issue_id)
         target_user_id = request.POST.get('user_id')
@@ -363,14 +356,8 @@ def remove_watcher(request, issue_id):
             user,
         )
 
-    if request.content_type == "application/json":
-        return JsonResponse({
-            'issue_id': issue.id,
-            'current_watchers_count': issue.watchers.count(),
-            'watchers_list': [w.username for w in issue.watchers.all()]
-        }, status=201)
-    else:
-        return redirect('issue_detail', issue_id=issue_id)
+
+    return redirect('issue_detail', issue_id=issue_id)
 
 # --- COMMENTS ---
 def comment_list_api(issue_id):
@@ -451,62 +438,13 @@ def comment_delete_web(request, comment_id):
     return redirect('issue_detail', issue_id=issue_id)
 
 # ATTACHMENTS
-def attachment_get_api(attachment_id):
-    attachment = get_object_or_404(Attachment, id=attachment_id)
-    data = {
-        'attachment_id': attachment.id,
-        'issue_id': attachment.issue_id,
-        'creator_id': attachment.creator_id,
-        'url': attachment.file.url,
-        'name': attachment.name
-    }
-
-    return JsonResponse(data, status=200)
-
-def attachment_list_api(issue_id):
-    attachments = Attachment.objects.filter(issue_id=issue_id)
-    data = []
-    for attachment in attachments:
-        data.append({
-            'attachment_id': attachment.id,
-            'issue_id': attachment.issue_id,
-            'creator_id': attachment.creator_id,
-            'url': attachment.file.url,
-            'name': attachment.name
-        })
-
-    return JsonResponse(data, status=200, safe=False)
-
-def attachment_add_api(request, issue_id, user):
+def attachment_add_web(request, issue):
     form = UploadFileForm(request.POST, request.FILES)
     if not form.is_valid():
         return JsonResponse({'message': 'Invalid request format'}, status=400)
 
-    attachment = attachment_create_instance(issue_id, user, request.FILES['files'])
-
-    data = {
-        'attachment_id': attachment.id,
-        'issue_id': attachment.issue_id,
-        'creator_id': attachment.creator_id,
-        'url': attachment.file.url,
-        'name': attachment.name
-    }
-
-    return JsonResponse(data, status=201)
-
-def attachment_add_web(request, issue_id):
-    form = UploadFileForm(request.POST, request.FILES)
-    if not form.is_valid():
-        return JsonResponse({'message': 'Invalid request format'}, status=400)
-
-    attachment_create_instance(issue_id, request.user, request.FILES['files'])
-    return redirect('issue_detail', issue_id=issue_id)
-
-def attachment_delete_api(attachment_id):
-    attachment = get_object_or_404(Attachment, id=attachment_id)
-    attachment.delete()
-
-    return JsonResponse({'message': 'Attachment deleted'}, status=204)
+    attachment_create_instance(issue, request.user, request.FILES['files'])
+    return redirect('issue_detail', issue_id=issue.id)
 
 def attachment_delete_web(request, attachment_id):
     attachment = get_object_or_404(Attachment, id=attachment_id)

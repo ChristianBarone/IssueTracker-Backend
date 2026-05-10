@@ -661,6 +661,7 @@ paths:
         - attachments
       summary: Upload an attachment
       operationId: uploadAttachment
+      description: Creates a new attachment. Any user can upload an attachment, regardless of who owns the issue.
       parameters:
         - name: issueId
           in: path
@@ -756,6 +757,7 @@ paths:
         - attachments
       summary: Delete an attachment
       operationId: deleteAttachment
+      description: Deletes an attachment. Only the attachment uploader is allowed to delete it.
       parameters:
         - name: attachmentId
           in: path
