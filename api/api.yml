@@ -799,7 +799,7 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
-  /issues/{issueId}/comment/:
+  /issues/{issueId}/comments/:
     get:
       tags:
         - comments
@@ -902,6 +902,15 @@ paths:
               examples:
                 errorExample:
                   $ref: '#/components/examples/error404'
+        '409':
+          description: Duplicate comment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error409'
       security:
         - ApiKeyAuth: [ ]
 

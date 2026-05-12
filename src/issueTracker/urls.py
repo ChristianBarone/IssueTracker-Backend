@@ -37,10 +37,10 @@ urlpatterns = [
     path('issues/<int:issue_id>/watchers/', issue_watchers_dispatcher, name='post_watcher'),
     path('issues/<int:issue_id>/watchers/<int:watcher_id>', issue_watchers_dispatcher, name='delete_watcher'),
 
-    path('issues/<int:issue_id>/comment/', issue_comments, name='comment_add'),
-    path('comment/<int:comment_id>/edit/', comment_detail_route, name='comment_edit'),
-    path('comment/<int:comment_id>/delete/', comment_delete_web, name='comment_delete'),
-    path('comments/<int:comment_id>/', comment_detail_route, name='comment_api_detail'),
+    path('issues/<int:issue_id>/comments/', comments_dispatcher, name='comment_add'),
+    path('comments/<int:comment_id>/', comment_instance_dispatcher, name='comment_api_detail'),
+    path('comments/<int:comment_id>/edit/', comment_instance_dispatcher, name='comment_edit'),
+    path('comments/<int:comment_id>/delete/', comment_delete_web, name='comment_delete'),
 
     path('profile/<str:username>/', profile_dispatcher, name='profile_view'),
     path('users/<str:username>/edit/', profile_edit_dispatcher, name='profile_edit'),

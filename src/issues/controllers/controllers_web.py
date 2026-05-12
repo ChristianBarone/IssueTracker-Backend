@@ -360,64 +360,11 @@ def watcher_remove_web(request, issue_id):
     return redirect('issue_detail', issue_id=issue_id)
 
 # --- COMMENTS ---
-def comment_list_api(issue_id):
-    comments = Comment.objects.filter(issue_id=issue_id)
-    data = []
-    for c in comments:
-        data.append({
-            'id': c.id,
-            'body': c.body,
-            'author': c.author.username,
-            'created_at': c.created_at.isoformat(),
-            'issue_id': c.issue_id
-        })
-    return JsonResponse(data, status=200, safe=False)
-
-def comment_add_api(text, issue_id, user):
-    if Comment.objects.filter(issue_id=issue_id, author=user, body=text).exists():
-        return JsonResponse({'error': 'Duplicate comment'}, status=409)
-
-    comment = Comment.objects.create(issue_id=issue_id, author=user, body=text)
-    return JsonResponse({
-        'id': comment.id,
-        'body': comment.body,
-        'author': comment.author.username,
-        'issue_id': issue_id
-    }, status=201)
-
 def comment_add_web(request, issue_id):
     text = request.POST.get('body', '').strip()
     if text:
         Comment.objects.create(issue_id=issue_id, author=request.user, body=text)
     return redirect('issue_detail', issue_id=issue_id)
-
-def comment_edit_api(request, comment):
-    try:
-        data = json.loads(request.body)
-    except (json.JSONDecodeError, ValueError):
-        # Si falla el JSON, intentamos ver si viene de un formulario
-        text = request.POST.get('body', '').strip()
-        if not text:
-            return JsonResponse({'message': 'Invalid JSON body or missing body field'}, status=400)
-    else:
-        # Si el JSON es válido, extraemos el campo 'body'
-        text = data.get('body', '').strip() if 'body' in data else ''
-
-    if not text:
-        return JsonResponse({'message': 'Body is required'}, status=400)
-
-    if Comment.objects.filter(issue=comment.issue, author=comment.author, body=text).exclude(id=comment.id).exists():
-        return JsonResponse({'error': 'Duplicate comment'}, status=409)
-
-    comment.body = text
-    comment.save()
-    return JsonResponse({
-        'id': comment.id,
-        'body': comment.body,
-        'author': comment.author.username,
-        'created_at': comment.created_at.isoformat(),
-        'issue_id': comment.issue.id
-    }, status=200)
 
 def comment_edit_web(request, comment):
     text = request.POST.get('body', '').strip()
@@ -425,11 +372,6 @@ def comment_edit_web(request, comment):
         comment.body = text
         comment.save()
     return redirect('issue_detail', issue_id=comment.issue_id)
-
-def comment_delete_api(comment_id):
-    comment = get_object_or_404(Comment, id=comment_id)
-    comment.delete()
-    return JsonResponse({'message': 'Comment deleted'}, status=204)
 
 def comment_delete_web(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)

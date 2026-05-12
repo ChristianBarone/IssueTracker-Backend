@@ -155,7 +155,7 @@ def issue_update_assignee_dispatcher(request, issue_id):
             return user
 
         try:
-            data = json.loads(request.body) if request.body else {}
+            data = json.loads(request.body)
         except (json.JSONDecodeError, ValueError):
             return JsonResponse({'message': 'Invalid JSON body'}, status=400)
 
@@ -201,7 +201,7 @@ def attachments_dispatcher(request, issue_id):
     # API
     else:
         user = validate_api_key(request.headers.get("Authorization"))
-        if type(user) is JsonResponse:
+        if isinstance(user, JsonResponse):
             return user
 
         if request.method == 'POST':
@@ -213,7 +213,7 @@ def attachments_dispatcher(request, issue_id):
         elif request.method == 'GET':
             return attachment_list_api(issue_id)
 
-    return JsonResponse({'message': 'The requested method for this resource is not allowed'}, status=205)
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 def attachment_instance_dispatcher(request, attachment_id):
     # only used by API
@@ -223,42 +223,34 @@ def attachment_instance_dispatcher(request, attachment_id):
         return JsonResponse({'message': f'There is no attachment with \'id\'={attachment_id}'}, status=404)
 
     user = validate_api_key(request.headers.get("Authorization"))
-    if type(user) is JsonResponse:
+    if isinstance(user, JsonResponse):
         return user
 
     if request.method == 'DELETE':
         perm = validate_api_user(request.headers.get("Authorization"), target_attachment.creator.id)
-        if type(perm) is JsonResponse:
+        if isinstance(perm, JsonResponse):
             return perm
 
         return attachment_delete_api(target_attachment)
     elif request.method == 'GET':
         return attachment_get_api(target_attachment)
 
-    return JsonResponse({'message': 'The requested method for this resource is not allowed'}, status=205)
-
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 # COMMENTS
-def issue_comments(request, issue_id):
+def comments_dispatcher(request, issue_id):
+    try:
+        get_object_or_404(Issue, id=issue_id)
+    except Http404:
+        return JsonResponse({'message': f"There is no issue with 'id'={issue_id}"}, status=404)
+
     if not _is_api_request(request):
         if request.method == 'POST':
             return comment_add_web(request, issue_id)
-        else:
-            response = JsonResponse({'message': 'Method not allowed'}, status=405)
-            response.headers["Allow"] = "POST"
-            return response
-
     else:
-        try:
-            get_object_or_404(Issue, id=issue_id)
-        except:
-            return JsonResponse({'message': f"There is no issue with 'id'={issue_id}"}, status=404)
-
-        if request.user.is_authenticated:
-            user = request.user
-        else:
-            user = validate_api_key(request.headers.get("Authorization"))
-            if type(user) is JsonResponse: return user
+        user = validate_api_key(request.headers.get("Authorization"))
+        if isinstance(user, JsonResponse):
+            return user
 
         if request.method == 'POST':
             try:
@@ -272,14 +264,11 @@ def issue_comments(request, issue_id):
             return comment_add_api(data['body'], issue_id, user)
         elif request.method == 'GET':
             return comment_list_api(issue_id)
-        else:
-            response = JsonResponse({'message': 'The requested method for this resource is not allowed'}, status=405)
-            response.headers["Allow"] = "GET, POST"
-            return response
+
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 
-def comment_detail_route(request, comment_id):
-    # Only api
+def comment_instance_dispatcher(request, comment_id):
     try:
         comment = get_object_or_404(Comment, id=comment_id)
     except Http404:
@@ -287,34 +276,29 @@ def comment_detail_route(request, comment_id):
 
     if not _is_api_request(request):
         if comment.author != request.user:
-            return JsonResponse({'message': 'Forbidden'}, status=403)
+            return JsonResponse({'message': "The provided API key does not authorize this action"}, status=403)
 
         if request.method == 'POST':
             if 'delete' in request.path or request.POST.get('_method') == 'DELETE':
                 return comment_delete_web(request, comment_id)
+        else:
             return comment_edit_web(request, comment)
-
     else:
-        if request.user.is_authenticated:
-            user = request.user
-        else:
-            user = validate_api_key(request.headers.get("Authorization"))
-            if type(user) is JsonResponse: return user
-
-        if request.user.is_authenticated:
-            perm = request.user
-        else:
-            perm = validate_api_user(request.headers.get("Authorization"), comment.author.id)
-            if type(perm) is JsonResponse: return perm
+        perm = validate_api_user(request.headers.get("Authorization"), comment.author.id)
+        if isinstance(perm, JsonResponse):
+            return perm
 
         if request.method == 'DELETE':
             return comment_delete_api(comment_id)
-        elif request.method == 'PUT' or request.method == 'POST':
-            return comment_edit_api(request, comment)
+        elif request.method == 'PUT':
+            try:
+                data = json.loads(request.body)
+            except (json.JSONDecodeError, ValueError):
+                return JsonResponse({'message': 'Invalid JSON body'}, status=400)
 
-    response = JsonResponse({'message': 'Method not allowed'}, status=405)
-    response.headers["Allow"] = "GET, POST, PUT, DELETE"
-    return response
+            return comment_edit_api(data, comment)
+
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 # profile 
 def profile_dispatcher(request, username):

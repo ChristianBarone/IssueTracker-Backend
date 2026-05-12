@@ -417,3 +417,51 @@ def attachment_get_api(attachment):
 def attachment_delete_api(attachment):
     attachment.delete()
     return JsonResponse({'message': 'Attachment deleted'}, status=204)
+
+# COMMENTS
+def comment_list_api(issue_id):
+    comments = Comment.objects.filter(issue_id=issue_id)
+    data = []
+    for c in comments:
+        data.append({
+            'id': c.id,
+            'body': c.body,
+            'author': c.author.username,
+            'created_at': c.created_at.isoformat(),
+            'issue_id': c.issue_id
+        })
+    return JsonResponse(data, status=200, safe=False)
+
+
+def comment_add_api(text, issue_id, user):
+    if Comment.objects.filter(issue_id=issue_id, author=user, body=text).exists():
+        return JsonResponse({'error': 'Duplicate comment'}, status=409)
+
+    comment = Comment.objects.create(issue_id=issue_id, author=user, body=text)
+
+    return JsonResponse({
+        'id': comment.id,
+        'body': comment.body,
+        'author': comment.author.username,
+        'issue_id': issue_id
+    }, status=201)
+
+def comment_edit_api(data, comment):
+    body = data["body"]
+    if Comment.objects.filter(issue=comment.issue, author=comment.author, body=body).exclude(id=comment.id).exists():
+        return JsonResponse({'error': 'Duplicate comment'}, status=409)
+
+    comment.body = body
+    comment.save()
+    return JsonResponse({
+        'id': comment.id,
+        'body': comment.body,
+        'author': comment.author.username,
+        'created_at': comment.created_at.isoformat(),
+        'issue_id': comment.issue.id
+    }, status=200)
+
+def comment_delete_api(comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    comment.delete()
+    return JsonResponse({'message': 'Comment deleted'}, status=204)
