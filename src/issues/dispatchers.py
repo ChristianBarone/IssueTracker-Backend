@@ -300,26 +300,57 @@ def comment_instance_dispatcher(request, comment_id):
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
-# profile 
-def profile_dispatcher(request, username):
+# SETTINGS
+def settings_dispatcher(request, entity, setting_id=None):
+    user = validate_api_key(request.headers.get("Authorization"))
+    if isinstance(user, JsonResponse):
+        return user
 
+    if entity not in SETTINGS_MODELS:
+        return JsonResponse({'message': f"Unknown entity '{entity}'"}, status=404)
+
+    if request.method == 'GET':
+        return settings_list_api(entity)
+    elif request.method == 'POST':
+        return settings_create_api(request, entity)
+    elif request.method == 'PUT':
+        return settings_update_api(request, entity, setting_id)
+    elif request.method == 'DELETE':
+        return settings_delete_api(request, entity, setting_id)
+
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+def settings_move_dispatcher(request, entity, setting_id):
+    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
+        return settings_move_up(request, entity, setting_id) if "up" in request.path else settings_move_down(request, entity, setting_id)
+
+    user = validate_api_key(request.headers.get("Authorization"))
+    if isinstance(user, JsonResponse):
+        return user
+
+    if entity not in SETTINGS_MODELS:
+        return JsonResponse({'message': f"Unknown entity '{entity}'"}, status=404)
+
+    if request.method == 'POST':
+        if "up" in request.path:
+            return settings_move_api(entity, setting_id, 'up')
+        else:
+            return settings_move_api(entity, setting_id, 'down')
+
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+# PROFILE
+def profile_dispatcher(request, username):
     if not _is_api_request(request):
         return profile_view_web(request, username)
 
-    if request.user.is_authenticated:
-        user = request.user
-    else:
-        user = validate_api_key(
-            request.headers.get("Authorization")
-        )
-
-        if isinstance(user, JsonResponse):
-            return user
+    user = validate_api_key(request.headers.get("Authorization"))
+    if isinstance(user, JsonResponse):
+        return user
 
     return profile_view_api(request, username)
 
 def profile_edit_dispatcher(request, username):
-
     if not _is_api_request(request):
         return profile_edit_web(request, username)
 
@@ -333,80 +364,4 @@ def profile_edit_dispatcher(request, username):
         if isinstance(user, JsonResponse):
             return user
 
-    return profile_edit_api(request, username, user)           
-
-
-# SETTINGS API
-
-def settings_api_collection(request, entity):
-    user = validate_api_key(request.headers.get("Authorization"))
-    if isinstance(user, JsonResponse):
-        return user
-
-    if entity not in SETTINGS_MODELS:
-        return JsonResponse({'message': f"Unknown entity '{entity}'"}, status=404)
-
-    if request.method == 'GET':
-        return settings_list_api(entity)
-    elif request.method == 'POST':
-        return settings_create_api(request, entity)
-    else:
-        response = JsonResponse({'message': 'Method not allowed'}, status=405)
-        response.headers["Allow"] = "GET, POST"
-        return response
-
-
-def settings_api_detail(request, entity, pk):
-    user = validate_api_key(request.headers.get("Authorization"))
-    if isinstance(user, JsonResponse):
-        return user
-
-    if entity not in SETTINGS_MODELS:
-        return JsonResponse({'message': f"Unknown entity '{entity}'"}, status=404)
-
-    if request.method == 'PUT':
-        return settings_update_api(request, entity, pk)
-    elif request.method == 'DELETE':
-        return settings_delete_api(request, entity, pk)
-    else:
-        response = JsonResponse({'message': 'Method not allowed'}, status=405)
-        response.headers["Allow"] = "PUT, DELETE"
-        return response
-
-
-def settings_move_up_dispatcher(request, entity, pk):
-    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
-        return settings_move_up(request, entity, pk)
-
-    user = validate_api_key(request.headers.get("Authorization"))
-    if isinstance(user, JsonResponse):
-        return user
-
-    if entity not in SETTINGS_MODELS:
-        return JsonResponse({'message': f"Unknown entity '{entity}'"}, status=404)
-
-    if request.method != 'POST':
-        response = JsonResponse({'message': 'Method not allowed'}, status=405)
-        response.headers["Allow"] = "POST"
-        return response
-
-    return settings_move_api(entity, pk, 'up')
-
-
-def settings_move_down_dispatcher(request, entity, pk):
-    if "text/html" in request.META.get("HTTP_ACCEPT", ""):
-        return settings_move_down(request, entity, pk)
-
-    user = validate_api_key(request.headers.get("Authorization"))
-    if isinstance(user, JsonResponse):
-        return user
-
-    if entity not in SETTINGS_MODELS:
-        return JsonResponse({'message': f"Unknown entity '{entity}'"}, status=404)
-
-    if request.method != 'POST':
-        response = JsonResponse({'message': 'Method not allowed'}, status=405)
-        response.headers["Allow"] = "POST"
-        return response
-
-    return settings_move_api(entity, pk, 'down')
+    return profile_edit_api(request, username, user)

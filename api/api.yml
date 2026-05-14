@@ -1285,7 +1285,7 @@ paths:
             type: integer
             example: 2
       responses:
-        '200':
+        '204':
           description: Record deleted
           content:
             application/json:
