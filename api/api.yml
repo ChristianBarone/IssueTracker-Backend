@@ -43,7 +43,7 @@ paths:
             items:
               type: string
               enum: [Wishlist, Minor, Normal, Important, Critical]
-        - name: filter_status
+        - name: status
           in: query
           description: "Filter by status"
           explode: true
@@ -73,6 +73,8 @@ paths:
                       $ref: '#/components/schemas/Issue'
                   current_order:
                     type: string
+                  total_count:
+                    type: integer
                   unassigned_count:
                     type: integer
         '401':
@@ -94,7 +96,7 @@ paths:
       requestBody:
         description: Provide the details for the new issue
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               properties:
@@ -113,16 +115,23 @@ paths:
                   example: '2026-05-08'
                 issue_type:
                   type: string
+                  enum: [Bug, Question, Enhancement]
                   example: "Bug"
                 priority:
                   type: string
-                  example: "High"
+                  enum: [Low, Normal, High]
+                  example: "Normal"
                 issue_severity:
                   type: string
+                  enum: [Wishlist, Minor, Normal, Important, Critical]
                   example: "Normal"
                 status:
                   type: string
+                  enum: [New, In Progress, Ready for test, Needs Info, Rejected, Postponed, Closed]
                   example: "New"
+                files:
+                  type: string
+                  format: binary
               required:
                 - subject
         required: true
@@ -155,6 +164,7 @@ paths:
         - ApiKeyAuth: []
   /issues/bulk/:
     post:
+      description: Create a series of issues from an array of subjects. All created issues will have identical, default parameters.
       tags:
         - issues
       summary: Bulk create a list of issues
@@ -202,7 +212,7 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
-  /issue/{issueId}/:
+  /issues/{issueId}/:
     get:
       tags:
         - issues
@@ -249,11 +259,9 @@ paths:
       description: |
         Updates an issue. All fields are optional; only provided fields are modified.
 
-        **Creator-only fields** (`subject`, `description`, `status`, `issue_type`, `issue_severity`, `priority`, `tags`, `deadline`): only the issue creator can send these. Returns 403 if a non-creator includes any of them.
+        **Editable fields** (`subject`, `description`, `status`, `issue_type`, `issue_severity`, `priority`, `tags`, `deadline`).
 
-        **Any authenticated user** can modify `assignee` and `watchers`.
-
-        **Attachments**: any authenticated user can add or delete attachments via the dedicated endpoints (`POST /issue/{issueId}/attachments` and `DELETE /attachments/{attachmentId}`).
+        **Only the issue creator** can modify the fields. To edit fields modifiable by all users (`attachments`, `watchers`, and `assignee`), use the dedicated endpoints.
       operationId: updateIssue
       parameters:
         - name: issueId
@@ -283,31 +291,31 @@ paths:
               properties:
                 subject:
                   type: string
-                  description: "[Creator only] New title for the issue"
+                  description: "New title for the issue"
                   example: "Updated bug title"
                 description:
                   type: string
-                  description: "[Creator only] New description"
+                  description: "New description"
                   example: "More details about the bug"
                 status:
                   type: integer
-                  description: "[Creator only] ID of the status"
+                  description: "ID of the status"
                   example: 2
                 issue_type:
                   type: integer
-                  description: "[Creator only] ID of the type"
+                  description: "ID of the type"
                   example: 1
                 issue_severity:
                   type: integer
-                  description: "[Creator only] ID of the severity"
+                  description: "ID of the severity"
                   example: 3
                 priority:
                   type: integer
-                  description: "[Creator only] ID of the priority"
+                  description: "ID of the priority"
                   example: 2
                 tags:
                   type: array
-                  description: "[Creator only] List of tag IDs (replaces current tags)"
+                  description: "List of tag IDs (replaces current tags)"
                   items:
                     type: integer
                   example: [1, 3]
@@ -317,18 +325,6 @@ paths:
                   nullable: true
                   description: "[Creator only] Deadline date, or null to remove it"
                   example: "2026-06-01"
-                assignee:
-                  type: integer
-                  nullable: true
-                  description: "ID of the user to assign, or null to unassign"
-                  example: 5
-                watchers:
-                  type: array
-                  description: "List of user IDs that will watch the issue (replaces current watchers)"
-                  items:
-                    type: integer
-                  example: [2, 7]
-
       responses:
         '200':
           description: Issue updated
@@ -355,7 +351,7 @@ paths:
                 errorExample:
                   $ref: '#/components/examples/error401'
         '403':
-          description: Forbidden (non-creator attempted to edit a creator-only field)
+          description: Forbidden (non-creator attempted to edit an issue)
           content:
             application/json:
               schema:
@@ -419,13 +415,87 @@ paths:
                   $ref: '#/components/examples/error404'
       security:
         - ApiKeyAuth: []
-
-  /issue/{issue_id}/watchers/:
-    post:
+  /issues/{issueId}/assignee/:
+    put:
       tags:
         - issues
+      summary: Update an issue's assignee
+      description:
+        Updates an issue's assignee. Any user can update the assignee of any issue. If body does not have `user_id` key or it's null, issue will be set to `unassigned`.
+      operationId: updateAssignee
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  description: "ID of the user to assign the issue to. Leave null or omit to set the issue as unassigned."
+                  example: 1
+      responses:
+        '200':
+          description: Assignee updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueDetail'
+        '400':
+          description: Bad request (User does not exist)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  value:
+                    message: 'Invalid user_id'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
+        '404':
+          description: Issue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error404'
+        '409':
+          description: User is already assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  value:
+                    message: "Provided user is already assigned to this issue"
+      security:
+        - ApiKeyAuth: [ ]
+
+  /issues/{issue_id}/watchers/:
+    post:
+      tags:
+        - watchers
       summary: Add a watcher to the issue
       operationId: addWatcher
+      description: Any user can add `watchers` to any issue. If no `user_id` is provided, the authorized user is added instead.
       parameters:
         - name: issue_id
           in: path
@@ -450,7 +520,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/WatcherResp'
         '400':
-          description: Bad Request (Body is required)
+          description: Bad Request (Body is required or provided user does not exist)
           content:
             application/json:
               schema:
@@ -476,12 +546,21 @@ paths:
               examples:
                 errorExample:
                   $ref: '#/components/examples/error404'
+        '409':
+          description: User is already watching this issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error409_watchers'
       security:
         - ApiKeyAuth: []
-  /issue/{issue_id}/watchers/{watcher_id}:
+  /issues/{issue_id}/watchers/{watcher_id}:
     delete:
       tags:
-        - issues
+        - watchers
       summary: Remove a watcher from the issue
       operationId: removeWatcher
       parameters:
@@ -505,7 +584,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/WatcherResp'
         '400':
-          description: Bad Request (Body is required)
+          description: Bad Request (Body is required or user is not watching this issue)
           content:
             application/json:
               schema:
@@ -534,7 +613,7 @@ paths:
       security:
         - ApiKeyAuth: []
 
-  /issue/{issueId}/attachments:
+  /issues/{issueId}/attachments:
     get:
       tags:
         - attachments
@@ -582,6 +661,7 @@ paths:
         - attachments
       summary: Upload an attachment
       operationId: uploadAttachment
+      description: Creates a new attachment. Any user can upload an attachment, regardless of who owns the issue.
       parameters:
         - name: issueId
           in: path
@@ -677,6 +757,7 @@ paths:
         - attachments
       summary: Delete an attachment
       operationId: deleteAttachment
+      description: Deletes an attachment. Only the attachment uploader is allowed to delete it.
       parameters:
         - name: attachmentId
           in: path
@@ -718,7 +799,7 @@ paths:
       security:
         - ApiKeyAuth: [ ]
 
-  /issue/{issueId}/comment/:
+  /issues/{issueId}/comments/:
     get:
       tags:
         - comments
@@ -821,6 +902,15 @@ paths:
               examples:
                 errorExample:
                   $ref: '#/components/examples/error404'
+        '409':
+          description: Duplicate comment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error409'
       security:
         - ApiKeyAuth: [ ]
 
@@ -1195,7 +1285,7 @@ paths:
             type: integer
             example: 2
       responses:
-        '200':
+        '204':
           description: Record deleted
           content:
             application/json:
@@ -1354,7 +1444,10 @@ paths:
         - profiles
       summary: Get profile information
       operationId: getProfile
-
+      description: | 
+        Returns the profile information for the given user.
+        
+        `api-key` and `watched-issues` are only returned if the requested user is the same as the authorized user.
       parameters:
         - name: username
           in: path
@@ -1376,41 +1469,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
-
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
         '404':
           description: User not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  value:
+                    message: "User does not exist"
 
       security:
         - ApiKeyAuth: []
 
-  /profile/{username}/edit/:
-    post:
+  /profile/:
+    put:
       tags:
         - profiles
       summary: Edit user profile
       operationId: editProfile
-
-      parameters:
-        - name: username
-          in: path
-          required: true
-          schema:
-            type: string
-
+      description: Edit the authenticated user's profile. Only provided fields are modified.
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               properties:
                 bio:
                   type: string
-                  example: "Backend developer and AI enthusiast"
+                avatar:
+                  type: string
+                  format: binary
 
       responses:
         '200':
@@ -1420,29 +1514,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/Profile'
 
+        '400':
+          description: Invalid body format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+
         '401':
           description: Invalid API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
-
-        '403':
-          description: Cannot edit another user's profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
-
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
 
       security:
-        - ApiKeyAuth: []       
+        - ApiKeyAuth: []
 
 components:
   schemas:
@@ -1451,27 +1544,40 @@ components:
       properties:
         username:
           type: string
-          example: "alice"
+          example: "martipiris"
 
         bio:
           type: string
           example: "Software engineering student"
 
-        watched_issues:
-          type: integer
-          example: 5
+        registered:
+          type: string
+          format: date
+          example: "2026-4-16"
 
-        created_issues:
-          type: integer
-          example: 10
-
-        comments_count:
-          type: integer
-          example: 22
+        avatar:
+          type: string
+          example: "https://storage.googleapis.com/issue-tracker2026-media/avatars/Screenshot_2026-05-14_235458.png"
 
         open_assigned_issues:
-          type: integer
-          example: 3
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+
+        watched_issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+
+        api-key:
+          type: string
+          example: "GUT16hZNz179keYwClqbbRMM9subGnR2"
+
     Issue:
       type: object
       properties:
@@ -1481,6 +1587,9 @@ components:
         subject:
           type: string
           example: "Bug in login"
+        description:
+          type: string
+          example: "Logging in sometimes throws unexpected errors."
         status:
           type: string
           example: "Open"
@@ -1490,16 +1599,27 @@ components:
         severity:
           type: string
           example: "Normal"
+        type:
+          type: string
+          example: "Bug"
+        creator:
+          type: string
+          example: "martipiris"
         assignee:
           type: string
           example: "Andreu-Caro"
-        deadline:
-          $ref: '#/components/schemas/Deadline'
         created_at:
           type: string
           format: date-time
           example: "2026-05-04T21:00:00Z"
-
+        modified_at:
+          type: string
+          format: date-time
+          example: "2026-05-04T21:00:00Z"
+        deadline:
+          type: string
+          format: date
+          example: "2026-05-08"
     IssueDetail:
       allOf:
         - $ref: '#/components/schemas/Issue'
@@ -1508,14 +1628,6 @@ components:
             description:
               type: string
               example: "The login button is not working on Chrome"
-            current_watchers_count:
-              type: integer
-              example: 5
-            watchers_list:
-              type: array
-              items:
-                type: string
-              example: [ "Christian-Barone", "Andreu-Caro" ]
             comments:
               type: array
               items:
@@ -1529,7 +1641,15 @@ components:
               items:
                 type: string
                 example: "frontend"
-
+            watchers:
+              type: array
+              items:
+                type: string
+              example: [ "Christian-Barone", "Andreu-Caro" ]
+            activities:
+              type: array
+              items:
+                $ref: '#/components/schemas/Activity'
     BulkIssues:
       type: array
       items:
@@ -1541,15 +1661,6 @@ components:
           subject:
             type: string
             example: "Bug in login"
-
-    Deadline:
-      type: object
-      properties:
-        deadline:
-          type: string
-          format: date
-          example: "2026-05-08"
-
     WatcherResp:
       type: object
       properties:
@@ -1557,7 +1668,7 @@ components:
           type: integer
         current_watchers_count:
           type: integer
-          example: 5
+          example: 2
         watchers_list:
           type: array
           items:
@@ -1607,6 +1718,25 @@ components:
           type: integer
           format: int64
           example: 6
+    Activity:
+      type: object
+      properties:
+        user:
+          type: string
+          example: "martipiris"
+        field:
+          type: string
+          example: "watchers"
+        old:
+          type: string
+          example: ""
+        new:
+          type: string
+          example: "removed @martipiris"
+        date:
+          type: string
+          format: date-time
+          example: "2026-04-16T21:29:29.184088+00:00"
     SettingsObject:
       type: object
       description: "Representation of a settings record. Fields vary by entity type."
@@ -1675,6 +1805,9 @@ components:
     error409:
       value:
         message: "Duplicate comment"
+    error409_watchers:
+      value:
+        message: "User martipiris is already watching this issue"
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

@@ -18,18 +18,52 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 
-from issues.controllers import *
+from issues.controllers.controllers_web import *
 from issues.views import *
-from issues.routes import *
+from issues.dispatchers import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', login_page, name='login_page'),
+    
     path('issues/', issues_dispatcher, name='issue_list'),
     path('new/', issues_dispatcher, name='issue_create'),
     path('issues/bulk/', issues_bulk_dispatcher, name='issue_bulk_create'),
-    path('issue/<int:issue_id>/', issue_detail_dispatcher, name='issue_detail'),
-    path('issue/<int:issue_id>/delete/', issue_detail_dispatcher, name='issue_delete'),
+    path('issues/<int:issue_id>/', issue_detail_dispatcher, name='issue_detail'),
+    path('issues/<int:issue_id>/delete/', issue_detail_dispatcher, name='issue_delete'),
+
+    path('issues/<int:issue_id>/assignee/', issue_update_assignee_dispatcher, name='issue_update_assignee'),
+
+    path('issues/<int:issue_id>/watchers/', issue_watchers_dispatcher, name='post_watcher'),
+    path('issues/<int:issue_id>/watchers/<int:watcher_id>', issue_watchers_dispatcher, name='delete_watcher'),
+
+    path('issues/<int:issue_id>/comments/', comments_dispatcher, name='comment_add'),
+    path('comments/<int:comment_id>/', comment_instance_dispatcher, name='comment_api_detail'),
+    path('comments/<int:comment_id>/edit/', comment_instance_dispatcher, name='comment_edit'),
+    path('comments/<int:comment_id>/delete/', comment_delete_web, name='comment_delete'),
+
+    path('profile/<str:username>/', profile_dispatcher, name='profile_view'),
+    path('profile/', profile_dispatcher, name='profile_edit'),
+    path('profile/<str:username>', profile_dispatcher, name='profile_edit'),
+    path('accounts/', include('allauth.urls')),
+
+    path('issues/<int:issue_id>/attachments', attachments_dispatcher, name='attachment_add'),
+    path('attachments/<int:attachment_id>', attachment_instance_dispatcher, name='attachment'),
+
+    path('settings/<str:entity>/<int:setting_id>/', settings_dispatcher, name='settings_api_detail'),
+    path('settings/<str:entity>/', settings_dispatcher, name='settings_api_collection'),
+    path('settings/', settings_view, name='settings_view'),
+    path('settings/<str:entity>/add/', settings_save, name='settings_add'),
+    path('settings/<str:entity>/<int:pk>/edit/', settings_save, name='settings_edit'),
+    path('settings/<str:entity>/<int:pk>/delete/', settings_delete, name='settings_delete'),
+    path('settings/statuses/<int:pk>/toggle-closed/', settings_toggle_closed, name='settings_toggle_closed'),
+    path('settings/<str:entity>/<int:id>/move-up/', settings_move_dispatcher, name='settings_move_up'),
+    path('settings/<str:entity>/<int:id>/move-down/', settings_move_dispatcher, name='settings_move_down'),
+
+    path('attachments/<int:attachment_id>/delete', attachment_delete_web, name='attachment_delete'),
+
+    path('issue/<int:issue_id>/watcher_add/', watcher_add_web, name='watcher_add'),
+    path('issue/<int:issue_id>/remove_watcher/', watcher_remove_web, name='remove_watcher'),
 
     path('issue/<int:issue_id>/update-status/', issue_update_status, name='issue_update_status'),
     path('issue/<int:issue_id>/update-assignee/', issue_update_assignee_dispatcher, name='issue_update_assignee'),
@@ -42,35 +76,6 @@ urlpatterns = [
     path('issue/<int:issue_id>/update-deadline/', issue_update_deadline_detail, name='issue_update_deadline_detail'),
     path('issue/<int:issue_id>/add-tag/', issue_add_tag, name='issue_add_tag'),
     path('issue/<int:issue_id>/remove-tag/<int:tag_id>/', issue_remove_tag, name='issue_remove_tag'),
-
-    path('issue/<int:issue_id>/watcher_add/', watcher_add, name='watcher_add'),
-    path('issue/<int:issue_id>/remove_watcher/',remove_watcher, name='remove_watcher'),
-
-    path('issue/<int:issue_id>/watchers/', issue_watchers_dispatcher, name='post_watcher'),
-    path('issue/<int:issue_id>/watchers/<int:watcher_id>', issue_watchers_dispatcher, name='delete_watcher'),
-
-    path('issue/<int:issue_id>/comment/', issue_comments, name='comment_add'),
-    path('comment/<int:comment_id>/edit/', comment_detail_route, name='comment_edit'),
-    path('comment/<int:comment_id>/delete/', comment_delete_web, name='comment_delete'),
-    path('comments/<int:comment_id>/', comment_detail_route, name='comment_api_detail'),
-
-    path('profile/<str:username>/', profile_dispatcher, name='profile_view'),
-    path('users/<str:username>/edit/', profile_edit_dispatcher, name='profile_edit'),
-    path('accounts/', include('allauth.urls')),
-
-    path('issue/<int:issue_id>/attachments', attachments, name='attachment_add'),
-    path('attachments/<int:attachment_id>', attachment, name='attachment'),
-    path('attachments/<int:attachment_id>/delete', attachment_delete_web, name='attachment_delete'),
-
-    path('settings/<str:entity>/<int:pk>/', settings_api_detail, name='settings_api_detail'),
-    path('settings/<str:entity>/', settings_api_collection, name='settings_api_collection'),
-    path('settings/', settings_view, name='settings_view'),
-    path('settings/<str:entity>/add/', settings_save, name='settings_add'),
-    path('settings/<str:entity>/<int:pk>/edit/', settings_save, name='settings_edit'),
-    path('settings/<str:entity>/<int:pk>/delete/', settings_delete, name='settings_delete'),
-    path('settings/statuses/<int:pk>/toggle-closed/', settings_toggle_closed, name='settings_toggle_closed'),
-    path('settings/<str:entity>/<int:pk>/move-up/', settings_move_up_dispatcher, name='settings_move_up'),
-    path('settings/<str:entity>/<int:pk>/move-down/', settings_move_down_dispatcher, name='settings_move_down'),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
