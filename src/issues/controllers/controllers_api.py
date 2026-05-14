@@ -75,47 +75,7 @@ def issue_create_api(data, user):
     }, status=201)
 
 def issue_detail_api(issue):
-    attachments = issue.attachments.all()
-    return JsonResponse({
-        'id': issue.id,
-        'subject': issue.subject,
-        'description': issue.description,
-        'status': issue.status.name if issue.status else None,
-        'priority': issue.priority.name if issue.priority else None,
-        'severity': issue.issue_severity.name if issue.issue_severity else None,
-        'type': issue.issue_type.name if issue.issue_type else None,
-        'creator': issue.creator.username,
-        'assignee': issue.assignee.username if issue.assignee else "Unassigned",
-        'created_at': issue.created_at.isoformat(),
-        'modified_at': issue.modified_at.isoformat(),
-        'deadline': issue.deadline.isoformat() if issue.deadline else None,
-        'comments': [
-            {
-                'id': c.id,
-                'author': c.author.username,
-                'body': c.body,
-                'created_at': c.created_at.isoformat()
-            } for c in issue.comments.all()
-        ],
-        'attachments': [
-            {
-                'id': a.id,
-                'name': a.file.name,
-                'url': a.file.url
-            } for a in attachments
-        ],
-        'tags': [t.name for t in issue.tags.all()],
-        'watchers': [w.username for w in issue.watchers.all()],
-        'activities': [
-            {
-                'user': a.actor.username if a.actor else "System",
-                'field': a.field_name,
-                'old': a.old_value,
-                'new': a.new_value,
-                'date': a.created_at.isoformat()
-            } for a in issue.activities.all()
-        ]
-    }, status=200)
+    return JsonResponse(issue_serializer(issue), status=200)
 
 def issue_edit_api(data, issue, user):
     update_fields = ['modified_at']
@@ -653,3 +613,51 @@ def settings_move_api(entity, pk, direction):
     return JsonResponse(serializer(obj), status=200)
 
 # PROFILE
+def profile_view_api(user, same_user):
+    profile_obj, _ = Profile.objects.get_or_create(user=user)
+
+    data = {
+        'username': user.username,
+        'bio': profile_obj.bio,
+        'registered': user.date_joined.isoformat(),
+        'avatar': profile_obj.avatar.url if profile_obj.avatar else None,
+        'open_assigned_issues': [
+            issue_serializer(i)
+            for i in Issue.objects.all().filter(assignee=user).exclude(status__name='Closed')
+        ],
+        'comments': [
+            {
+                'id': c.id,
+                'author': c.author.username,
+                'body': c.body,
+                'created_at': c.created_at.isoformat()
+            }
+            for c in Comment.objects.all().filter(author=user)
+        ],
+    }
+
+    if same_user:
+        data['watched_issues'] = [
+            issue_serializer(i)
+            for i in user.watched_issues.all()
+        ]
+        data['auth_key'] = profile_obj.api_key
+
+    return JsonResponse(data, status=200)
+
+def profile_edit_api(request, user):
+    profile_obj, _ = Profile.objects.get_or_create(user=user)
+    request.method = 'POST'
+
+    data = request.POST
+    files = request.FILES
+
+    if 'bio' in data and data['bio'].strip() != "":
+        profile_obj.bio = data['bio']
+
+    if 'avatar' in files:
+        profile_obj.avatar = files['avatar']
+
+    profile_obj.save()
+
+    return profile_view_api(user, True)

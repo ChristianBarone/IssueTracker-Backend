@@ -237,3 +237,47 @@ def apply_issue_queries(request):
         issues = issues.filter(assignee_id=f_assignee)
 
     return issues, order_param
+
+def issue_serializer(issue):
+    attachments = issue.attachments.all()
+
+    return {
+        'id': issue.id,
+        'subject': issue.subject,
+        'description': issue.description,
+        'status': issue.status.name if issue.status else None,
+        'priority': issue.priority.name if issue.priority else None,
+        'severity': issue.issue_severity.name if issue.issue_severity else None,
+        'type': issue.issue_type.name if issue.issue_type else None,
+        'creator': issue.creator.username,
+        'assignee': issue.assignee.username if issue.assignee else "Unassigned",
+        'created_at': issue.created_at.isoformat(),
+        'modified_at': issue.modified_at.isoformat(),
+        'deadline': issue.deadline.isoformat() if issue.deadline else None,
+        'comments': [
+            {
+                'id': c.id,
+                'author': c.author.username,
+                'body': c.body,
+                'created_at': c.created_at.isoformat()
+            } for c in issue.comments.all()
+        ],
+        'attachments': [
+            {
+                'id': a.id,
+                'name': a.file.name,
+                'url': a.file.url
+            } for a in attachments
+        ],
+        'tags': [t.name for t in issue.tags.all()],
+        'watchers': [w.username for w in issue.watchers.all()],
+        'activities': [
+            {
+                'user': a.actor.username if a.actor else "System",
+                'field': a.field_name,
+                'old': a.old_value,
+                'new': a.new_value,
+                'date': a.created_at.isoformat()
+            } for a in issue.activities.all()
+        ]
+    }

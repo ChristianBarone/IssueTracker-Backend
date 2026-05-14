@@ -453,33 +453,6 @@ def profile_view_web(request, username):
 
     return render_profile_view(request, context)
 
-def profile_view_api(request, username):
-    profile_user = get_object_or_404(User, username=username)
-    profile_obj, _ = Profile.objects.get_or_create(user=profile_user)
-
-    data = {
-        'username': profile_user.username,
-
-        'bio': profile_obj.bio,
-        'created_issues': Issue.objects.filter(
-            creator=profile_user
-        ).count(),
-
-        'open_assigned_issues': Issue.objects.filter(
-            assignee=profile_user
-        ).exclude(status__name='Closed').count(),
-
-        'comments_count': Comment.objects.filter(
-            author=profile_user
-        ).count(),
-
-        'watched_issues': Issue.objects.filter(
-            watchers=profile_user
-        ).count(),
-    }
-
-    return JsonResponse(data, status=200)
-
 @login_required
 def profile_edit_web(request, username):
     profile_user = get_object_or_404(User, username=username)
@@ -510,40 +483,6 @@ def profile_edit_web(request, username):
     }
 
     return render_profile_edit(request, context)
-
-def profile_edit_api(request, username, user):
-    profile_user = get_object_or_404(User, username=username)
-
-    if user != profile_user:
-        return JsonResponse({
-            'message': 'Forbidden'
-        }, status=403)
-
-    profile_obj, _ = Profile.objects.get_or_create(
-        user=profile_user
-    )
-
-    try:
-        data = json.loads(request.body)
-    except (json.JSONDecodeError, ValueError):
-        return JsonResponse({
-            'message': 'Invalid JSON body'
-        }, status=400)
-
-    if 'bio' in data:
-        profile_obj.bio = data['bio']
-
-    if 'location' in data:
-        profile_obj.location = data['location']
-
-    profile_obj.save()
-
-    return JsonResponse({
-        'message': 'Profile updated',
-        'bio': profile_obj.bio,
-    }, status=200)
-
-
 
 # SETTINGS
 @login_required

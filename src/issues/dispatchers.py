@@ -340,7 +340,7 @@ def settings_move_dispatcher(request, entity, setting_id):
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 # PROFILE
-def profile_dispatcher(request, username):
+def profile_dispatcher(request, username=None):
     if not _is_api_request(request):
         return profile_view_web(request, username)
 
@@ -348,20 +348,14 @@ def profile_dispatcher(request, username):
     if isinstance(user, JsonResponse):
         return user
 
-    return profile_view_api(request, username)
+    if request.method == 'GET':
+        try:
+            req_user = get_object_or_404(User, username=username)
+        except Http404:
+            return JsonResponse({'message': f'There is no user with \'username\'={username}'}, status=404)
 
-def profile_edit_dispatcher(request, username):
-    if not _is_api_request(request):
-        return profile_edit_web(request, username)
+        return profile_view_api(req_user, user == req_user)
+    elif request.method == 'PUT':
+        return profile_edit_api(request, user)
 
-    if request.user.is_authenticated:
-        user = request.user
-    else:
-        user = validate_api_key(
-            request.headers.get("Authorization")
-        )
-
-        if isinstance(user, JsonResponse):
-            return user
-
-    return profile_edit_api(request, username, user)
+    return JsonResponse({'message': 'Method not allowed'}, status=405)

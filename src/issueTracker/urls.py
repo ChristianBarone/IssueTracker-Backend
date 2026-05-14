@@ -43,7 +43,8 @@ urlpatterns = [
     path('comments/<int:comment_id>/delete/', comment_delete_web, name='comment_delete'),
 
     path('profile/<str:username>/', profile_dispatcher, name='profile_view'),
-    path('users/<str:username>/edit/', profile_edit_dispatcher, name='profile_edit'),
+    path('profile/', profile_dispatcher, name='profile_edit'),
+    path('profile/<str:username>', profile_dispatcher, name='profile_edit'),
     path('accounts/', include('allauth.urls')),
 
     path('issues/<int:issue_id>/attachments', attachments_dispatcher, name='attachment_add'),

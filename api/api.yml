@@ -1444,7 +1444,10 @@ paths:
         - profiles
       summary: Get profile information
       operationId: getProfile
-
+      description: | 
+        Returns the profile information for the given user.
+        
+        `api-key` and `watched-issues` are only returned if the requested user is the same as the authorized user.
       parameters:
         - name: username
           in: path
@@ -1466,41 +1469,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
-
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
         '404':
           description: User not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  value:
+                    message: "User does not exist"
 
       security:
         - ApiKeyAuth: []
 
-  /profile/{username}/edit/:
-    post:
+  /profile/:
+    put:
       tags:
         - profiles
       summary: Edit user profile
       operationId: editProfile
-
-      parameters:
-        - name: username
-          in: path
-          required: true
-          schema:
-            type: string
-
+      description: Edit the authenticated user's profile. Only provided fields are modified.
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               properties:
                 bio:
                   type: string
-                  example: "Backend developer and AI enthusiast"
+                avatar:
+                  type: string
+                  format: binary
 
       responses:
         '200':
@@ -1510,29 +1514,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/Profile'
 
+        '400':
+          description: Invalid body format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error400'
+
         '401':
           description: Invalid API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResult'
-
-        '403':
-          description: Cannot edit another user's profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
-
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResult'
+              examples:
+                errorExample:
+                  $ref: '#/components/examples/error401'
 
       security:
-        - ApiKeyAuth: []       
+        - ApiKeyAuth: []
 
 components:
   schemas:
@@ -1541,27 +1544,40 @@ components:
       properties:
         username:
           type: string
-          example: "alice"
+          example: "martipiris"
 
         bio:
           type: string
           example: "Software engineering student"
 
-        watched_issues:
-          type: integer
-          example: 5
+        registered:
+          type: string
+          format: date
+          example: "2026-4-16"
 
-        created_issues:
-          type: integer
-          example: 10
-
-        comments_count:
-          type: integer
-          example: 22
+        avatar:
+          type: string
+          example: "https://storage.googleapis.com/issue-tracker2026-media/avatars/Screenshot_2026-05-14_235458.png"
 
         open_assigned_issues:
-          type: integer
-          example: 3
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+
+        watched_issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+
+        api-key:
+          type: string
+          example: "GUT16hZNz179keYwClqbbRMM9subGnR2"
+
     Issue:
       type: object
       properties:
