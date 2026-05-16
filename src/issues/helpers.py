@@ -212,16 +212,21 @@ def apply_issue_queries(request):
     if clean_order not in allowed_order_fields:
         order_param = '-created_at'
 
+
     issues = Issue.objects.all().order_by(order_param)
 
     search_query = request.GET.get('search', '').strip()
     if search_query:
+        from .models import Comment
+
+        issues_con_comentarios = Comment.objects.filter(body__icontains=search_query).values_list('issue_id', flat=True)
+
         issues = issues.filter(
             Q(subject__icontains=search_query) |
             Q(id__icontains=search_query) |
             Q(description__icontains=search_query) |
-            Q(comments__body__icontains=search_query)
-        ).distinct()
+            Q(id__in=issues_con_comentarios)
+        )
 
     if request.GET.getlist('issue_type'):
         issues = issues.filter(issue_type__name__in=request.GET.getlist('issue_type'))
