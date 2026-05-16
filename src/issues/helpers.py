@@ -216,7 +216,12 @@ def apply_issue_queries(request):
 
     search_query = request.GET.get('search', '').strip()
     if search_query:
-        issues = issues.filter(Q(subject__icontains=search_query) | Q(id__icontains=search_query) | Q(description__icontains=search_query))
+        issues = issues.filter(
+            Q(subject__icontains=search_query) |
+            Q(id__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(comments__body__icontains=search_query)
+        ).distinct()
 
     if request.GET.getlist('issue_type'):
         issues = issues.filter(issue_type__name__in=request.GET.getlist('issue_type'))
