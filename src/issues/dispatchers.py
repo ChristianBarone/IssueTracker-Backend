@@ -281,6 +281,8 @@ def comment_instance_dispatcher(request, comment_id):
         if request.method == 'POST':
             if 'delete' in request.path or request.POST.get('_method') == 'DELETE':
                 return comment_delete_web(request, comment_id)
+            else:
+                return comment_edit_web(request, comment)
         else:
             return comment_edit_web(request, comment)
     else:
