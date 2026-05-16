@@ -43,6 +43,15 @@ paths:
             items:
               type: string
               enum: [Wishlist, Minor, Normal, Important, Critical]
+        - name: priority
+          in: query
+          description: "Filter by priority"
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [ Low, Normal, High ]
         - name: status
           in: query
           description: "Filter by status"
