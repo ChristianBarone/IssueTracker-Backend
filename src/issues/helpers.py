@@ -216,7 +216,21 @@ def apply_issue_queries(request):
 
     search_query = request.GET.get('search', '').strip()
     if search_query:
-        issues = issues.filter(Q(subject__icontains=search_query) | Q(id__icontains=search_query) | Q(description__icontains=search_query))
+        from .models import Comment
+
+        # 1. Buscamos de forma aislada los IDs de issues que tienen comentarios con esa palabra.
+        # Al envolverlo en list(), forzamos a Django a sacar los datos en memoria limpiamente.
+        issues_con_comentarios = list(
+            Comment.objects.filter(body__icontains=search_query).values_list('issue_id', flat=True)
+        )
+
+        # 2. Aplicamos tu filtro original intacto + la lista de IDs de los comentarios
+        issues = issues.filter(
+            Q(subject__icontains=search_query) |
+            Q(id__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(id__in=issues_con_comentarios) # <- El filtro extra para capturar los comentarios
+        )
 
     if request.GET.getlist('issue_type'):
         issues = issues.filter(issue_type__name__in=request.GET.getlist('issue_type'))
