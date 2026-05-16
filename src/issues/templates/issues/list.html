@@ -42,6 +42,7 @@
                     {% for val in selected_types %}<span class="filter-tag">{{ val }}</span>{% endfor %}
                     {% for val in selected_severities %}<span class="filter-tag">{{ val }}</span>{% endfor %}
                     {% for val in selected_statuses %}<span class="filter-tag">{{ val }}</span>{% endfor %}
+                    {% for val in selected_priorities %}<span class="filter-tag">{{ val }}</span>{% endfor %}
                 </div>
                 {% endif %}
 
@@ -71,6 +72,21 @@
                             </div>
                             <span class="count-pill">{{ s.issue_count }}</span>
                         </label>
+                        {% endfor %}
+                    </div>
+                </details>
+
+                <details open>
+                    <summary>Priority <span>▾</span></summary>
+                    <div class="filter-content">
+                        {% for p in all_priorities %}
+                            <label class="filter-label" style="border-left-color: {{ p.color }};">
+                                <div class="filter-item">
+                                    <input type="checkbox" name="priority" value="{{ p.name }}" {% if p.name in selected_priorities %}checked{% endif %}>
+                                    <span>{{ p.name }}</span>
+                                </div>
+                                <span class="count-pill">{{ p.issue_count }}</span>
+                            </label>
                         {% endfor %}
                     </div>
                 </details>

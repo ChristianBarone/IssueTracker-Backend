@@ -41,6 +41,7 @@ def issue_list_web(request):
 
         'all_types': IssueType.objects.annotate(issue_count=Count('issue')).order_by('order'),
         'all_severities': Severity.objects.annotate(issue_count=Count('issue')).order_by('order'),
+        'all_priorities': Priority.objects.annotate(issue_count=Count('issue')).order_by('order'),
         'all_statuses': Status.objects.annotate(issue_count=Count('issue')).order_by('order'),
 
         'search_query': request.GET.get('search', ''),
