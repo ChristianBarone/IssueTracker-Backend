@@ -1,9 +1,11 @@
 import json
 
-from issues.helpers import *
-from issues.models import *
+from django.contrib.auth.models import User
 from django.http import JsonResponse, Http404
 from django.shortcuts import get_object_or_404
+
+from issues.helpers import *
+from issues.models import *
 
 # ISSUES
 def issue_list_api(request):
@@ -42,7 +44,9 @@ def issue_create_api(data, user):
         return JsonResponse({'error': 'Subject is required'}, status=400)
 
     assignee_id = data['assignee']
-    assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
+    assignee = resolve_user_reference(assignee_id)
+    if assignee_id and not assignee:
+        return JsonResponse({'error': 'Invalid assignee'}, status=400)
 
     d_line = data['deadline']
     deadline_value = d_line if d_line and d_line.strip() != "" else None
@@ -279,7 +283,7 @@ def issue_update_assignee_api(data, issue, user):
 
     new_assignee = None
     if assignee_id:
-        new_assignee = User.objects.filter(id=assignee_id).first()
+        new_assignee = resolve_user_reference(assignee_id)
         if not new_assignee:
             return JsonResponse({'message': 'Invalid user_id'}, status=400)
 

@@ -1,5 +1,6 @@
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.models import User
 from issues.forms import *
 from .models import *
 from django.http import JsonResponse
@@ -44,6 +45,7 @@ REASSIGNABLE_FIELD = {
 }
 
 ORDERABLE_ENTITIES = {'statuses', 'priorities', 'types', 'severities', 'duedates'}
+
 
 def issue_create_instance(subject, description, issue_type,
                            issue_severity, priority, status, d_line, creator,
@@ -178,8 +180,18 @@ def validate_api_key(api_key):
 
     if user.count() != 1:
         return JsonResponse({'message': "The API key you provided does not belong to any users"}, status=401)
-    else:
-        return user[0].user
+    return user[0].user
+
+
+def resolve_user_reference(user_reference):
+    if user_reference in (None, ''):
+        return None
+
+    user = User.objects.filter(id=user_reference).first()
+    if user:
+        return user
+
+    return User.objects.filter(username=user_reference).first()
 
 def issue_bulk_create(subjects, creator):
     # Valors per defecte en fer bulk add

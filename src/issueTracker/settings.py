@@ -30,9 +30,10 @@ ALLOWED_HOSTS = ['*']
 DATABASES = {
     "default": dj_database_url.config(
         default='postgresql://postgres:postgres@localhost:5432/issueTrackerDB',
-        conn_max_age=600
     )
 }
+
+DATABASES['default']['CONN_MAX_AGE'] = 600
 
 # Keep localhost as the configured host, but force IPv4 transport to avoid
 # intermittent localhost/IPv6 reset issues on Windows + Docker.
@@ -52,7 +53,10 @@ if DEBUG:
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 else:
-    from google.oauth2 import service_account
+    try:
+        from google.oauth2 import service_account  # type: ignore[import-not-found]
+    except ImportError:
+        service_account = None
 
     STORAGES = {
         "default": {
@@ -67,7 +71,7 @@ else:
     MEDIA_URL = 'https://storage.googleapis.com/{}/'.format(GS_BUCKET_NAME)
 
     credentials_path = os.path.join(BASE_DIR, '../gcloud_credentials.json')
-    if os.path.exists(credentials_path):
+    if service_account is not None and os.path.exists(credentials_path):
         GS_CREDENTIALS = service_account.Credentials.from_service_account_file(credentials_path)
 
 # Application definition
@@ -105,21 +109,28 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
+    "http://localhost:3000",
     "https://issuetracker-ff8u.onrender.com",
     'https://editor.swagger.io'
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+# Allow Authorization header in CORS requests
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'authorization',
+]
 
 ROOT_URLCONF = 'issueTracker.urls'
 
