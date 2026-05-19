@@ -118,10 +118,12 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
     "http://localhost:8000",
     "http://localhost:3000",
     "https://issuetracker-ff8u.onrender.com",
-    'https://editor.swagger.io'
+    "https://editor.swagger.io",
+    "https://issuetracker-frontend.vercel.app"
 ]
 CORS_ALLOW_CREDENTIALS = True
 
