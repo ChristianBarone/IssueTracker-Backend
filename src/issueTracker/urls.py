@@ -45,7 +45,6 @@ urlpatterns = [
     path('profile/<str:username>/', profile_dispatcher, name='profile_view'),
     path('profile/', profile_dispatcher, name='profile_edit'),
     path('profile/<str:username>', profile_dispatcher, name='profile_edit'),
-    path('auth/bootstrap/<str:username>/', auth_bootstrap_dispatcher, name='auth_bootstrap_user'),
     path('accounts/', include('allauth.urls')),
 
     path('issues/<int:issue_id>/attachments', attachments_dispatcher, name='attachment_add'),

@@ -24,40 +24,6 @@ def _is_api_request(request):
         return True
     return False
 
-
-DEFAULT_USERNAMES = {
-    'Andreu-Caro',
-    'Marti-Piris',
-    'Hala-Alkhatib',
-    'Aleks-shahverdyan',
-    'Christian-Alejandro-Barone',
-}
-
-DEPRECATED_API_KEYS = {
-    'a1c3e5f7a1c3e5f7a1c3e5f7a1c3e5f7',
-    'b2d4f6a8b2d4f6a8b2d4f6a8b2d4f6a8',
-    'c3e5a7c9c3e5a7c9c3e5a7c9c3e5a7c9',
-    'd4f6b8d0d4f6b8d0d4f6b8d0d4f6b8d0',
-    'e5a7c9e1e5a7c9e1e5a7c9e1e5a7c9e1',
-}
-
-
-def auth_bootstrap_dispatcher(request, username):
-    if request.method != 'GET':
-        return JsonResponse({'message': 'Method not allowed'}, status=405)
-
-    if username not in DEFAULT_USERNAMES:
-        return JsonResponse({'message': f"There is no default user with 'username'={username}"}, status=404)
-
-    user = get_object_or_404(User, username=username)
-    profile, _ = Profile.objects.get_or_create(user=user)
-
-    if not profile.api_key or profile.api_key in DEPRECATED_API_KEYS:
-        profile.api_key = get_random_string(32)
-        profile.save()
-
-    return JsonResponse({'username': user.username, 'api_key': profile.api_key}, status=200)
-
 # ISSUES
 def issues_dispatcher(request):
     if not _is_api_request(request):
