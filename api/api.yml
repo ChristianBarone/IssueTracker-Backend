@@ -1687,7 +1687,7 @@ components:
     Attachment:
       type: object
       properties:
-        attachment_id:
+        id:
           type: integer
           format: int64
           example: 2
@@ -1730,6 +1730,9 @@ components:
     Activity:
       type: object
       properties:
+        id:
+          type: integer
+          example: 1
         user:
           type: string
           example: "martipiris"

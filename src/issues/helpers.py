@@ -283,6 +283,7 @@ def issue_serializer(issue):
         'watchers': [w.username for w in issue.watchers.all()],
         'activities': [
             {
+                'id': a.id,
                 'user': a.actor.username if a.actor else "System",
                 'field': a.field_name,
                 'old': a.old_value,
@@ -294,7 +295,7 @@ def issue_serializer(issue):
 
 def attachment_serializer(attachment):
     return {
-        'attachment_id': attachment.id,
+        'id': attachment.id,
         'issue_id': attachment.issue_id,
         'creator_id': attachment.creator_id,
         'url': attachment.file.url,
