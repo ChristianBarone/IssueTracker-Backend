@@ -30,10 +30,9 @@ ALLOWED_HOSTS = ['*']
 DATABASES = {
     "default": dj_database_url.config(
         default='postgresql://postgres:postgres@localhost:5432/issueTrackerDB',
+        conn_health_checks=True,
     )
 }
-
-DATABASES['default']['CONN_MAX_AGE'] = 600
 
 # Keep localhost as the configured host, but force IPv4 transport to avoid
 # intermittent localhost/IPv6 reset issues on Windows + Docker.
