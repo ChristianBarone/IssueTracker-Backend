@@ -112,7 +112,6 @@ def log_watcher_activity(issue, actor, action, watcher_user):
 
 
 def do_move(request, entity, pk, direction):
-    from issues.controllers.controllers_web import ORDERABLE_ENTITIES, SETTINGS_MODELS
     if request.method != 'POST' or entity not in ORDERABLE_ENTITIES:
         return redirect(f'/settings/?tab={entity}')
 

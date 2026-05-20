@@ -499,11 +499,7 @@ def settings_view(request):
         'active_tab': active_tab,
     }
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return render_settings_view(request, context)
+    return render_settings_view(request, context)
 
 @login_required
 def settings_delete(request, entity, pk):
@@ -544,29 +540,17 @@ def settings_delete(request, entity, pk):
         'replacements': replacements,
     }
 
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return render_settings_delete(request, context)
+    return render_settings_delete(request, context)
 
 @login_required
 def settings_move_up(request, entity, pk):
     do_move(request, entity, pk, 'up')
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect(f'/settings/?tab={entity}')
+    return redirect(f'/settings/?tab={entity}')
 
 @login_required
 def settings_move_down(request, entity, pk):
     do_move(request, entity, pk, 'down')
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect(f'/settings/?tab={entity}')
+    return redirect(f'/settings/?tab={entity}')
 
 @login_required
 def settings_toggle_closed(request, pk):
@@ -575,11 +559,7 @@ def settings_toggle_closed(request, pk):
         status.is_closed = not status.is_closed
         status.save(update_fields=['is_closed'])
         
-    if request.content_type == "application/json":
-        # implementar
-        return None
-    else:
-        return redirect(f'/settings/?tab=statuses')
+    return redirect(f'/settings/?tab=statuses')
     
 @login_required
 def settings_save(request, entity, pk=None):
@@ -600,11 +580,7 @@ def settings_save(request, entity, pk=None):
                 obj.order = max_order + 1
             obj.save()
 
-            if request.content_type == "application/json":
-                # implementar
-                return None
-            else:
-                return redirect(f'/settings/?tab={entity}')
+            return redirect(f'/settings/?tab={entity}')
     else:
         form = form_class(instance=instance)
 
