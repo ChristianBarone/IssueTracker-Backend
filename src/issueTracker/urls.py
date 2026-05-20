@@ -57,8 +57,8 @@ urlpatterns = [
     path('settings/<str:entity>/<int:pk>/edit/', settings_save, name='settings_edit'),
     path('settings/<str:entity>/<int:pk>/delete/', settings_delete, name='settings_delete'),
     path('settings/statuses/<int:pk>/toggle-closed/', settings_toggle_closed, name='settings_toggle_closed'),
-    path('settings/<str:entity>/<int:id>/move-up/', settings_move_dispatcher, name='settings_move_up'),
-    path('settings/<str:entity>/<int:id>/move-down/', settings_move_dispatcher, name='settings_move_down'),
+    path('settings/<str:entity>/<int:setting_id>/move-up/', settings_move_dispatcher, name='settings_move_up'),
+    path('settings/<str:entity>/<int:setting_id>/move-down/', settings_move_dispatcher, name='settings_move_down'),
 
     path('attachments/<int:attachment_id>/delete', attachment_delete_web, name='attachment_delete'),
 
