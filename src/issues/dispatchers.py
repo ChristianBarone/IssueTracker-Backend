@@ -149,7 +149,7 @@ def issue_update_assignee_dispatcher(request, issue_id):
             return redirect('/')
 
         if request.method == 'POST':
-            return issue_update_assignee_web(request, issue_id)
+            return issue_update_assignee_web(request, issue)
 
     # API
     else:
