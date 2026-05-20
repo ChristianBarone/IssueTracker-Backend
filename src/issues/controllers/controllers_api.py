@@ -608,6 +608,7 @@ def profile_view_api(user, same_user):
         'comments': [
             {
                 'id': c.id,
+                'issue_id': c.issue_id,
                 'author': c.author.username,
                 'body': c.body,
                 'created_at': c.created_at.isoformat()
