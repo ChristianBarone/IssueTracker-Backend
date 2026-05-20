@@ -289,16 +289,13 @@ def issue_serializer(issue):
             } for c in issue.comments.all()
         ],
         'attachments': [
-            {
-                'id': a.id,
-                'name': a.file.name,
-                'url': a.file.url
-            } for a in attachments
+            attachment_serializer(a) for a in attachments
         ],
         'tags': [t.name for t in issue.tags.all()],
         'watchers': [w.username for w in issue.watchers.all()],
         'activities': [
             {
+                'id': a.id,
                 'user': a.actor.username if a.actor else "System",
                 'field': a.field_name,
                 'old': a.old_value,
@@ -306,4 +303,13 @@ def issue_serializer(issue):
                 'date': a.created_at.isoformat()
             } for a in issue.activities.all()
         ]
+    }
+
+def attachment_serializer(attachment):
+    return {
+        'id': attachment.id,
+        'issue_id': attachment.issue_id,
+        'creator_id': attachment.creator_id,
+        'url': attachment.file.url,
+        'name': attachment.name
     }
