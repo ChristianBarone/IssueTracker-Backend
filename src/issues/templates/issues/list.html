@@ -253,11 +253,13 @@
                             {% if issue.deadline %}
                                 <div style="display:flex; align-items:center; gap:4px;">
                                     <span style="color: #94a3b8; font-size: 12px;">{{ issue.deadline|date:"d M Y" }}</span>
-                                    <form method="POST" action="{% url 'issue_update_status' issue.id %}" style="margin:0;">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="deadline" value="">
-                                        <button type="submit" class="btn-delete-deadline" title="Clear deadline">✕</button>
-                                    </form>
+                                    {% if issue.creator == request.user %}
+                                        <form method="POST" action="{% url 'issue_update_status' issue.id %}" style="margin:0;">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="deadline" value="">
+                                            <button type="submit" class="btn-delete-deadline" title="Clear deadline">✕</button>
+                                        </form>
+                                    {% endif %}
                                 </div>
                             {% else %}
                                 <span style="color: #94a3b8; font-size: 12px;">No date</span>
