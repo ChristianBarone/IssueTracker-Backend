@@ -47,16 +47,24 @@ REASSIGNABLE_FIELD = {
 ORDERABLE_ENTITIES = {'statuses', 'priorities', 'types', 'severities', 'duedates'}
 
 
+def _get_default_or_first(model, name=None):
+    if name:
+        obj = model.objects.filter(name=name).first()
+        if obj:
+            return obj
+    return model.objects.filter(is_default=True).first() or model.objects.order_by('order', 'name').first()
+
+
 def issue_create_instance(subject, description, issue_type,
                            issue_severity, priority, status, d_line, creator,
                           assignee):
     issue = Issue.objects.create(
         subject=subject,
         description=description,
-        issue_type=IssueType.objects.filter(name=issue_type).first(),
-        issue_severity=Severity.objects.filter(name=issue_severity).first(),
-        priority=Priority.objects.filter(name=priority).first(),
-        status=Status.objects.filter(name=status).first(),
+        issue_type=_get_default_or_first(IssueType, issue_type),
+        issue_severity=_get_default_or_first(Severity, issue_severity),
+        priority=_get_default_or_first(Priority, priority),
+        status=_get_default_or_first(Status, status),
         deadline=d_line,
         creator=creator,
         assignee=assignee
@@ -193,21 +201,9 @@ def resolve_user_reference(user_reference):
     return User.objects.filter(username=user_reference).first()
 
 def issue_bulk_create(subjects, creator):
-    # Valors per defecte en fer bulk add
-    description = ''
-    issue_type = 'Bug'
-    issue_severity = 'Normal'
-    priority = 'Normal'
-    status = 'New'
-    d_line = None
-    assignee = None
-
     issues = []
-
     for subject in subjects:
-        issues.append(issue_create_instance(subject, description, issue_type, issue_severity, priority, status, d_line, creator,
-                          assignee))
-
+        issues.append(issue_create_instance(subject, '', None, None, None, None, None, creator, None))
     return issues
 
 def apply_issue_queries(request):
