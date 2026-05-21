@@ -83,7 +83,7 @@ def issue_create_web(request):
         issue_type=request.POST.get('issue_type'),
         issue_severity=request.POST.get('issue_severity'),
         priority=request.POST.get('priority'),
-        status=request.POST.get('status') or 'New',
+        status=request.POST.get('status'),
         d_line=deadline_value,
         creator=request.user,
         assignee=assignee
