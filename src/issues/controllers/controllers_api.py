@@ -57,7 +57,7 @@ def issue_create_api(data, user):
         issue_type=data['issue_type'],
         issue_severity=data['issue_severity'],
         priority=data['priority'],
-        status=data['status'] or 'New',
+        status=data['status'],
         d_line= deadline_value,
         creator=user,
         assignee=assignee
