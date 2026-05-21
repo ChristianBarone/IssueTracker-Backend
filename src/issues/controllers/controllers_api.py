@@ -26,6 +26,7 @@ def issue_list_api(request):
             'issue_type': issue.issue_type.name if issue.issue_type else None,
             'severity': issue.issue_severity.name if issue.issue_severity else None,
             'assignee': issue.assignee.username if issue.assignee else "Unassigned",
+            'creator': issue.creator.username,
             'created_at': issue.created_at.isoformat(),
             'modified_at': issue.modified_at.isoformat() if hasattr(issue, 'modified_at') else None,
             'deadline': issue.deadline.isoformat() if issue.deadline else None,
