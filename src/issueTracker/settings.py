@@ -34,7 +34,7 @@ DATABASES = {
     )
 }
 
-DATABASES['default']['CONN_MAX_AGE'] = 60
+DATABASES['default']['CONN_MAX_AGE'] = 0
 
 # Keep localhost as the configured host, but force IPv4 transport to avoid
 # intermittent localhost/IPv6 reset issues on Windows + Docker.
