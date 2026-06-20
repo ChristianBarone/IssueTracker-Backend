@@ -3,7 +3,6 @@
 **Aplicació web per gestionar Issues per a l'assignatura ASW QP 2025-26**
 
 **Enllaç aplicació desplegada:** https://issuetracker-ff8u.onrender.com/ <br>
-**Enllaç Taiga:** https://tree.taiga.io/project/andreu_caro-asw2526q2-it115
 
 # Autors
 ID de grup: it115
